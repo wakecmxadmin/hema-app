@@ -1,18 +1,17 @@
 import React from "react";
 import { View } from "react-native";
-import { styles } from "@/styles/cart.styles";
 import { PulseView } from "./PulseView"; // Nosso motor de animação
 
 export function CartItemSkeleton() {
   return (
-    <View style={{ marginBottom: 15 }}>
-      <View style={[styles.cartItem, { marginBottom: 0 }]}>
+    <View className="mb-[15px]">
+      <View className="mb-0 flex-row items-center border border-[#F0F0F0] rounded-[16px] bg-[#FFF] p-[14px]">
         {/* Imagem Quadrada */}
-        <PulseView style={[styles.imageContainer, { borderRadius: 8 }]} />
+        <PulseView className="h-[76px] w-[76px] overflow-hidden rounded-[8px] items-center justify-center bg-[#F9F9F9]" />
 
-        <View style={styles.itemDetails}>
-          <View style={styles.itemHeader}>
-            <View style={{ flex: 1, paddingRight: 10 }}>
+        <View className="ml-[14px] flex-1 h-[76px] justify-between">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-[10px]">
               {/* Nome do Produto */}
               <PulseView
                 style={{
@@ -31,11 +30,9 @@ export function CartItemSkeleton() {
             <PulseView style={{ height: 18, width: 60, borderRadius: 4 }} />
           </View>
 
-          <View style={[styles.itemFooter, { marginTop: 15 }]}>
+          <View className="flex-row items-center justify-between mt-[15px]">
             {/* Controles de Quantidade */}
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
+            <View className="flex-row items-center gap-[10px]">
               <PulseView style={{ height: 28, width: 28, borderRadius: 14 }} />
               <PulseView style={{ height: 16, width: 20, borderRadius: 4 }} />
               <PulseView style={{ height: 28, width: 28, borderRadius: 14 }} />

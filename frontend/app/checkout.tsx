@@ -8,16 +8,16 @@ import {
   ActivityIndicator,
   Modal,
   RefreshControl,
-  Alert, // Mantive apenas para o aviso de área não atendida (pois precisa do botão de confirmar)
+  Alert,
+  Platform,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 
-import { styles } from "../styles/checkout.styles";
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
 import { OrdersService } from "@/services/orders";
-import { Toast } from "@/util/toast"; // Novo import de Toasts
+import { Toast } from "@/util/toast";
 
 type DeliveryMethod = "pickup" | "delivery";
 type PaymentMethod = "pix" | "credit_card" | "cash";
@@ -64,17 +64,14 @@ export default function CheckoutScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = async () => {
-    // 1. Atualiza o carrinho (silencioso)
     await refreshCart();
 
-    // 2. Busca os endereços (Motor lida com erros de rede)
     const response = await getAddresses();
 
     if (response.success && response.data) {
       const data = response.data;
       setAddresses(data);
 
-      // 3. Seleção automática
       setSelectedAddressId((currentSelectedId) => {
         if (currentSelectedId) return currentSelectedId;
         if (data.length > 0) {
@@ -125,7 +122,6 @@ export default function CheckoutScreen() {
       currentDeliveryFee === -1 &&
       selectedAddressId
     ) {
-      // Mantivemos o Alert nativo aqui pois essa é uma mensagem bloqueante que o usuário precisa confirmar "Entendi"
       const timer = setTimeout(() => {
         Alert.alert(
           "Região não atendida 🛵",
@@ -174,7 +170,6 @@ export default function CheckoutScreen() {
     setIsCreatingOrder(false);
 
     if (response.success && response.data) {
-      // Limpa carrinho só depois que deu certo
       await refreshCart();
 
       if (paymentMethod === "cash") {
@@ -200,14 +195,9 @@ export default function CheckoutScreen() {
 
   if (loading && items.length === 0) {
     return (
-      <View
-        style={[
-          styles.safeArea,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <View className="flex-1 bg-[#F8F8F8] pt-10 justify-center items-center">
         <ActivityIndicator size="large" color="#E31837" />
-        <Text style={{ marginTop: 10, color: "#666" }}>
+        <Text className="mt-2.5 text-[#666]">
           Carregando dados do pedido...
         </Text>
       </View>
@@ -215,12 +205,11 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View style={styles.safeArea}>
+    <View className="flex-1 bg-[#F8F8F8] pt-10">
       <StatusBar barStyle="dark-content" />
 
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentPadding}
+        className="flex-1 p-4 pb-[160px]"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -232,14 +221,17 @@ export default function CheckoutScreen() {
         }
       >
         {/* 1. MÉTODO DE ENTREGA */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Como deseja receber?</Text>
-          <View style={styles.optionsRow}>
+        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
+          <Text className="text-base font-bold text-[#333] mb-3">
+            Como deseja receber?
+          </Text>
+          <View className="flex-row justify-between gap-2.5">
             <TouchableOpacity
-              style={[
-                styles.optionCard,
-                deliveryMethod === "delivery" && styles.optionCardActive,
-              ]}
+              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+                deliveryMethod === "delivery"
+                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+              }`}
               onPress={() => setDeliveryMethod("delivery")}
             >
               <MaterialCommunityIcons
@@ -248,20 +240,22 @@ export default function CheckoutScreen() {
                 color={deliveryMethod === "delivery" ? "#E31837" : "#999"}
               />
               <Text
-                style={[
-                  styles.optionText,
-                  deliveryMethod === "delivery" && styles.optionTextActive,
-                ]}
+                className={`text-[13px] font-semibold mt-1.5 ${
+                  deliveryMethod === "delivery"
+                    ? "text-[#E31837]"
+                    : "text-[#666]"
+                }`}
               >
                 Delivery
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.optionCard,
-                deliveryMethod === "pickup" && styles.optionCardActive,
-              ]}
+              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+                deliveryMethod === "pickup"
+                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+              }`}
               onPress={() => setDeliveryMethod("pickup")}
             >
               <MaterialCommunityIcons
@@ -270,10 +264,9 @@ export default function CheckoutScreen() {
                 color={deliveryMethod === "pickup" ? "#E31837" : "#999"}
               />
               <Text
-                style={[
-                  styles.optionText,
-                  deliveryMethod === "pickup" && styles.optionTextActive,
-                ]}
+                className={`text-[13px] font-semibold mt-1.5 ${
+                  deliveryMethod === "pickup" ? "text-[#E31837]" : "text-[#666]"
+                }`}
               >
                 Retirar na Loja
               </Text>
@@ -281,25 +274,25 @@ export default function CheckoutScreen() {
           </View>
 
           {/* DADOS DE ENTREGA / RETIRADA */}
-          <View style={styles.deliveryDetailsContainer}>
+          <View className="mt-4 border-t border-[#EAEAEA] pt-4">
             {deliveryMethod === "pickup" ? (
-              <View style={styles.storeInfoBox}>
+              <View className="flex-row bg-[#F5F5F5] p-3 rounded-lg items-start">
                 <MaterialCommunityIcons
                   name="map-marker-radius"
                   size={24}
                   color="#E31837"
                 />
-                <View style={styles.storeInfoTextContainer}>
-                  <Text style={styles.storeInfoTitle}>
+                <View className="ml-2.5 flex-1">
+                  <Text className="text-sm font-bold text-[#333] mb-1">
                     Endereço de Retirada
                   </Text>
-                  <Text style={styles.storeInfoText}>
+                  <Text className="text-[13px] text-[#666] mb-0.5">
                     R. São José dos Pinhais, 187 - Sítio Cercado
                   </Text>
-                  <Text style={styles.storeInfoText}>
+                  <Text className="text-[13px] text-[#666] mb-0.5">
                     Curitiba - PR, 81910-010
                   </Text>
-                  <Text style={styles.storeInfoHours}>
+                  <Text className="text-xs text-[#666] mt-1.5 font-medium">
                     <MaterialCommunityIcons
                       name="clock-outline"
                       size={14}
@@ -311,8 +304,8 @@ export default function CheckoutScreen() {
               </View>
             ) : (
               <View>
-                <View style={styles.addressHeader}>
-                  <Text style={styles.subSectionTitle}>
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-sm font-semibold text-[#333]">
                     Selecione o Endereço
                   </Text>
                   <TouchableOpacity
@@ -333,18 +326,18 @@ export default function CheckoutScreen() {
                     style={{ marginVertical: 20 }}
                   />
                 ) : addresses.length === 0 ? (
-                  <Text style={styles.emptyAddressText}>
+                  <Text className="text-sm text-[#999] italic text-center mt-2.5">
                     Nenhum endereço cadastrado.
                   </Text>
                 ) : (
                   addresses.map((address) => (
                     <TouchableOpacity
                       key={address.id}
-                      style={[
-                        styles.addressItem,
-                        selectedAddressId === address.id &&
-                          styles.addressItemActive,
-                      ]}
+                      className={`flex-row items-center py-3 px-2.5 border rounded-lg mb-2 ${
+                        selectedAddressId === address.id
+                          ? "border-[#E31837] bg-[#FFF5F5]"
+                          : "border-[#EAEAEA]"
+                      }`}
                       onPress={() => setSelectedAddressId(address.id)}
                     >
                       <MaterialCommunityIcons
@@ -358,46 +351,34 @@ export default function CheckoutScreen() {
                           selectedAddressId === address.id ? "#E31837" : "#999"
                         }
                       />
-                      <View style={styles.addressItemTextContainer}>
+                      <View className="ml-3 flex-1">
                         {address.label && (
-                          <Text
-                            style={{
-                              fontSize: 14,
-                              fontWeight: "bold",
-                              color: "#333",
-                              marginBottom: 2,
-                            }}
-                          >
+                          <Text className="text-sm font-bold text-[#333] mb-0.5">
                             {address.label}
                           </Text>
                         )}
 
-                        <View
-                          style={{ flexDirection: "row", alignItems: "center" }}
-                        >
+                        <View className="flex-row items-center">
                           <Text
-                            style={[
-                              styles.addressItemStreet,
-                              { flexShrink: 1 },
-                            ]}
+                            className="text-sm font-semibold text-[#333] flex-shrink"
                             numberOfLines={1}
                           >
                             {address.street}, {address.number}
                           </Text>
                           {address.is_default && (
-                            <View style={styles.defaultBadge}>
+                            <View className="flex-row items-center bg-[#FFF5F5] border border-[rgba(227,24,55,0.3)] px-1.5 py-0.5 rounded ml-2">
                               <MaterialCommunityIcons
                                 name="star"
                                 size={12}
                                 color="#E31837"
                               />
-                              <Text style={styles.defaultBadgeText}>
+                              <Text className="text-[10px] text-[#E31837] font-bold ml-0.5">
                                 Favorito
                               </Text>
                             </View>
                           )}
                         </View>
-                        <Text style={styles.addressItemDetails}>
+                        <Text className="text-xs text-[#666] mt-0.5">
                           {address.neighborhood} - {address.city}/
                           {address.state}
                           {address.complement ? ` • ${address.complement}` : ""}
@@ -412,14 +393,17 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 2. FORMA DE PAGAMENTO */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Forma de Pagamento</Text>
-          <View style={styles.optionsRow}>
+        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
+          <Text className="text-base font-bold text-[#333] mb-3">
+            Forma de Pagamento
+          </Text>
+          <View className="flex-row justify-between gap-2.5">
             <TouchableOpacity
-              style={[
-                styles.optionCard,
-                paymentMethod === "pix" && styles.optionCardActive,
-              ]}
+              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+                paymentMethod === "pix"
+                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+              }`}
               onPress={() => setPaymentMethod("pix")}
             >
               <MaterialCommunityIcons
@@ -428,21 +412,21 @@ export default function CheckoutScreen() {
                 color={paymentMethod === "pix" ? "#E31837" : "#999"}
               />
               <Text
-                style={[
-                  styles.optionText,
-                  paymentMethod === "pix" && styles.optionTextActive,
-                ]}
+                className={`text-[13px] font-semibold mt-1.5 ${
+                  paymentMethod === "pix" ? "text-[#E31837]" : "text-[#666]"
+                }`}
               >
                 PIX
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.optionCard,
-                paymentMethod === "credit_card" && styles.optionCardActive, // credit_card!
-              ]}
-              onPress={() => setPaymentMethod("credit_card")} // credit_card!
+              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+                paymentMethod === "credit_card"
+                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+              }`}
+              onPress={() => setPaymentMethod("credit_card")}
             >
               <MaterialCommunityIcons
                 name="credit-card-outline"
@@ -450,20 +434,22 @@ export default function CheckoutScreen() {
                 color={paymentMethod === "credit_card" ? "#E31837" : "#999"}
               />
               <Text
-                style={[
-                  styles.optionText,
-                  paymentMethod === "credit_card" && styles.optionTextActive,
-                ]}
+                className={`text-[13px] font-semibold mt-1.5 ${
+                  paymentMethod === "credit_card"
+                    ? "text-[#E31837]"
+                    : "text-[#666]"
+                }`}
               >
                 Cartão
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.optionCard,
-                paymentMethod === "cash" && styles.optionCardActive,
-              ]}
+              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+                paymentMethod === "cash"
+                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+              }`}
               onPress={() => setPaymentMethod("cash")}
             >
               <MaterialCommunityIcons
@@ -472,10 +458,9 @@ export default function CheckoutScreen() {
                 color={paymentMethod === "cash" ? "#E31837" : "#999"}
               />
               <Text
-                style={[
-                  styles.optionText,
-                  paymentMethod === "cash" && styles.optionTextActive,
-                ]}
+                className={`text-[13px] font-semibold mt-1.5 ${
+                  paymentMethod === "cash" ? "text-[#E31837]" : "text-[#666]"
+                }`}
               >
                 Dinheiro
               </Text>
@@ -484,21 +469,24 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 3. RESUMO DOS VALORES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumo da Compra</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>
+        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
+          <Text className="text-base font-bold text-[#333] mb-3">
+            Resumo da Compra
+          </Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-sm text-[#666]">
               Subtotal ({items?.length || 0} itens)
             </Text>
-            <Text style={styles.summaryValue}>{formatPrice(subtotal)}</Text>
+            <Text className="text-sm text-[#333] font-medium">
+              {formatPrice(subtotal)}
+            </Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Taxa de Entrega</Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-sm text-[#666]">Taxa de Entrega</Text>
             <Text
-              style={[
-                styles.summaryValue,
-                currentDeliveryFee === -1 && { color: "#E31837" },
-              ]}
+              className={`text-sm font-medium ${
+                currentDeliveryFee === -1 ? "text-[#E31837]" : "text-[#333]"
+              }`}
             >
               {deliveryMethod === "pickup"
                 ? "Grátis"
@@ -508,20 +496,31 @@ export default function CheckoutScreen() {
             </Text>
           </View>
 
-          <View style={styles.summaryTotalRow}>
-            <Text style={styles.summaryTotalLabel}>Total</Text>
-            <Text style={styles.summaryTotalValue}>{formatPrice(total)}</Text>
+          <View className="flex-row justify-between mt-2.5 pt-2.5 border-t border-[#EAEAEA]">
+            <Text className="text-base font-bold text-[#1A1A1A]">Total</Text>
+            <Text className="text-lg font-bold text-[#E31837]">
+              {formatPrice(total)}
+            </Text>
           </View>
         </View>
       </ScrollView>
 
       {/* 4. FOOTER */}
-      <View style={styles.footer}>
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA]"
+        style={{
+          paddingBottom: Platform.OS === "ios" ? 30 : 16,
+          elevation: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.05,
+          shadowRadius: 5,
+        }}
+      >
         <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            (isCreatingOrder || currentDeliveryFee === -1) && { opacity: 0.7 },
-          ]}
+          className={`bg-[#E31837] h-[50px] rounded-md justify-center items-center mb-2.5 ${
+            (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
+          }`}
           activeOpacity={0.8}
           onPress={handleConfirmOrder}
           disabled={isCreatingOrder || currentDeliveryFee === -1}
@@ -529,39 +528,28 @@ export default function CheckoutScreen() {
           {isCreatingOrder ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.confirmButtonText}>Confirmar Pedido</Text>
+            <Text className="text-white text-base font-bold">
+              Confirmar Pedido
+            </Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.continueShoppingButton}
+          className="items-center py-1"
           onPress={() => router.back()}
           disabled={isCreatingOrder}
         >
-          <Text style={styles.continueShoppingText}>
+          <Text className="text-[#666] text-sm font-medium">
             Voltar e revisar carrinho
           </Text>
         </TouchableOpacity>
       </View>
 
       <Modal visible={showSuccessModal} transparent={true} animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.6)",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-          }}
-        >
+        <View className="flex-1 bg-black/60 justify-center items-center p-5">
           <View
+            className="bg-white rounded-[16px] p-[30px] items-center w-full max-w-[340px]"
             style={{
-              backgroundColor: "#FFF",
-              borderRadius: 16,
-              padding: 30,
-              alignItems: "center",
-              width: "100%",
-              maxWidth: 340,
               elevation: 10,
               shadowColor: "#000",
               shadowOpacity: 0.2,
@@ -573,47 +561,21 @@ export default function CheckoutScreen() {
               size={80}
               color="#4CAF50"
             />
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "bold",
-                color: "#1A1A1A",
-                marginTop: 16,
-                textAlign: "center",
-              }}
-            >
+            <Text className="text-[24px] font-bold text-[#1A1A1A] mt-4 text-center">
               Pedido Confirmado!
             </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                color: "#666",
-                textAlign: "center",
-                marginTop: 8,
-                marginBottom: 24,
-                lineHeight: 22,
-              }}
-            >
+            <Text className="text-base text-[#666] text-center mt-2 mb-6 leading-[22px]">
               Recebemos seu pedido e já vamos começar a preparar.
             </Text>
             <TouchableOpacity
-              style={{
-                backgroundColor: "#E31837",
-                paddingVertical: 14,
-                paddingHorizontal: 24,
-                borderRadius: 8,
-                width: "100%",
-                alignItems: "center",
-              }}
+              className="bg-[#E31837] py-3.5 px-6 rounded-lg w-full items-center"
               onPress={() => {
                 setShowSuccessModal(false);
                 refreshCart();
                 router.replace("/(tabs)/home");
               }}
             >
-              <Text style={{ color: "#FFF", fontSize: 16, fontWeight: "bold" }}>
-                Concluir
-              </Text>
+              <Text className="text-white text-base font-bold">Concluir</Text>
             </TouchableOpacity>
           </View>
         </View>

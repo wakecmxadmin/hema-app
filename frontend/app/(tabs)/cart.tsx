@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Swipeable } from "react-native-gesture-handler";
 
-import { styles } from "../../styles/cart.styles";
+// NativeWind styling – removed StyleSheet import
 import { useCart } from "@/context/CartContext";
 import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
@@ -60,7 +60,7 @@ const CartItemComponent = ({
     });
 
     return (
-      <View style={styles.swipeDeleteAction}>
+      <View className="flex-1 bg-[#E31837] justify-center items-end rounded-[10px]">
         <Animated.View
           style={{
             opacity,
@@ -89,49 +89,50 @@ const CartItemComponent = ({
           }
         }}
       >
-        <View style={[styles.cartItem, { marginBottom: 0 }]}>
-          <View style={styles.imageContainer}>
+        <View className="flex-row p-[14px] bg-white rounded-[16px] mb-[16px] border border-[#F0F0F0] items-center shadow-sm" style={{ marginBottom: 0 }}>
+          <View className="w-[76px] h-[76px] bg-[#F9F9F9] rounded-[12px] justify-center items-center overflow-hidden">
             {item.product.image_url ? (
               <Image
                 source={{ uri: item.product.image_url }}
-                style={styles.image}
+                className="w-full h-full"
+                resizeMode="cover"
               />
             ) : (
               <Ionicons name="image-outline" size={20} color="#CCC" />
             )}
           </View>
 
-          <View style={styles.itemDetails}>
-            <View style={styles.itemHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemName} numberOfLines={1}>
+          <View className="flex-1 ml-[14px] h-[76px] justify-between">
+            <View className="flex-row justify-between items-start">
+              <View className="flex-1">
+                <Text className="text-[15px] text-[#222] font-bold mr-[8px]" numberOfLines={1}>
                   {item.product.name}
                 </Text>
-                <Text style={styles.unitPriceText}>
+                <Text className="text-[12px] text-[#888] mt-[2px] font-medium">
                   {formattedUnitPrice}{" "}
                   {item.product.type === "unit" ? "/un" : "/kg"}
                 </Text>
               </View>
-              <Text style={styles.itemTotalPrice}>{formattedItemTotal}</Text>
+              <Text className="text-[16px] font-extrabold text-[#E31837]">{formattedItemTotal}</Text>
             </View>
 
-            <View style={styles.itemFooter}>
-              <View style={styles.qtyLabelContainer}>
+            <View className="flex-row justify-between items-center">
+              <View className="min-w-[32px] items-center justify-center">
                 {item.product.type === "unit" ? (
-                  <View style={styles.quantityContainer}>
+                  <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] p-[3px] border border-[#EEEEEE]">
                     <TouchableOpacity
                       onPress={() =>
                         updateItem(item.id, {
                           quantity: Math.max(1, (item.quantity || 0) - 1),
                         })
                       }
-                      style={styles.qtyButton}
+                      className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
                     >
                       <Ionicons name="remove" size={16} color="#E31837" />
                     </TouchableOpacity>
 
                     <View style={{ minWidth: 30, alignItems: "center" }}>
-                      <Text style={styles.qtyText}>{item.quantity}</Text>
+                      <Text className="text-[14px] font-bold text-[#1A1A1A]">{item.quantity}</Text>
                     </View>
 
                     <TouchableOpacity
@@ -140,16 +141,16 @@ const CartItemComponent = ({
                           quantity: (item.quantity || 0) + 1,
                         })
                       }
-                      style={styles.qtyButton}
+                      className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
                     >
                       <Ionicons name="add" size={16} color="#E31837" />
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <View style={styles.weightEditContainer}>
+                  <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] px-[12px] py-[4px] border border-[#EEEEEE] h-[36px]">
                     <TextInput
                       ref={inputRef}
-                      style={styles.weightInput}
+                      className="text-[14px] font-bold text-[#1A1A1A] min-w-[35px] text-right p-0 h-[28px]"
                       keyboardType="numeric"
                       defaultValue={String(item.weight)}
                       maxLength={4}
@@ -165,10 +166,10 @@ const CartItemComponent = ({
                         }
                       }}
                     />
-                    <Text style={styles.weightUnitText}>g</Text>
+                    <Text className="text-[13px] font-bold text-[#888] ml-[2px] mr-[10px] mt-[1px]">g</Text>
 
                     <TouchableOpacity
-                      style={styles.editWeightButton}
+                      className="w-[24px] h-[24px] rounded-[12px] bg-white items-center justify-center shadow-sm"
                       onPress={() => inputRef.current?.focus()}
                     >
                       <Ionicons name="pencil" size={14} color="#E31837" />
@@ -179,10 +180,10 @@ const CartItemComponent = ({
 
               <TouchableOpacity
                 onPress={() => removeItem(item.id)}
-                style={styles.removeButton}
+                className="flex-row items-center gap-[4px] p-[6px]"
               >
                 <Ionicons name="trash-outline" size={16} color="#999" />
-                <Text style={styles.removeButtonText}>Remover</Text>
+                <Text className="text-[12px] text-[#A0A0A0] font-semibold">Remover</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -251,13 +252,13 @@ export default function CartScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
-      <View style={{ flex: 1 }}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <View className="flex-1">
         <StatusBar barStyle="dark-content" />
 
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Meu Carrinho</Text>
+        <View className="px-4">
+          <View className="py-5 mb-2">
+            <Text className="text-2xl font-extrabold text-[#111]" style={{letterSpacing:-0.5}}>Meu Carrinho</Text>
           </View>
 
           <FlatList
@@ -267,7 +268,7 @@ export default function CartScreen() {
               showListSkeleton ? `skel-${index}` : item.id
             }
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={{ paddingBottom: 40 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -278,9 +279,9 @@ export default function CartScreen() {
             }
             ListEmptyComponent={
               showListSkeleton ? null : (
-                <View style={{ alignItems: "center", marginTop: 60 }}>
+                <View className="items-center mt-15">
                   <Ionicons name="cart-outline" size={64} color="#DDD" />
-                  <Text style={[styles.emptyCartText, { marginTop: 10 }]}>
+                  <Text className="text-base text-[#BBB] mt-2">
                     Seu carrinho está vazio.
                   </Text>
                 </View>
@@ -290,32 +291,24 @@ export default function CartScreen() {
 
           {/* Resumo e Botão Finalizar */}
           {items.length > 0 && !showListSkeleton && (
-            <View style={styles.footerContainer}>
-              <View style={styles.subtotalRow}>
-                <Text style={styles.subtotalLabel}>Subtotal</Text>
-
+            <View className="p-6 pt-8 bg-white rounded-t-3xl shadow-lg">
+              <View className="flex-row justify-between mb-4">
+                <Text className="text-base text-[#666]">Subtotal</Text>
                 {showPriceSkeleton ? (
                   <PriceSkeleton />
                 ) : (
-                  <Text style={styles.subtotalValue}>
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(parseFloat(cart?.total_price || "0"))}
+                  <Text className="text-2xl font-extrabold text-[#E31837]">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(cart?.total_price || "0"))}
                   </Text>
                 )}
               </View>
-
               <TouchableOpacity
-                style={[
-                  styles.checkoutButton,
-                  showPriceSkeleton && { opacity: 0.7 },
-                ]}
+                className="bg-[#E31837] py-4 rounded-full items-center"
                 activeOpacity={0.8}
                 onPress={() => router.push("/checkout")}
                 disabled={showPriceSkeleton}
               >
-                <Text style={styles.checkoutButtonText}>Finalizar Compra</Text>
+                <Text className="text-white text-base font-bold uppercase">Finalizar Compra</Text>
               </TouchableOpacity>
             </View>
           )}

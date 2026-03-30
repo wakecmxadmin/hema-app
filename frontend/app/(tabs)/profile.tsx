@@ -15,7 +15,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 
-import { styles } from "../../styles/profile.styles";
 import { logout } from "../../services/auth";
 import { uploadAvatar } from "../../services/profile";
 import { Toast } from "@/util/toast";
@@ -72,7 +71,6 @@ export default function ProfileScreen() {
   };
 
   const handlePickImage = async () => {
-    // 1. Pede permissão
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -83,7 +81,6 @@ export default function ProfileScreen() {
       return;
     }
 
-    // 2. Abre a galeria
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -128,50 +125,32 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
-      <View style={styles.safeArea}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <View className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" />
         <ScrollView
-          style={styles.container}
+          className="flex-1 bg-white"
           showsVerticalScrollIndicator={false}
         >
           {/* SEÇÃO SUPERIOR: Avatar e Infos */}
-          <View style={styles.headerSection}>
+          <View className="items-center py-10 bg-white border-b border-[#F2F2F2]">
             <TouchableOpacity onPress={handlePickImage} disabled={uploading}>
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  {
-                    overflow: "hidden",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  },
-                ]}
-              >
+              <View className="w-[100px] h-[100px] rounded-full bg-[#F5F5F5] border border-[#EEE] mb-4 overflow-hidden justify-center items-center">
                 {uploading ? (
                   <ActivityIndicator color="#E31837" />
                 ) : user.avatarUrl ? (
                   <Image
                     source={{ uri: user.avatarUrl }}
-                    style={{ width: "100%", height: "100%" }}
+                    className="w-full h-full"
                   />
                 ) : (
-                  <Text style={styles.avatarText}>
+                  <Text className="text-[40px] text-[#CCC] font-semibold">
                     {getInitials(user.name)}
                   </Text>
                 )}
               </View>
 
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: 10,
-                  right: 10,
-                  backgroundColor: "#E31837",
-                  borderRadius: 12,
-                  padding: 4,
-                }}
-              >
+              <View className="absolute bottom-2.5 right-2.5 bg-[#E31837] rounded-xl p-1">
                 <MaterialCommunityIcons
                   name="camera-plus"
                   size={14}
@@ -180,37 +159,43 @@ export default function ProfileScreen() {
               </View>
             </TouchableOpacity>
 
-            <Text style={styles.userName}>{user.name}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text className="text-[22px] font-bold text-[#1A1A1A]">
+              {user.name}
+            </Text>
+            <Text className="text-sm text-[#666] mt-1">{user.email}</Text>
           </View>
 
           {/* Seção de Menu */}
-          <View style={styles.menuSection}>
+          <View className="mt-5 px-4">
             {MENU_OPTIONS.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={styles.menuItem}
+                className="flex-row items-center justify-between py-[18px] border-b border-[#F8F8F8]"
                 activeOpacity={0.6}
                 onPress={() => {
                   if (item.route) router.push(item.route as any);
                 }}
               >
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemText}>{item.title}</Text>
+                <View className="flex-row items-center">
+                  <Text className="text-base text-[#333] font-normal">
+                    {item.title}
+                  </Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Text className="text-lg text-[#BBB] font-light">›</Text>
               </TouchableOpacity>
             ))}
           </View>
 
           {/* Botão Sair */}
-          <View style={styles.logoutContainer}>
+          <View className="mt-10 px-4 pb-10">
             <TouchableOpacity
-              style={styles.logoutButton}
+              className="bg-[#E31837] py-[15px] rounded-full items-center justify-center"
               onPress={handleLogout}
               activeOpacity={0.8}
             >
-              <Text style={styles.logoutButtonText}>Sair da Conta</Text>
+              <Text className="text-white text-base font-bold">
+                Sair da Conta
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

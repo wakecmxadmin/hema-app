@@ -8,7 +8,6 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "../styles/home.styles";
 
 interface ShimmerProps {
   width: DimensionValue;
@@ -55,21 +54,21 @@ const Shimmer = ({ width, height, borderRadius = 0 }: ShimmerProps) => {
 
 export default function SkeletonCard() {
   return (
-    <View style={styles.productCard}>
+    <View className="bg-[#FFFFFF] flex-1 overflow-hidden rounded-[12px] border border-[#EAEAEA] shadow-[0_4px_8px_rgba(0,0,0,0.06)]" style={{ elevation: 2 }}>
       {/* Imagem do Produto */}
       <Shimmer width="100%" height={150} borderRadius={0} />
 
-      <View style={[styles.productInfo, { marginTop: 10 }]}>
+      <View className="flex-1 justify-between p-[12px] pb-[8px] mt-[10px]">
         {/* Título */}
         <Shimmer width="80%" height={14} />
 
         {/* Espaçador */}
-        <View style={{ marginBottom: 8 }} />
+        <View className="mb-[8px]" />
 
         {/* Subtítulo/Preço */}
         <Shimmer width="40%" height={14} />
 
-        <View style={{ marginBottom: 12 }} />
+        <View className="mb-[12px]" />
 
         {/* Botão ou rodapé do card */}
         <Shimmer width="100%" height={32} borderRadius={0} />
@@ -86,7 +85,7 @@ export const SkeletonGrid = () => (
     keyExtractor={(item) => item.toString()}
     numColumns={2}
     scrollEnabled={false}
-    columnWrapperStyle={styles.productGridRow}
-    contentContainerStyle={styles.productGridContainer}
+    columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
+    contentContainerStyle={{ paddingHorizontal: 18 }}
   />
 );

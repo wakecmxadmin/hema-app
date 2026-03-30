@@ -12,8 +12,7 @@ import {
   UIManager,
   ActivityIndicator,
 } from "react-native";
-import { Stack, useRouter } from "expo-router"; // Adicionado useRouter para redirecionamento
-import { styles } from "../styles/auth.styles";
+import { Stack, useRouter } from "expo-router";
 import { login, signup } from "../services/auth";
 import { View as MotiView, Text as MotiText, AnimatePresence } from "moti";
 import { Toast } from "@/util/toast";
@@ -26,7 +25,7 @@ if (
 }
 
 export default function AuthScreen() {
-  const router = useRouter(); // Hook para navegar
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,9 +52,8 @@ export default function AuthScreen() {
     setIsLoading(false);
 
     if (response.success) {
-      // Toast de sucesso opcional para login. Muitas vezes só redirecionar já basta para uma boa UX.
       Toast.show({ type: "success", text1: response.message });
-      router.replace("/(tabs)/home"); // Redireciona para a Home
+      router.replace("/(tabs)/home");
     } else {
       Toast.show({
         type: "error",
@@ -79,7 +77,7 @@ export default function AuthScreen() {
 
     if (response.success) {
       Toast.show({ type: "success", text1: response.message });
-      router.replace("/(tabs)/home"); // Cadastrou, já manda pra loja
+      router.replace("/(tabs)/home");
     } else {
       Toast.show({
         type: "error",
@@ -89,47 +87,62 @@ export default function AuthScreen() {
     }
   }
 
+  // Sombra suave para o input wrapper
+  const inputShadow = Platform.select({
+    ios: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+    },
+    android: {
+      elevation: 2,
+    },
+  });
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className="flex-1 bg-white"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.innerContainer}>
-          <View style={styles.header}>
+        <View className="flex-1 px-7 justify-center">
+          <View className="mb-10 items-start">
             <MotiText
+              className="text-[42px] font-black text-[#EA1D2C] tracking-[-2px]"
               from={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
-              style={styles.logo}
             >
               HEMA
             </MotiText>
-            <Text style={styles.subtitle}>
+            <Text className="text-base text-[#666666] mt-3 leading-6 font-normal">
               Alimentos naturais entregues na sua casa
             </Text>
           </View>
 
-          <View style={styles.form}>
+          <View>
             <AnimatePresence exitBeforeEnter>
               {!isLogin && (
                 <MotiView
                   key="name-input"
                   from={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 70, marginBottom: 15 }}
+                  animate={{ opacity: 1, height: 80, marginBottom: 20 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   transition={{ type: "timing", duration: 250 }}
                   style={{ overflow: "hidden" }}
                 >
                   <View
-                    style={[
-                      styles.inputWrapper,
-                      focusedInput === "name" && styles.inputWrapperFocused,
-                    ]}
+                    className={`rounded-[16px] justify-center ${
+                      focusedInput === "name"
+                        ? "bg-white border-2 border-[#EA1D2C]"
+                        : "bg-[#F9F9F9] border border-[#E8E8E8]"
+                    }`}
+                    style={inputShadow}
                   >
                     <TextInput
-                      style={styles.input}
+                      className="h-[60px] px-5 text-base text-[#1A1A1A]"
                       placeholder="Nome completo"
                       placeholderTextColor="#999"
                       value={name}
@@ -144,13 +157,15 @@ export default function AuthScreen() {
             </AnimatePresence>
 
             <View
-              style={[
-                styles.inputWrapper,
-                focusedInput === "email" && styles.inputWrapperFocused,
-              ]}
+              className={`rounded-[16px] mb-5 justify-center ${
+                focusedInput === "email"
+                  ? "bg-white border-2 border-[#EA1D2C]"
+                  : "bg-[#F9F9F9] border border-[#E8E8E8]"
+              }`}
+              style={inputShadow}
             >
               <TextInput
-                style={styles.input}
+                className="h-[60px] px-5 text-base text-[#1A1A1A]"
                 placeholder="E-mail"
                 placeholderTextColor="#999"
                 value={email}
@@ -164,13 +179,15 @@ export default function AuthScreen() {
             </View>
 
             <View
-              style={[
-                styles.inputWrapper,
-                focusedInput === "password" && styles.inputWrapperFocused,
-              ]}
+              className={`rounded-[16px] mb-5 justify-center ${
+                focusedInput === "password"
+                  ? "bg-white border-2 border-[#EA1D2C]"
+                  : "bg-[#F9F9F9] border border-[#E8E8E8]"
+              }`}
+              style={inputShadow}
             >
               <TextInput
-                style={styles.input}
+                className="h-[60px] px-5 text-base text-[#1A1A1A]"
                 placeholder="Senha"
                 placeholderTextColor="#999"
                 value={password}
@@ -185,36 +202,40 @@ export default function AuthScreen() {
             <View style={{ marginTop: 24 }} />
 
             <TouchableOpacity
-              style={[styles.primaryButton, isLoading && { opacity: 0.7 }]}
+              className="bg-[#EA1D2C] h-[58px] rounded-[16px] justify-center items-center mt-3"
               activeOpacity={0.8}
               onPress={isLogin ? handleLogin : handleSignup}
               disabled={isLoading}
+              style={{
+                shadowColor: "#EA1D2C",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+                elevation: 6,
+              }}
             >
               {isLoading ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <AnimatePresence exitBeforeEnter>
-                  <MotiText
-                    key={isLogin ? "login-txt" : "signup-txt"}
-                    from={{ opacity: 0, translateY: 5 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    exit={{ opacity: 0, translateY: -5 }}
-                    style={styles.primaryButtonText}
-                  >
-                    {isLogin ? "Entrar" : "Criar conta"}
-                  </MotiText>
-                </AnimatePresence>
+                <MotiText
+                  className="text-base font-bold uppercase tracking-[0.5px] text-white"
+                  from={{ opacity: 0, translateY: 5 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  exit={{ opacity: 0, translateY: -5 }}
+                >
+                  {isLogin ? "Entrar" : "Criar conta"}
+                </MotiText>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.secondaryButton}
+              className="mt-6 items-center self-center"
               onPress={toggleMode}
               disabled={isLoading}
             >
-              <Text style={styles.secondaryText}>
+              <Text className="text-[15px] text-[#666666]">
                 {isLogin ? "Ainda não tem conta? " : "Já tenho conta. "}
-                <Text style={styles.secondaryTextBold}>
+                <Text className="font-bold text-[#EA1D2C]">
                   {isLogin ? "Criar conta" : "Entrar"}
                 </Text>
               </Text>

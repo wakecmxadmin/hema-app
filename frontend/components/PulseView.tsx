@@ -4,9 +4,10 @@ import { Animated, ViewStyle, StyleProp } from "react-native";
 interface PulseViewProps {
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
+  className?: string;
 }
 
-export function PulseView({ style, children }: PulseViewProps) {
+export function PulseView({ style, children, className }: PulseViewProps) {
   // 1. Criamos a referência da animação (0.4 = mais escuro / 1 = mais claro)
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
 
@@ -30,6 +31,7 @@ export function PulseView({ style, children }: PulseViewProps) {
 
   return (
     <Animated.View
+      className={className}
       style={[
         style,
         {

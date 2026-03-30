@@ -22,7 +22,6 @@ import {
   createAddress,
   updateAddress,
 } from "@/services/addresses";
-import { styles } from "@/styles/addresses.styles";
 
 export default function AddressFormScreen() {
   const router = useRouter();
@@ -155,52 +154,53 @@ export default function AddressFormScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#E31837" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
+        <View className="flex-row items-center px-4 py-3 border-b border-[#F3F4F6] bg-white">
+          <TouchableOpacity onPress={() => router.back()} className="p-1">
             <Ionicons name="close" size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Text className="flex-1 text-[18px] font-bold text-[#1A1A1A] text-center mr-8">
             {isEditing ? "Editar Endereço" : "Novo Endereço"}
           </Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.formContent}>
-          <Text style={styles.sectionTitle}>IDENTIFICAÇÃO DO LOCAL</Text>
-          <View style={styles.inputContainer}>
+        <ScrollView contentContainerClassName="p-5 pb-[120px]">
+          <Text className="text-[13px] font-bold text-[#9CA3AF] tracking-[1px] mb-3 mt-2">
+            IDENTIFICAÇÃO DO LOCAL
+          </Text>
+          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
             <TextInput
               placeholder="Ex: Minha Casa, Trabalho..."
-              style={styles.input}
+              className="h-[50px] text-[15px] text-[#111827]"
               value={label}
               onChangeText={setLabel}
             />
           </View>
 
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>CEP *</Text>
-              <View style={styles.inputContainer}>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+                CEP *
+              </Text>
+              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
                 <TextInput
                   placeholder="00000-000"
                   keyboardType="numeric"
                   maxLength={9}
-                  style={styles.input}
+                  className="h-[50px] text-[15px] text-[#111827]"
                   value={zipCode}
                   onChangeText={setZipCode}
                   onBlur={handleCepSearch}
@@ -216,34 +216,40 @@ export default function AddressFormScreen() {
             )}
           </View>
 
-          <Text style={styles.inputLabel}>Rua/Avenida *</Text>
-          <View style={styles.inputContainer}>
+          <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+            Rua/Avenida *
+          </Text>
+          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
             <TextInput
               placeholder="Av. Paulista..."
-              style={styles.input}
+              className="h-[50px] text-[15px] text-[#111827]"
               value={street}
               onChangeText={setStreet}
             />
           </View>
 
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Número *</Text>
-              <View style={styles.inputContainer}>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+                Número *
+              </Text>
+              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
                 <TextInput
                   placeholder="100"
-                  style={styles.input}
+                  className="h-[50px] text-[15px] text-[#111827]"
                   value={number}
                   onChangeText={setNumber}
                 />
               </View>
             </View>
-            <View style={{ flex: 2 }}>
-              <Text style={styles.inputLabel}>Complemento</Text>
-              <View style={styles.inputContainer}>
+            <View className="flex-[2]">
+              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+                Complemento
+              </Text>
+              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
                 <TextInput
                   placeholder="Apto, Bloco..."
-                  style={styles.input}
+                  className="h-[50px] text-[15px] text-[#111827]"
                   value={complement}
                   onChangeText={setComplement}
                 />
@@ -251,36 +257,42 @@ export default function AddressFormScreen() {
             </View>
           </View>
 
-          <Text style={styles.inputLabel}>Bairro *</Text>
-          <View style={styles.inputContainer}>
+          <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+            Bairro *
+          </Text>
+          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
             <TextInput
               placeholder="Ex: Centro"
-              style={styles.input}
+              className="h-[50px] text-[15px] text-[#111827]"
               value={neighborhood}
               onChangeText={setNeighborhood}
             />
           </View>
 
-          <View style={styles.row}>
-            <View style={{ flex: 2 }}>
-              <Text style={styles.inputLabel}>Cidade *</Text>
-              <View style={styles.inputContainer}>
+          <View className="flex-row gap-3">
+            <View className="flex-[2]">
+              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+                Cidade *
+              </Text>
+              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
                 <TextInput
                   placeholder="Ex: São Paulo"
-                  style={styles.input}
+                  className="h-[50px] text-[15px] text-[#111827]"
                   value={city}
                   onChangeText={setCity}
                 />
               </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>UF *</Text>
-              <View style={styles.inputContainer}>
+            <View className="flex-1">
+              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+                UF *
+              </Text>
+              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
                 <TextInput
                   placeholder="SP"
                   maxLength={2}
                   autoCapitalize="characters"
-                  style={styles.input}
+                  className="h-[50px] text-[15px] text-[#111827]"
                   value={state}
                   onChangeText={setState}
                 />
@@ -288,10 +300,12 @@ export default function AddressFormScreen() {
             </View>
           </View>
 
-          <View style={styles.switchContainer}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchLabel}>Tornar como padrão</Text>
-              <Text style={styles.switchSublabel}>
+          <View className="flex-row items-center justify-between py-5 mt-6 border-t border-[#F3F4F6]">
+            <View className="flex-1">
+              <Text className="text-[16px] font-semibold text-[#111827]">
+                Tornar como padrão
+              </Text>
+              <Text className="text-[13px] text-[#6B7280] mt-0.5">
                 Este endereço será o principal em suas compras.
               </Text>
             </View>
@@ -305,16 +319,18 @@ export default function AddressFormScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.footer}>
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6]">
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.buttonDisabled]}
+          className={`h-[56px] rounded-xl items-center justify-center ${
+            saving ? "bg-[#FCA5A5]" : "bg-[#E31837]"
+          }`}
           onPress={handleSave}
           disabled={saving}
         >
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>
+            <Text className="text-white text-[16px] font-bold">
               {isEditing ? "Salvar Alterações" : "Adicionar Endereço"}
             </Text>
           )}

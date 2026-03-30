@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { styles } from "@/styles/profile.styles";
 import { Toast } from "@/util/toast";
 import { getCurrentUser } from "@/services/auth";
 import { updateProfile, deleteAccount } from "@/services/profile";
@@ -79,6 +78,7 @@ export default function SettingsScreen() {
 
             if (response.success) {
               Toast.show({ type: "success", text1: "Conta removida." });
+              // A navegação será tratada pelo AuthGuard, mas forçamos aqui para garantir
               router.replace("/auth");
             } else {
               Toast.show({
@@ -95,35 +95,40 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: "center" }]}>
+      <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#E31837" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
+      {/* CABEÇALHO */}
+      <View className="flex-row items-center justify-between p-4 bg-white border-b border-[#EEE]">
+        <TouchableOpacity onPress={() => router.back()} className="p-2">
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.title}>Configurações</Text>
-        <View style={{ width: 40 }} />
+        <Text className="text-lg font-bold text-[#1A1A1A]">Configurações</Text>
+        <View className="w-10" />
       </View>
 
-      <ScrollView style={styles.content}>
-        <Text style={styles.sectionTitle}>Notificações</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowText}>Atualizações do Pedido</Text>
+      <ScrollView className="flex-1 p-5">
+        <Text className="text-sm font-bold text-[#666] mb-2.5 uppercase">
+          Notificações
+        </Text>
+        <View className="bg-white rounded-xl px-4 mb-6 border border-[#EEE]">
+          <View className="flex-row justify-between items-center py-4 border-b border-[#F5F5F5]">
+            <Text className="text-base text-[#333]">
+              Atualizações do Pedido
+            </Text>
             <Switch
               value={notifications}
               onValueChange={setNotifications}
               trackColor={{ true: "#E31837", false: "#DDD" }}
             />
           </View>
-          <View style={[styles.row, { borderBottomWidth: 0 }]}>
-            <Text style={styles.rowText}>Promoções e Ofertas</Text>
+          <View className="flex-row justify-between items-center py-4">
+            <Text className="text-base text-[#333]">Promoções e Ofertas</Text>
             <Switch
               value={promotions}
               onValueChange={setPromotions}
@@ -132,15 +137,15 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Privacidade e Conta</Text>
-        <View style={styles.card}>
+        <Text className="text-sm font-bold text-[#666] mb-2.5 uppercase">
+          Privacidade e Conta
+        </Text>
+        <View className="bg-white rounded-xl px-4 mb-6 border border-[#EEE]">
           <TouchableOpacity
-            style={[styles.row, { borderBottomWidth: 0 }]}
+            className="flex-row justify-between items-center py-4"
             onPress={handleDeleteAccount}
           >
-            <Text
-              style={[styles.rowText, { color: "#E31837", fontWeight: "600" }]}
-            >
+            <Text className="text-base text-[#E31837] font-semibold">
               Excluir minha conta
             </Text>
             <MaterialCommunityIcons
@@ -151,19 +156,26 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.version}>Versão do Aplicativo: 1.0.2 (Beta)</Text>
+        <Text className="text-center text-[#999] mt-10">
+          Versão do Aplicativo: 1.0.2 (Beta)
+        </Text>
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* RODAPÉ */}
+      <View className="p-5 border-t border-[#EEE]">
         <TouchableOpacity
-          style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+          className={`bg-[#E31837] p-4 rounded-lg items-center ${
+            saving ? "opacity-70" : ""
+          }`}
           onPress={handleSaveSettings}
           disabled={saving}
         >
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.saveBtnText}>Salvar Preferências</Text>
+            <Text className="text-white text-base font-bold">
+              Salvar Preferências
+            </Text>
           )}
         </TouchableOpacity>
       </View>

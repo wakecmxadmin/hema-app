@@ -8,6 +8,7 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -15,7 +16,6 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Toast } from "@/util/toast";
 
 import { getAddresses, deleteAddress } from "@/services/addresses";
-import { styles } from "@/styles/addresses.styles";
 
 export default function AddressListScreen() {
   const router = useRouter();
@@ -78,34 +78,47 @@ export default function AddressListScreen() {
 
   const renderAddressItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.addressCard}
+      className="flex-row bg-white rounded-xl p-4 mb-3 border border-[#E5E7EB]"
+      style={
+        Platform.OS === "ios"
+          ? {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            }
+          : { elevation: 2 }
+      }
       onPress={() => router.push(`/addresses/${item.id}`)}
       activeOpacity={0.7}
     >
-      <View style={styles.addressInfo}>
-        <View style={styles.addressHeaderRow}>
-          <Text style={styles.addressLabel}>{item.label || "Endereço"}</Text>
+      <View className="flex-1">
+        <View className="flex-row items-center mb-1">
+          <Text className="text-[16px] font-bold text-[#111827] mr-2">
+            {item.label || "Endereço"}
+          </Text>
           {item.is_default && (
-            <View style={styles.defaultBadge}>
-              <Text style={styles.defaultBadgeText}>Principal</Text>
+            <View className="bg-[#FFF1F2] px-2 py-0.5 rounded border border-[#FECDD3]">
+              <Text className="text-[10px] font-bold text-[#E31837] uppercase">
+                Principal
+              </Text>
             </View>
           )}
         </View>
 
-        <Text style={styles.addressText}>
+        <Text className="text-[14px] text-[#374151] leading-[20px]">
           {item.street}, {item.number}
         </Text>
-        <Text style={styles.addressSubtext}>
+        <Text className="text-[13px] text-[#6B7280] mt-0.5">
           {item.neighborhood} • {item.city}/{item.state}
         </Text>
-        <Text style={styles.addressSubtext}>{item.zip_code}</Text>
+        <Text className="text-[13px] text-[#6B7280] mt-0.5">
+          {item.zip_code}
+        </Text>
       </View>
 
-      <View style={styles.addressActions}>
-        <TouchableOpacity
-          onPress={() => handleDelete(item.id)}
-          style={styles.deleteButton}
-        >
+      <View className="justify-between items-end ml-3">
+        <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-2">
           <MaterialCommunityIcons
             name="trash-can-outline"
             size={22}
@@ -118,23 +131,22 @@ export default function AddressListScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
+      <View className="flex-row items-center px-4 py-3 border-b border-[#F3F4F6] bg-white">
+        <TouchableOpacity onPress={() => router.back()} className="p-1">
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Meus Endereços</Text>
-        <View style={{ width: 40 }} />
+        <Text className="flex-1 text-[18px] font-bold text-[#1A1A1A] text-center mr-8">
+          Meus Endereços
+        </Text>
+        <View className="w-10" />
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
+        <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#E31837" />
         </View>
       ) : (
@@ -142,7 +154,7 @@ export default function AddressListScreen() {
           data={addresses}
           keyExtractor={(item) => item.id}
           renderItem={renderAddressItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerClassName="p-4 pb-[100px]"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -151,26 +163,30 @@ export default function AddressListScreen() {
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View className="flex-1 items-center justify-center pt-[100px]">
               <MaterialCommunityIcons
                 name="map-marker-off-outline"
                 size={64}
                 color="#CCC"
               />
-              <Text style={styles.emptyText}>Nenhum endereço cadastrado.</Text>
+              <Text className="mt-4 text-[16px] text-[#999]">
+                Nenhum endereço cadastrado.
+              </Text>
             </View>
           }
         />
       )}
 
       {/* BOTÃO FLUTUANTE */}
-      <View style={styles.footer}>
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6]">
         <TouchableOpacity
-          style={styles.addButton}
+          className="flex-row bg-[#E31837] h-[56px] rounded-xl items-center justify-center gap-2"
           onPress={() => router.push("/addresses/new")}
         >
           <Ionicons name="add" size={24} color="#fff" />
-          <Text style={styles.addButtonText}>Adicionar Novo Endereço</Text>
+          <Text className="text-white text-[16px] font-bold">
+            Adicionar Novo Endereço
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

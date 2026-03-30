@@ -8,6 +8,7 @@ import {
   StatusBar,
   RefreshControl,
   ScrollView,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,6 @@ import { getProductsByCategory } from "@/services/products";
 import { Product } from "@/types/product";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
-import { styles } from "@/styles/category.styles";
 import { useCart } from "@/context/CartContext";
 
 const LIMIT = 30;
@@ -105,7 +105,7 @@ export default function CategoryScreen() {
     if (!hasMore && products.length > 0) return null;
 
     return (
-      <View style={{ paddingVertical: 20, alignItems: "center" }}>
+      <View className="py-5 items-center">
         {loadingMore ? (
           <ActivityIndicator size="small" color="#E31837" />
         ) : (
@@ -113,18 +113,9 @@ export default function CategoryScreen() {
           products.length > 0 && (
             <TouchableOpacity
               onPress={loadMoreProducts}
-              style={{
-                backgroundColor: "#F5F5F5",
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: "#EAEAEA",
-              }}
+              className="bg-[#F5F5F5] py-3 px-6 rounded-lg border border-[#EAEAEA]"
             >
-              <Text
-                style={{ color: "#E31837", fontWeight: "600", fontSize: 14 }}
-              >
+              <Text className="text-[#E31837] font-semibold text-[14px]">
                 Mostrar Mais
               </Text>
             </TouchableOpacity>
@@ -134,30 +125,49 @@ export default function CategoryScreen() {
     );
   };
 
+  // Estilo de sombra do header
+  const headerShadow = Platform.select({
+    ios: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+    },
+    android: {
+      elevation: 4,
+    },
+  });
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]" edges={["top"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <View style={styles.header}>
+      {/* HEADER */}
+      <View
+        className="flex-row items-center px-5 py-4 bg-white rounded-b-2xl z-10"
+        style={headerShadow}
+      >
         <TouchableOpacity
-          style={styles.backButton}
+          className="p-2 bg-[#F0F0F0] rounded-full"
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{name}</Text>
+        <Text className="text-[22px] font-extrabold ml-3 capitalize text-[#1A1A1A] tracking-[0.3px]">
+          {name}
+        </Text>
       </View>
 
       {loading ? (
         <ScrollView
-          style={{ flex: 1, width: "100%" }}
+          className="flex-1 w-full"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.skeletonGrid}>
+          <View className="flex-row flex-wrap justify-between px-4 pt-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <View key={i} style={styles.skeletonGridItem}>
+              <View key={i} className="w-[48%] mb-4">
                 <ProductCardSkeleton />
               </View>
             ))}
@@ -165,12 +175,12 @@ export default function CategoryScreen() {
         </ScrollView>
       ) : (
         <FlatList
-          style={{ flex: 1, width: "100%" }}
+          className="flex-1 w-full"
           data={products}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           numColumns={2}
-          contentContainerStyle={styles.listContent}
-          columnWrapperStyle={styles.columnWrapper}
+          contentContainerClassName="px-4 pt-4 pb-10"
+          columnWrapperClassName="justify-between mb-4"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -181,7 +191,7 @@ export default function CategoryScreen() {
             />
           }
           renderItem={({ item }) => (
-            <View style={styles.cardWrapper}>
+            <View className="w-[48%]">
               <ProductCard
                 product={item}
                 onPress={() => router.push(`/product/${item.id}`)}
@@ -190,9 +200,9 @@ export default function CategoryScreen() {
             </View>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View className="flex-1 items-center justify-center mt-20 px-6">
               <Ionicons name="basket-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>
+              <Text className="text-center mt-4 text-[#666] text-base leading-6">
                 Poxa, ainda não temos produtos na categoria "{name}".
               </Text>
             </View>

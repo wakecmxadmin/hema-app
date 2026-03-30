@@ -7,11 +7,11 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { styles } from "@/styles/orders.styles";
 
 import { OrdersService } from "@/services/orders";
 import { Toast } from "@/util/toast";
@@ -26,7 +26,7 @@ export default function OrderDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrderDetails = async (isInitial = true) => {
-    if (isInitial) setLoading(true); 
+    if (isInitial) setLoading(true);
 
     const response = await OrdersService.getOrderDetails(id);
 
@@ -111,36 +111,46 @@ export default function OrderDetailsScreen() {
 
   if (loading || !order) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <View className="flex-1 bg-[#F5F5F5] justify-center items-center">
         <ActivityIndicator size="large" color="#E31837" />
       </View>
     );
   }
 
   const badge = getStatusBadge(order.status);
-  const isPickup = !order.addresses; 
+  const isPickup = !order.addresses;
+
+  // Sombra padronizada para as sections
+  const sectionShadow = Platform.select({
+    ios: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+    },
+    android: {
+      elevation: 2,
+    },
+  });
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-[#F5F5F5]" edges={["top", "bottom"]}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <View className="flex-row items-center justify-between px-5 py-[15px] bg-white border-b border-[#EAEAEA]">
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="w-10 h-10 justify-center"
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalhes do Pedido</Text>
-        <View style={{ width: 40 }} />
+        <Text className="text-[18px] font-bold text-[#1A1A1A]">
+          Detalhes do Pedido
+        </Text>
+        <View className="w-10" />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerClassName="p-4 pb-10"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -151,41 +161,45 @@ export default function OrderDetailsScreen() {
         }
       >
         {/* RESUMO DO STATUS */}
-        <View style={styles.section}>
-          <Text style={styles.orderIdTitle}>
+        <View className="bg-white rounded-xl p-4 mb-4" style={sectionShadow}>
+          <Text className="text-[18px] font-bold text-[#1A1A1A]">
             Pedido #{order.id.substring(0, 8).toUpperCase()}
           </Text>
           <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: badge.bg,
-                alignSelf: "flex-start",
-                marginTop: 8,
-              },
-            ]}
+            className="flex-row items-center px-2.5 py-1.5 rounded-2xl gap-1 self-start mt-2"
+            style={{ backgroundColor: badge.bg }}
           >
-            <Text style={[styles.statusText, { color: badge.color }]}>
+            <Text
+              className="text-[13px] font-bold"
+              style={{ color: badge.color }}
+            >
               {badge.label}
             </Text>
           </View>
         </View>
 
         {/* LISTA DE ITENS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Itens</Text>
+        <View className="bg-white rounded-xl p-4 mb-4" style={sectionShadow}>
+          <Text className="text-[16px] font-bold text-[#1A1A1A] mb-4">
+            Itens
+          </Text>
           {order.order_items?.map((item: any) => (
-            <View key={item.id} style={styles.itemRow}>
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>{item.product_name}</Text>
-                <Text style={styles.itemQty}>
+            <View
+              key={item.id}
+              className="flex-row justify-between items-center border-b border-[#F0F0F0] pb-3 mb-3"
+            >
+              <View className="flex-1 pr-4">
+                <Text className="text-[14px] text-[#1A1A1A] font-medium mb-1">
+                  {item.product_name}
+                </Text>
+                <Text className="text-[12px] text-[#666]">
                   {item.quantity
                     ? `${item.quantity}x unitário`
                     : `${item.weight}g`}{" "}
                   • {formatPrice(item.product_price)}
                 </Text>
               </View>
-              <Text style={styles.itemSubtotal}>
+              <Text className="text-[14px] font-bold text-[#1A1A1A]">
                 {formatPrice(item.subtotal)}
               </Text>
             </View>
@@ -193,34 +207,38 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* ENDEREÇO / RETIRADA */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Entrega</Text>
+        <View className="bg-white rounded-xl p-4 mb-4" style={sectionShadow}>
+          <Text className="text-[16px] font-bold text-[#1A1A1A] mb-4">
+            Entrega
+          </Text>
           {isPickup ? (
-            <View style={styles.addressBox}>
+            <View className="flex-row items-center bg-[#F9F9F9] p-3 rounded-lg">
               <MaterialCommunityIcons
                 name="storefront"
                 size={24}
                 color="#E31837"
               />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={styles.addressTitle}>Retirada na Loja</Text>
-                <Text style={styles.addressText}>
+              <View className="ml-3 flex-1">
+                <Text className="text-[14px] font-bold text-[#1A1A1A] mb-0.5">
+                  Retirada na Loja
+                </Text>
+                <Text className="text-[12px] text-[#666]">
                   R. São José dos Pinhais, 187
                 </Text>
               </View>
             </View>
           ) : (
-            <View style={styles.addressBox}>
+            <View className="flex-row items-center bg-[#F9F9F9] p-3 rounded-lg">
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={24}
                 color="#E31837"
               />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={styles.addressTitle}>
+              <View className="ml-3 flex-1">
+                <Text className="text-[14px] font-bold text-[#1A1A1A] mb-0.5">
                   {order.addresses.street}, {order.addresses.number}
                 </Text>
-                <Text style={styles.addressText}>
+                <Text className="text-[12px] text-[#666]">
                   {order.addresses.neighborhood} - {order.addresses.city}/
                   {order.addresses.state}
                 </Text>
@@ -230,27 +248,31 @@ export default function OrderDetailsScreen() {
         </View>
 
         {/* TOTAIS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumo</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>
+        <View className="bg-white rounded-xl p-4 mb-4" style={sectionShadow}>
+          <Text className="text-[16px] font-bold text-[#1A1A1A] mb-4">
+            Resumo
+          </Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-[14px] text-[#666]">Subtotal</Text>
+            <Text className="text-[14px] text-[#1A1A1A]">
               {formatPrice(
                 Number(order.total_price) - Number(order.delivery_fee),
               )}
             </Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Taxa de Entrega</Text>
-            <Text style={styles.summaryValue}>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-[14px] text-[#666]">Taxa de Entrega</Text>
+            <Text className="text-[14px] text-[#1A1A1A]">
               {order.delivery_fee > 0
                 ? formatPrice(order.delivery_fee)
                 : "Grátis"}
             </Text>
           </View>
-          <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total Pago</Text>
-            <Text style={styles.totalValue}>
+          <View className="flex-row justify-between border-t border-[#EAEAEA] pt-3 mt-1">
+            <Text className="text-[16px] font-bold text-[#1A1A1A]">
+              Total Pago
+            </Text>
+            <Text className="text-[18px] font-bold text-[#E31837]">
               {formatPrice(order.total_price)}
             </Text>
           </View>
@@ -258,16 +280,18 @@ export default function OrderDetailsScreen() {
       </ScrollView>
 
       {order.status === "pending" && (
-        <View style={styles.footer}>
+        <View className="p-4 bg-white border-t border-[#EAEAEA]">
           <TouchableOpacity
-            style={styles.cancelButton}
+            className="py-3.5 rounded-lg border border-[#E31837] items-center"
             onPress={handleCancelOrder}
             disabled={canceling}
           >
             {canceling ? (
               <ActivityIndicator color="#E31837" />
             ) : (
-              <Text style={styles.cancelButtonText}>Cancelar Pedido</Text>
+              <Text className="text-[#E31837] text-[16px] font-bold">
+                Cancelar Pedido
+              </Text>
             )}
           </TouchableOpacity>
         </View>

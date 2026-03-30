@@ -7,11 +7,11 @@ import {
   ScrollView,
   RefreshControl,
   StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { styles } from "@/styles/orders.styles";
 
 import { OrdersService } from "@/services/orders";
 
@@ -93,35 +93,47 @@ export default function OrdersListScreen() {
 
   if (loading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <View className="flex-1 bg-[#F5F5F5] justify-center items-center">
         <ActivityIndicator size="large" color="#E31837" />
       </View>
     );
   }
 
+  // Sombra padronizada para os cards
+  const cardShadow = Platform.select({
+    ios: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+    },
+    android: {
+      elevation: 2,
+    },
+  });
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-[#F5F5F5]" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
-      <View style={styles.header}>
+      <View className="flex-row items-center justify-between px-5 py-[15px] bg-white border-b border-[#EAEAEA]">
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="w-10 h-10 justify-center"
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Meus Pedidos</Text>
-        <View style={{ width: 40 }} />
+        <Text className="text-[18px] font-bold text-[#1A1A1A]">
+          Meus Pedidos
+        </Text>
+        <View className="w-10" />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.listContainer}
+        contentContainerClassName={
+          orders.length === 0 ? "flex-1" : "p-4 flex-grow"
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -131,16 +143,18 @@ export default function OrdersListScreen() {
         }
       >
         {orders.length === 0 ? (
-          <View style={styles.emptyContainer}>
+          <View className="flex-1 justify-center items-center mt-[100px] px-4">
             <MaterialCommunityIcons name="receipt" size={64} color="#CCC" />
-            <Text style={styles.emptyText}>
+            <Text className="text-[16px] text-[#666] mt-4 mb-6 text-center">
               Você ainda não fez nenhum pedido.
             </Text>
             <TouchableOpacity
-              style={styles.shopButton}
+              className="bg-[#E31837] px-6 py-3 rounded-lg"
               onPress={() => router.push("/(tabs)/home")}
             >
-              <Text style={styles.shopButtonText}>Ir para a loja</Text>
+              <Text className="text-white font-bold text-[16px]">
+                Ir para a loja
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -153,39 +167,47 @@ export default function OrdersListScreen() {
             return (
               <TouchableOpacity
                 key={order.id}
-                style={styles.card}
+                className="bg-white rounded-xl p-4 mb-3"
+                style={cardShadow}
                 onPress={() => router.push(`/orders/${order.id}` as any)}
               >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.orderId}>
+                <View className="flex-row justify-between mb-3">
+                  <Text className="text-[14px] font-bold text-[#1A1A1A]">
                     Pedido #{order.id.substring(0, 8).toUpperCase()}
                   </Text>
-                  <Text style={styles.orderDate}>
+                  <Text className="text-[12px] text-[#666]">
                     {formatDate(order.created_at)}
                   </Text>
                 </View>
 
-                <View style={styles.cardBody}>
-                  <Text style={styles.itemPreview} numberOfLines={1}>
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text
+                    className="flex-1 text-[14px] text-[#444] mr-4"
+                    numberOfLines={1}
+                  >
                     {itemsCount > 1
                       ? `${firstItemName} e mais ${itemsCount - 1} item(ns)`
                       : firstItemName}
                   </Text>
-                  <Text style={styles.orderTotal}>
+                  <Text className="text-[16px] font-bold text-[#1A1A1A]">
                     {formatPrice(order.total_price)}
                   </Text>
                 </View>
 
-                <View style={styles.cardFooter}>
+                <View className="flex-row justify-between items-center border-t border-[#F0F0F0] pt-3">
                   <View
-                    style={[styles.statusBadge, { backgroundColor: badge.bg }]}
+                    className="flex-row items-center px-2.5 py-1.5 rounded-2xl gap-1"
+                    style={{ backgroundColor: badge.bg }}
                   >
                     <MaterialCommunityIcons
                       name={badge.icon as any}
                       size={14}
                       color={badge.color}
                     />
-                    <Text style={[styles.statusText, { color: badge.color }]}>
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{ color: badge.color }}
+                    >
                       {badge.label}
                     </Text>
                   </View>

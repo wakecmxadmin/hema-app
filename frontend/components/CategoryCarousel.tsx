@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { CategoryBadgesService } from "@/services/category";
-import { styles } from "@/styles/category.badge.styles";
 
 const categoryOrder = ["Whey", "Creatina", "Snacks e Barras", "Pré-Treinos"];
 
@@ -50,7 +49,7 @@ export function CategoryCarousel() {
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
+      <View className="h-[40px] items-center justify-center">
         <ActivityIndicator size="small" color="#E31837" />
       </View>
     );
@@ -59,16 +58,17 @@ export function CategoryCarousel() {
   if (categories.length === 0) return null;
 
   return (
-    <View style={styles.container}>
+    <View className="my-[5px] mb-0 py-[10px]">
       <FlatList
         data={categories}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.badge}
+            className="rounded-[25px] bg-[#E31837] px-[20px] py-[10px] shadow-[0_2px_3px_rgba(227,24,55,0.2)]"
+            style={{ elevation: 4 }}
             onPress={() =>
               router.push({
                 pathname: "/category/[id]",
@@ -76,7 +76,7 @@ export function CategoryCarousel() {
               })
             }
           >
-            <Text style={styles.badgeText}>{item.name}</Text>
+            <Text className="text-[14px] font-[700] capitalize text-[#FFFFFF]">{item.name}</Text>
           </TouchableOpacity>
         )}
       />

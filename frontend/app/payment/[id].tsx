@@ -8,11 +8,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import { styles } from "@/styles/payment.styles";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Toast } from "@/util/toast"; // Substituindo os Alerts pelo Toast
+import { Toast } from "@/util/toast";
 
 const formatPrice = (value: string | number) => {
   const val = typeof value === "string" ? parseFloat(value) : value;
@@ -62,95 +61,110 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View className="flex-1 justify-center items-center bg-[#F8F9FA]">
         <ActivityIndicator size="large" color="#E31837" />
-        <Text style={styles.loadingText}>Configurando check-out...</Text>
+        <Text className="mt-[15px] text-[#666] text-base font-medium">
+          Configurando check-out...
+        </Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]" edges={["top", "bottom"]}>
+      <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header Customizado com Botão Voltar */}
-      <View
-        style={{
-          paddingHorizontal: 15,
-          paddingVertical: 10,
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 5 }}>
+      <View className="px-[15px] py-[10px] flex-row items-center">
+        <TouchableOpacity onPress={() => router.back()} className="p-1.5">
           <MaterialCommunityIcons
             name="chevron-left"
             color="#1A1A1A"
             size={32}
           />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: "700", marginLeft: 10 }}>
+        <Text className="text-[18px] font-bold ml-2.5 text-[#1A1A1A]">
           Checkout
         </Text>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="pb-10"
         showsVerticalScrollIndicator={false}
       >
         {/* Resumo do Pedido */}
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryTextContainer}>
-            <Text style={styles.summaryLabel} numberOfLines={1}>
+        <View
+          className="bg-white py-5 px-5 rounded-b-[24px] flex-row items-center justify-between w-full"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 12,
+            elevation: 3,
+          }}
+        >
+          <View className="flex-1 mr-2.5">
+            <Text
+              className="text-[#999] text-[11px] uppercase tracking-[1.2px] mb-0.5"
+              numberOfLines={1}
+            >
               PEDIDO #{displayId}
             </Text>
-            <Text style={styles.companyName} numberOfLines={1}>
+            <Text
+              className="text-[18px] font-extrabold text-[#1A1A1A]"
+              numberOfLines={1}
+            >
               Hema Cereais
             </Text>
           </View>
 
-          <View style={styles.summaryValueContainer}>
-            <Text style={styles.summaryTotal}>{formatPrice(total)}</Text>
+          <View className="items-end justify-center min-w-[100px]">
+            <Text className="text-[20px] font-black text-[#E31837] text-right">
+              {formatPrice(total)}
+            </Text>
           </View>
         </View>
 
         {/* Alerta de Preparação */}
-        <View style={styles.infoBox}>
+        <View className="flex-row bg-[#FFF1F2] mx-5 p-4 rounded-2xl mt-5 items-center border border-[#FFDFE1]">
           <MaterialCommunityIcons name="clock-fast" size={24} color="#E31837" />
-          <Text style={styles.infoText}>
+          <Text className="flex-1 ml-3 text-[14px] text-[#C0162D] leading-[20px] font-medium">
             Assim que o pagamento for aprovado nossos funcionários vão começar a
             preparar o pedido
           </Text>
         </View>
 
         {method === "pix" ? (
-          <View style={styles.paymentMethodContainer}>
-            <Text style={styles.sectionTitle}>Pague com PIX</Text>
+          <View className="mt-8 px-5">
+            <Text className="text-[18px] font-bold text-[#1A1A1A] mb-5">
+              Pague com PIX
+            </Text>
 
-            <View style={styles.qrCodeWrapper}>
-              <View style={styles.qrCodePlaceholder}>
+            <View className="items-center mb-8 bg-white rounded-[24px] p-6 self-center w-[80vw] border border-[#F0F0F0]">
+              <View className="p-2.5 bg-white">
                 <MaterialCommunityIcons
                   name="qrcode-scan"
                   size={140}
                   color="#1A1A1A"
                 />
               </View>
-              <Text style={styles.qrInstructions}>
+              <Text className="mt-4 text-[#666] text-[14px] font-medium">
                 Escaneie o QR Code acima
               </Text>
             </View>
 
-            <View style={styles.copyPasteArea}>
-              <Text style={styles.copyLabel}>Ou copie o código:</Text>
+            <View className="w-full mt-2">
+              <Text className="text-[14px] text-[#666] mb-2.5 font-medium">
+                Ou copie o código:
+              </Text>
               <TouchableOpacity
-                style={styles.copyButton}
+                className="flex-row bg-white p-[18px] rounded-[14px] items-center justify-between border-[1.5px] border-[#EEE] border-dashed"
                 onPress={handleCopyPix}
               >
-                <Text style={styles.pixCodeText} numberOfLines={1}>
+                <Text
+                  className="flex-1 mr-2.5 text-[#1A1A1A] text-[14px] font-semibold"
+                  numberOfLines={1}
+                >
                   {id}-pix-mercadopago-mock-2026-delivery-app
                 </Text>
                 <MaterialCommunityIcons
@@ -162,34 +176,42 @@ export default function PaymentPage() {
             </View>
           </View>
         ) : (
-          <View style={styles.paymentMethodContainer}>
-            <Text style={styles.sectionTitle}>Dados do Cartão</Text>
+          <View className="mt-8 px-5">
+            <Text className="text-[18px] font-bold text-[#1A1A1A] mb-5">
+              Dados do Cartão
+            </Text>
 
-            <View style={styles.cardForm}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Número do Cartão</Text>
+            <View className="bg-white p-5 rounded-[20px] border border-[#EEE]">
+              <View className="mb-5">
+                <Text className="text-[14px] font-bold text-[#444] mb-2">
+                  Número do Cartão
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  className="bg-[#F9FAFB] border border-[#E5E7EB] px-4 h-[54px] rounded-xl text-[16px] text-[#1A1A1A]"
                   placeholder="0000 0000 0000 0000"
                   keyboardType="numeric"
                   placeholderTextColor="#999"
                 />
               </View>
 
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Validade</Text>
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Text className="text-[14px] font-bold text-[#444] mb-2">
+                    Validade
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-[#F9FAFB] border border-[#E5E7EB] px-4 h-[54px] rounded-xl text-[16px] text-[#1A1A1A]"
                     placeholder="MM/AA"
                     keyboardType="numeric"
                     placeholderTextColor="#999"
                   />
                 </View>
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.inputLabel}>CVV</Text>
+                <View className="flex-1">
+                  <Text className="text-[14px] font-bold text-[#444] mb-2">
+                    CVV
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-[#F9FAFB] border border-[#E5E7EB] px-4 h-[54px] rounded-xl text-[16px] text-[#1A1A1A]"
                     placeholder="123"
                     keyboardType="numeric"
                     placeholderTextColor="#999"
@@ -197,12 +219,12 @@ export default function PaymentPage() {
                 </View>
               </View>
 
-              <View
-                style={[styles.inputGroup, { marginTop: 20, marginBottom: 0 }]}
-              >
-                <Text style={styles.inputLabel}>Nome Completo</Text>
+              <View className="mt-5">
+                <Text className="text-[14px] font-bold text-[#444] mb-2">
+                  Nome Completo
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  className="bg-[#F9FAFB] border border-[#E5E7EB] px-4 h-[54px] rounded-xl text-[16px] text-[#1A1A1A]"
                   placeholder="Como está no cartão"
                   autoCapitalize="characters"
                   placeholderTextColor="#999"
@@ -214,7 +236,14 @@ export default function PaymentPage() {
 
         {/* Botão de Ação Final */}
         <TouchableOpacity
-          style={styles.mainButton}
+          className="bg-[#E31837] mx-5 h-[60px] rounded-2xl items-center justify-center flex-row mt-8"
+          style={{
+            shadowColor: "#E31837",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
           onPress={handleFinishPayment}
         >
           <MaterialCommunityIcons
@@ -223,7 +252,7 @@ export default function PaymentPage() {
             color="#FFF"
             style={{ marginRight: 10 }}
           />
-          <Text style={styles.mainButtonText}>
+          <Text className="text-white text-[18px] font-bold">
             {method === "pix"
               ? "Já realizei o pagamento"
               : "Finalizar Pagamento"}

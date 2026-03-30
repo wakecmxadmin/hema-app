@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { View, Animated } from "react-native";
-import { cardStyles } from "@/styles/productCard.styles";
 
 export function ProductCardSkeleton({ isCarousel = false }) {
   // Criamos a referência para a animação
@@ -32,12 +31,13 @@ export function ProductCardSkeleton({ isCarousel = false }) {
 
   return (
     <View
-      style={[cardStyles.productCard, isCarousel && cardStyles.carouselWidth]}
+      className={`bg-[#FFFFFF] flex-1 overflow-hidden rounded-[12px] border border-[#EAEAEA] shadow-[0_4px_8px_rgba(0,0,0,0.06)] ${isCarousel ? "w-[180px] mb-0" : ""}`}
+      style={{ elevation: 2 }}
     >
       {/* Imagem Animada */}
-      <Animated.View style={[cardStyles.imageContainer, animatedStyle]} />
+      <Animated.View style={[animatedStyle]} className="h-[150px] w-full border-b border-[#F0F0F0] items-center justify-center p-[10px]" />
 
-      <View style={cardStyles.productInfo}>
+      <View className="flex-1 justify-between p-[12px] pb-[8px]">
         <View>
           {/* Linha de Título 1 */}
           <Animated.View

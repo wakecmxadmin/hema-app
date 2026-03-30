@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import { View, TextInput, Image, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { styles } from "@/styles/home.styles";
 
 export function HomeHeader({ onSearch }: { onSearch: (q: string) => void }) {
   const [value, setValue] = useState("");
@@ -29,22 +28,22 @@ export function HomeHeader({ onSearch }: { onSearch: (q: string) => void }) {
   };
 
   return (
-    <View style={styles.headerContainer}>
-      <View style={styles.logoContainer}>
+    <View className="flex-row items-center gap-[12px] bg-[#E31837] pb-[15px] pt-[5px] px-[16px]">
+      <View className="items-center justify-center">
         <Image
           source={require("@/assets/images/logo.jpg")}
-          style={styles.logo}
+          className="h-[44px] w-[44px] rounded-[22px]"
           resizeMode="contain"
         />
       </View>
 
-      <View style={styles.searchBar}>
-        <TouchableOpacity onPress={handleForceSearch} style={styles.iconButton}>
+      <View className="flex-1 flex-row items-center h-[42px] content-center rounded-[12px] bg-[#F5F5F5] px-[12px]">
+        <TouchableOpacity onPress={handleForceSearch} className="p-[4px]">
           <MaterialCommunityIcons name="magnify" size={24} color="#999" />
         </TouchableOpacity>
 
         <TextInput
-          style={styles.searchInput}
+          className="h-full flex-1 ml-[8px] text-[14px] text-[#333]"
           placeholder="Buscar produtos..."
           placeholderTextColor="#999"
           value={value}
@@ -54,7 +53,7 @@ export function HomeHeader({ onSearch }: { onSearch: (q: string) => void }) {
         />
 
         {value.length > 0 && (
-          <TouchableOpacity onPress={handleClear} style={styles.iconButton}>
+          <TouchableOpacity onPress={handleClear} className="p-[4px]">
             <MaterialCommunityIcons
               name="close-circle"
               size={20}

@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { styles } from "@/styles/home.styles";
 import { useHomeData } from "@/hooks/useHomeData";
 import { HomeHeader } from "@/components/HomeHeader";
 import { ProductCard } from "@/components/ProductCard";
@@ -97,13 +96,13 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-[#E31837]" edges={["top"]}>
       <StatusBar barStyle="light-content" backgroundColor="#E31837" />
 
       <HomeHeader onSearch={handleSearch} />
 
       <ScrollView
-        style={styles.mainContainer}
+        className="flex-1 bg-white"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -118,20 +117,20 @@ export default function HomeScreen() {
 
         {/* 1. LOADING DA BUSCA (SKELETON EM GRADE) */}
         {isSearching ? (
-          <View style={styles.skeletonGrid}>
+          <View className="flex-row flex-wrap justify-between px-4 mt-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <View key={i} style={styles.skeletonGridItem}>
+              <View key={i} className="w-1/2 mb-4">
                 <ProductCardSkeleton />
               </View>
             ))}
           </View>
         ) : searchQuery.trim() !== "" ? (
           /* 2. EXIBIÇÃO DOS RESULTADOS DA BUSCA */
-          <View style={styles.sectionContainer}>
+          <View className="mx-0 mb-0">
             {searchResults.length > 0 &&
             (searchResults[0].similarity_score ?? 1) < 0.3 ? (
               <View style={{ marginBottom: 10 }}>
-                <Text style={styles.sectionTitle}>
+                <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
                   Poxa, não encontramos "{searchQuery}"
                 </Text>
                 <Text
@@ -147,29 +146,29 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : searchResults.length > 0 ? (
-              <Text style={styles.sectionTitle}>
+              <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
                 Resultados para "{searchQuery}"
               </Text>
             ) : null}
 
             {/* Caso não encontre NADA */}
             {searchResults.length === 0 ? (
-              <View style={styles.emptyContainer}>
+              <View className="items-center justify-center pt-15">
                 <MaterialCommunityIcons
                   name="magnify-close"
                   size={48}
                   color="#CCC"
                 />
-                <Text style={styles.emptyText}>Nenhum produto encontrado</Text>
+                <Text className="mt-3 text-[#999] text-base">Nenhum produto encontrado</Text>
               </View>
             ) : (
               <>
                 {/* Grade de Produtos */}
-                <View style={styles.gridContainer}>
+                <View className="flex-row flex-wrap justify-between mt-2 px-4">
                   {searchResults.map((product, index) => (
                     <View
                       key={`${product.id}-${index}`}
-                      style={styles.gridItem}
+                      className="w-1/2 mb-4"
                     >
                       <ProductCard
                         product={product}
@@ -187,16 +186,16 @@ export default function HomeScreen() {
 
                 {/* BOTÃO MOSTRAR MAIS */}
                 {hasMoreSearch && (
-                  <View style={{ paddingVertical: 30, alignItems: "center" }}>
+                  <View className="py-7 items-center">
                     {isSearchingMore ? (
                       <ActivityIndicator size="small" color="#E31837" />
                     ) : (
                       <TouchableOpacity
                         onPress={loadMoreSearchResults}
-                        style={styles.loadMoreButton}
+                        className="bg-white py-3 px-10 rounded-full border border-[#E31837] mt-2 mb-5"
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.loadMoreText}>Mostrar Mais</Text>
+                        <Text className="text-[#E31837] font-bold text-sm">Mostrar Mais</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -205,20 +204,11 @@ export default function HomeScreen() {
             )}
           </View>
         ) : !catalog || refreshing ? (
-          <View style={{ marginTop: 20 }}>
+          <View className="mt-5">
             {[1, 2].map((row) => (
               <View key={row}>
-                <View
-                  style={{
-                    height: 20,
-                    width: 150,
-                    backgroundColor: "#F0F0F0",
-                    marginLeft: 18,
-                    marginBottom: 15,
-                    borderRadius: 4,
-                  }}
-                />
-                <View style={styles.skeletonRow}>
+                <View className="h-5 w-38 bg-[#F0F0F0] ml-4 mb-4 rounded" />
+                <View className="flex-row pl-4 gap-3 mb-6">
                   {[1, 2, 3].map((i) => (
                     <ProductCardSkeleton key={i} isCarousel={true} />
                   ))}
@@ -232,9 +222,9 @@ export default function HomeScreen() {
               return null;
 
             return (
-              <View key={category.id} style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{category.name}</Text>
+              <View key={category.id} className="mx-0 mb-0">
+                <View className="flex-row items-center justify-between mx-4 mt-4 mb-4">
+                  <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">{category.name}</Text>
                   <TouchableOpacity
                     onPress={() =>
                       router.push({
@@ -252,15 +242,12 @@ export default function HomeScreen() {
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalListContent}
+                  contentContainerStyle={{ paddingRight: 8, paddingLeft: 18 }}
                 >
                   {category.products.map((product, index) => (
                     <View
                       key={product.id}
-                      style={{
-                        marginRight:
-                          index === category.products.length - 1 ? 0 : 12,
-                      }}
+                      className={index === category.products.length - 1 ? "mr-0" : "mr-3"}
                     >
                       <ProductCard
                         product={product}

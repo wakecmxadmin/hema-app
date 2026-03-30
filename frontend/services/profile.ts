@@ -1,4 +1,5 @@
 import { apiFetch, ApiResponse } from "./api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UpdateProfileRequest, SupportRequest } from "../types/profile";
 
 export async function getProfileData(): Promise<ApiResponse<any>> {
@@ -39,5 +40,13 @@ export async function uploadAvatar(fileData: {
 }
 
 export async function deleteAccount(): Promise<ApiResponse<void>> {
-  return apiFetch("/profile", { method: "DELETE" });
+  const { supabase } = await import("./supabase");
+  const response = await apiFetch<void>("/profile", { method: "DELETE" });
+
+  if (response.success) {
+    await AsyncStorage.clear();
+    await supabase.auth.signOut();
+  }
+
+  return response;
 }

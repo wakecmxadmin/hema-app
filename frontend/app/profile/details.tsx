@@ -14,7 +14,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Toast } from "@/util/toast";
-import { styles } from "@/styles/profile.styles";
 import { getCurrentUser } from "@/services/auth";
 import { updateProfile, getProfileData } from "@/services/profile";
 
@@ -99,39 +98,36 @@ export default function PersonalDetailsScreen() {
 
   if (loading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#E31837" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" />
 
       {/* CABEÇALHO */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <View className="flex-row items-center justify-between p-4 bg-white border-b border-[#EEE]">
+        <TouchableOpacity onPress={() => router.back()} className="p-2">
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.title}>Meus Dados</Text>
-        <View style={{ width: 40 }} />
+        <Text className="text-lg font-bold text-[#1A1A1A]">Meus Dados</Text>
+        <View className="w-10" />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        className="flex-grow p-5"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nome Completo</Text>
+        <View className="mb-5">
+          <Text className="text-sm font-semibold text-[#333] mb-2">
+            Nome Completo
+          </Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
             value={name}
             onChangeText={setName}
             autoCorrect={false}
@@ -140,22 +136,21 @@ export default function PersonalDetailsScreen() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>E-mail</Text>
+        <View className="mb-5">
+          <Text className="text-sm font-semibold text-[#333] mb-2">E-mail</Text>
           <TextInput
-            style={[
-              styles.input,
-              { backgroundColor: "#F5F5F5", color: "#888" },
-            ]}
+            className="border border-[#DDD] rounded-lg p-[14px] text-base bg-[#F5F5F5] text-[#888]"
             value={email}
             editable={false}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Celular</Text>
+        <View className="mb-5">
+          <Text className="text-sm font-semibold text-[#333] mb-2">
+            Celular
+          </Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
             placeholder="(00) 00000-0000"
             keyboardType="phone-pad"
             value={phone}
@@ -164,10 +159,10 @@ export default function PersonalDetailsScreen() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>CPF</Text>
+        <View className="mb-5">
+          <Text className="text-sm font-semibold text-[#333] mb-2">CPF</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
             placeholder="000.000.000-00"
             keyboardType="numeric"
             value={cpf}
@@ -179,16 +174,20 @@ export default function PersonalDetailsScreen() {
       </ScrollView>
 
       {/* RODAPÉ */}
-      <View style={styles.footer}>
+      <View className="p-5 border-t border-[#EEE]">
         <TouchableOpacity
-          style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+          className={`bg-[#E31837] p-4 rounded-lg items-center ${
+            saving ? "opacity-70" : ""
+          }`}
           onPress={handleSave}
           disabled={saving}
         >
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.saveBtnText}>Salvar Alterações</Text>
+            <Text className="text-white text-base font-bold">
+              Salvar Alterações
+            </Text>
           )}
         </TouchableOpacity>
       </View>

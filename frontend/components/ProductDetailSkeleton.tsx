@@ -1,20 +1,19 @@
 import React from "react";
 import { View, Dimensions, ScrollView } from "react-native";
-import { styles } from "@/styles/product.styles";
 import { PulseView } from "./PulseView";
 const { width } = Dimensions.get("window");
 
 export function ProductDetailsSkeleton() {
   return (
-    <View style={styles.safeArea}>
+    <View className="flex-1 bg-[#FFF]">
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: 100 }}
         scrollEnabled={false}
       >
         {/* Skeleton da Imagem Principal */}
         <PulseView style={{ width: width, height: width }} />
 
-        <View style={styles.detailsContainer}>
+        <View className="p-[20px]">
           {/* Categoria */}
           <PulseView
             style={{ height: 12, width: 80, borderRadius: 4, marginBottom: 12 }}
@@ -48,7 +47,7 @@ export function ProductDetailsSkeleton() {
             }}
           />
 
-          <View style={styles.divider} />
+          <View className="bg-[#EAEAEA] h-[1px] my-[20px]" />
 
           {/* Título Descrição */}
           <PulseView
@@ -121,8 +120,8 @@ export function ProductDetailsSkeleton() {
       </ScrollView>
 
       {/* Botão de Rodapé Skeleton */}
-      <View style={styles.footer}>
-        <PulseView style={[styles.addButton, { backgroundColor: "#E0E0E0" }]} />
+      <View className="absolute bottom-0 left-0 right-0 border-t border-[#EAEAEA] bg-[#FFF] flex-row gap-[15px] p-[16px] pb-[16px]">
+        <PulseView className="flex-1 bg-[#E0E0E0] h-[50px] rounded-[8px] items-center justify-center" />
       </View>
     </View>
   );

@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { cardStyles } from "@/styles/productCard.styles"; // Ajuste o caminho do seu estilo se precisar
 import { Product } from "@/types/product";
 import { Image } from "expo-image";
 
@@ -10,7 +9,7 @@ interface ProductCardProps {
   product: Product;
   onPress: () => void;
   onAdd: () => void;
-  isCarousel?: boolean; // Propriedade nova para controlar a largura!
+  isCarousel?: boolean;
 }
 
 export function ProductCard({
@@ -33,25 +32,23 @@ export function ProductCard({
 
   return (
     <TouchableOpacity
-      style={[
-        cardStyles.productCard,
-        isCarousel && cardStyles.carouselWidth, // Aplica a largura fixa só se for carrossel
-      ]}
+      className={`bg-[#FFFFFF] flex-1 overflow-hidden rounded-[12px] border border-[#EAEAEA] shadow-[0_4px_8px_rgba(0,0,0,0.06)] ${isCarousel ? "w-[180px] mb-0" : ""}`}
+      style={{ elevation: 2 }}
       onPress={onPress}
       activeOpacity={0.9}
     >
       {/* IMAGEM OU PLACEHOLDER */}
-      <View style={cardStyles.imageContainer}>
+      <View className="h-[150px] w-full items-center justify-center border-b border-[#F0F0F0] bg-[#fff] p-[10px]">
         {product.image_url ? (
           <Image
             source={{ uri: product.image_url }}
-            style={cardStyles.productImage}
+            className="h-full w-full bg-[#F0F0F0] mt-0"
             contentFit="cover"
             transition={500}
             cachePolicy="disk"
           />
         ) : (
-          <View style={cardStyles.imageFallback}>
+          <View className="h-full w-full items-center justify-center bg-[#F5F5F5]">
             <MaterialCommunityIcons
               name="image-off-outline"
               size={32}
@@ -62,19 +59,19 @@ export function ProductCard({
       </View>
 
       {/* INFORMAÇÕES DO PRODUTO */}
-      <View style={cardStyles.productInfo}>
+      <View className="flex-1 justify-between p-[12px] pb-[8px]">
         <View>
-          <Text style={cardStyles.productName} numberOfLines={2}>
+          <Text className="mb-[6px] min-h-[36px] text-[13px] leading-[18px] font-[600] text-[#222222]" numberOfLines={2}>
             {product.name}
           </Text>
-          <Text style={cardStyles.productPrice}>
+          <Text className="mb-[10px] text-[16px] font-[800] text-[#E31837]">
             {formattedPrice}
-            <Text style={cardStyles.priceUnit}>{unitLabel}</Text>
+            <Text className="text-[11px] font-[600] text-[#888]">{unitLabel}</Text>
           </Text>
         </View>
 
-        <TouchableOpacity style={cardStyles.discreteAddButton} onPress={onAdd}>
-          <Text style={cardStyles.discreteAddButtonText}>Adicionar</Text>
+        <TouchableOpacity className="mb-[4px] items-center justify-center rounded-[8px] bg-[#E31837] px-[10px] py-[10px]" onPress={onAdd}>
+          <Text className="text-[13px] font-[800] uppercase text-[#ffffff]">Adicionar</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
