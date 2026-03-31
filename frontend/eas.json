@@ -5,7 +5,8 @@
         "EXPO_PUBLIC_API_URL": "https://api.apphema.codificaai.pro",
         "EXPO_PUBLIC_SUPABASE_URL": "https://popkqrorbtubrmyomzix.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcGtxcm9yYnR1YnJteW9teml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNDIwMDMsImV4cCI6MjA3NjYxODAwM30.ZjNfDkpBQy9K9yxoLToHdRVfunWewkaeDQGL0OgQIKM"
-      }
+      },
+      "channel": "production"
     }
   }
 }

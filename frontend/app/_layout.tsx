@@ -11,9 +11,13 @@ import { supabase } from "@/services/supabase";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
-import { View } from "react-native";
+import { View, Platform, StatusBar as RNStatusBar } from "react-native";
 import { ToastContainer } from "@/components/ToastContainer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/components/useColorScheme";
 import { CartProvider } from "@/context/CartContext";
@@ -43,9 +47,11 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <RootLayoutNav />
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <RootLayoutNav />
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
@@ -76,10 +82,22 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const inAuthGroup = segments[0] === "auth";
 
-    if (session && inAuthGroup) {
-      router.replace("/(tabs)/home");
-    } else if (!session && !inAuthGroup) {
-      router.replace("/auth");
+    const isResetPasswordScreen = (segments as string[]).includes(
+      "reset-password",
+    );
+
+    if (isResetPasswordScreen) {
+      return;
+    }
+
+    if (session) {
+      if (inAuthGroup) {
+        router.replace("/(tabs)/home");
+      }
+    } else {
+      if (!inAuthGroup) {
+        router.replace("/auth");
+      }
     }
   }, [session, isAuthReady, segments]);
 
@@ -92,15 +110,38 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+
+  const dynamicHeaderHeight =
+    Platform.OS === "ios" ? 44 + insets.top : 56 + RNStatusBar.currentHeight!;
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <CartProvider>
-        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: colorScheme === "dark" ? "#000" : "#fff",
+          }}
+        >
           <AuthGuard>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                headerStyle: {
+                  backgroundColor: "#fff",
+                },
+                headerTitleStyle: {
+                  fontWeight: "bold",
+                  fontSize: 18,
+                },
+                headerTitleAlign: "center",
+              }}
+            >
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="auth" />
+              <Stack.Screen name="auth/index" />
+              <Stack.Screen name="auth/forgot-password" />
+              <Stack.Screen name="auth/reset-password" />
             </Stack>
           </AuthGuard>
           <ToastContainer />

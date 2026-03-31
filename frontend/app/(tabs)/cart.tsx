@@ -89,7 +89,10 @@ const CartItemComponent = ({
           }
         }}
       >
-        <View className="flex-row p-[14px] bg-white rounded-[16px] mb-[16px] border border-[#F0F0F0] items-center shadow-sm" style={{ marginBottom: 0 }}>
+        <View
+          className="flex-row p-[14px] bg-white rounded-[16px] mb-[16px] border border-[#F0F0F0] items-center shadow-sm"
+          style={{ marginBottom: 0 }}
+        >
           <View className="w-[76px] h-[76px] bg-[#F9F9F9] rounded-[12px] justify-center items-center overflow-hidden">
             {item.product.image_url ? (
               <Image
@@ -105,7 +108,10 @@ const CartItemComponent = ({
           <View className="flex-1 ml-[14px] h-[76px] justify-between">
             <View className="flex-row justify-between items-start">
               <View className="flex-1">
-                <Text className="text-[15px] text-[#222] font-bold mr-[8px]" numberOfLines={1}>
+                <Text
+                  className="text-[15px] text-[#222] font-bold mr-[8px]"
+                  numberOfLines={1}
+                >
                   {item.product.name}
                 </Text>
                 <Text className="text-[12px] text-[#888] mt-[2px] font-medium">
@@ -113,7 +119,9 @@ const CartItemComponent = ({
                   {item.product.type === "unit" ? "/un" : "/kg"}
                 </Text>
               </View>
-              <Text className="text-[16px] font-extrabold text-[#E31837]">{formattedItemTotal}</Text>
+              <Text className="text-[16px] font-extrabold text-[#E31837]">
+                {formattedItemTotal}
+              </Text>
             </View>
 
             <View className="flex-row justify-between items-center">
@@ -132,7 +140,9 @@ const CartItemComponent = ({
                     </TouchableOpacity>
 
                     <View style={{ minWidth: 30, alignItems: "center" }}>
-                      <Text className="text-[14px] font-bold text-[#1A1A1A]">{item.quantity}</Text>
+                      <Text className="text-[14px] font-bold text-[#1A1A1A]">
+                        {item.quantity}
+                      </Text>
                     </View>
 
                     <TouchableOpacity
@@ -166,7 +176,9 @@ const CartItemComponent = ({
                         }
                       }}
                     />
-                    <Text className="text-[13px] font-bold text-[#888] ml-[2px] mr-[10px] mt-[1px]">g</Text>
+                    <Text className="text-[13px] font-bold text-[#888] ml-[2px] mr-[10px] mt-[1px]">
+                      g
+                    </Text>
 
                     <TouchableOpacity
                       className="w-[24px] h-[24px] rounded-[12px] bg-white items-center justify-center shadow-sm"
@@ -183,7 +195,9 @@ const CartItemComponent = ({
                 className="flex-row items-center gap-[4px] p-[6px]"
               >
                 <Ionicons name="trash-outline" size={16} color="#999" />
-                <Text className="text-[12px] text-[#A0A0A0] font-semibold">Remover</Text>
+                <Text className="text-[12px] text-[#A0A0A0] font-semibold">
+                  Remover
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -256,9 +270,15 @@ export default function CartScreen() {
       <View className="flex-1">
         <StatusBar barStyle="dark-content" />
 
-        <View className="px-4">
+        {/* 1. Área da Lista que ocupa o espaço flexível */}
+        <View className="flex-1 px-4">
           <View className="py-5 mb-2">
-            <Text className="text-2xl font-extrabold text-[#111]" style={{letterSpacing:-0.5}}>Meu Carrinho</Text>
+            <Text
+              className="text-2xl font-extrabold text-[#111]"
+              style={{ letterSpacing: -0.5 }}
+            >
+              Meu Carrinho
+            </Text>
           </View>
 
           <FlatList
@@ -268,7 +288,8 @@ export default function CartScreen() {
               showListSkeleton ? `skel-${index}` : item.id
             }
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            /* Aumentei o padding bottom para garantir que o último item não fique escondido sob o rodapé */
+            contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -279,7 +300,7 @@ export default function CartScreen() {
             }
             ListEmptyComponent={
               showListSkeleton ? null : (
-                <View className="items-center mt-15">
+                <View className="items-center mt-15 flex-1 justify-center">
                   <Ionicons name="cart-outline" size={64} color="#DDD" />
                   <Text className="text-base text-[#BBB] mt-2">
                     Seu carrinho está vazio.
@@ -288,31 +309,54 @@ export default function CartScreen() {
               )
             }
           />
-
-          {/* Resumo e Botão Finalizar */}
-          {items.length > 0 && !showListSkeleton && (
-            <View className="p-6 pt-8 bg-white rounded-t-3xl shadow-lg">
-              <View className="flex-row justify-between mb-4">
-                <Text className="text-base text-[#666]">Subtotal</Text>
-                {showPriceSkeleton ? (
-                  <PriceSkeleton />
-                ) : (
-                  <Text className="text-2xl font-extrabold text-[#E31837]">
-                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(cart?.total_price || "0"))}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                className="bg-[#E31837] py-4 rounded-full items-center"
-                activeOpacity={0.8}
-                onPress={() => router.push("/checkout")}
-                disabled={showPriceSkeleton}
-              >
-                <Text className="text-white text-base font-bold uppercase">Finalizar Compra</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
+
+        {/* 2. Área do Rodapé: Fixa na base usando absolute position */}
+        {items.length > 0 && !showListSkeleton && (
+          <View
+            className="absolute bottom-0 left-0 right-0 p-6 pt-6 bg-white rounded-t-[32px]"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -10 },
+              shadowOpacity: 0.08,
+              shadowRadius: 15,
+              elevation: 20, // Aumentei a elevação no Android
+            }}
+          >
+            <View className="flex-row justify-between items-center mb-5">
+              <Text className="text-[16px] font-bold text-[#666]">
+                Subtotal
+              </Text>
+              {showPriceSkeleton ? (
+                <PriceSkeleton />
+              ) : (
+                <Text className="text-[24px] font-extrabold text-[#E31837]">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(parseFloat(cart?.total_price || "0"))}
+                </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              className="bg-[#E31837] h-[56px] rounded-full items-center justify-center flex-row shadow-sm"
+              activeOpacity={0.8}
+              onPress={() => router.push("/checkout")}
+              disabled={showPriceSkeleton}
+            >
+              <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
+                Finalizar Compra
+              </Text>
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color="#FFF"
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

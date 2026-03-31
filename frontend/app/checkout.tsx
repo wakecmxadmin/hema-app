@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // <-- Import adicionado
 
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
@@ -49,6 +50,7 @@ function calculateDeliveryFee(city?: string): number {
 export default function CheckoutScreen() {
   const router = useRouter();
   const { items, loading, cart, refreshCart } = useCart();
+  const insets = useSafeAreaInsets(); // <-- Hook adicionado para pegar as margens seguras
 
   const [deliveryMethod, setDeliveryMethod] =
     useState<DeliveryMethod>("delivery");
@@ -209,8 +211,11 @@ export default function CheckoutScreen() {
       <StatusBar barStyle="dark-content" />
 
       <ScrollView
-        className="flex-1 p-4 pb-[160px]"
+        className="flex-1 p-4"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 180 : 160,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -509,7 +514,8 @@ export default function CheckoutScreen() {
       <View
         className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA]"
         style={{
-          paddingBottom: Platform.OS === "ios" ? 30 : 16,
+          // Ajuste dinâmico: soma 16px de margem + o tamanho da barra de navegação nativa do Android/iOS
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 24,
           elevation: 10,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -3 },

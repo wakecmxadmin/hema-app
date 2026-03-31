@@ -138,3 +138,32 @@ export async function logout(): Promise<ApiResponse<void>> {
 
   return { success: true, message: "Você saiu da sua conta." };
 }
+
+export async function sendPasswordResetEmail(
+  email: string,
+): Promise<ApiResponse<void>> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "hemaapp://auth/reset-password",
+  });
+
+  if (error) {
+    return { success: false, message: translateAuthError(error.message) };
+  }
+
+  return { success: true, message: "Instruções enviadas para o seu e-mail!" };
+}
+
+// Define a nova senha (usada na tela final de reset)
+export async function resetPassword(
+  newPassword: string,
+): Promise<ApiResponse<void>> {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    return { success: false, message: translateAuthError(error.message) };
+  }
+
+  return { success: true, message: "Senha alterada com sucesso!" };
+}

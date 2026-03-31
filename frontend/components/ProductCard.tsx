@@ -42,7 +42,11 @@ export function ProductCard({
         {product.image_url ? (
           <Image
             source={{ uri: product.image_url }}
-            className="h-full w-full bg-[#F0F0F0] mt-0"
+            style={{
+              width: "100%",
+              height: "100%",
+              backgroundColor: "#F0F0F0",
+            }}
             contentFit="cover"
             transition={500}
             cachePolicy="disk"
@@ -61,17 +65,27 @@ export function ProductCard({
       {/* INFORMAÇÕES DO PRODUTO */}
       <View className="flex-1 justify-between p-[12px] pb-[8px]">
         <View>
-          <Text className="mb-[6px] min-h-[36px] text-[13px] leading-[18px] font-[600] text-[#222222]" numberOfLines={2}>
+          <Text
+            className="mb-[6px] min-h-[36px] text-[13px] leading-[18px] font-[600] text-[#222222]"
+            numberOfLines={2}
+          >
             {product.name}
           </Text>
           <Text className="mb-[10px] text-[16px] font-[800] text-[#E31837]">
             {formattedPrice}
-            <Text className="text-[11px] font-[600] text-[#888]">{unitLabel}</Text>
+            <Text className="text-[11px] font-[600] text-[#888]">
+              {unitLabel}
+            </Text>
           </Text>
         </View>
 
-        <TouchableOpacity className="mb-[4px] items-center justify-center rounded-[8px] bg-[#E31837] px-[10px] py-[10px]" onPress={onAdd}>
-          <Text className="text-[13px] font-[800] uppercase text-[#ffffff]">Adicionar</Text>
+        <TouchableOpacity
+          className="mb-[4px] items-center justify-center rounded-[8px] bg-[#E31837] px-[10px] py-[10px]"
+          onPress={onAdd}
+        >
+          <Text className="text-[13px] font-[800] uppercase text-[#ffffff]">
+            Adicionar
+          </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

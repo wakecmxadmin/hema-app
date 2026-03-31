@@ -119,7 +119,7 @@ export default function HomeScreen() {
         {isSearching ? (
           <View className="flex-row flex-wrap justify-between px-4 mt-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <View key={i} className="w-1/2 mb-4">
+              <View key={i} className="w-[48%] mb-4">
                 <ProductCardSkeleton />
               </View>
             ))}
@@ -159,16 +159,18 @@ export default function HomeScreen() {
                   size={48}
                   color="#CCC"
                 />
-                <Text className="mt-3 text-[#999] text-base">Nenhum produto encontrado</Text>
+                <Text className="mt-3 text-[#999] text-base">
+                  Nenhum produto encontrado
+                </Text>
               </View>
             ) : (
-              <>
+              <View>
                 {/* Grade de Produtos */}
                 <View className="flex-row flex-wrap justify-between mt-2 px-4">
                   {searchResults.map((product, index) => (
                     <View
                       key={`${product.id}-${index}`}
-                      className="w-1/2 mb-4"
+                      className="w-[48%] mb-4"
                     >
                       <ProductCard
                         product={product}
@@ -195,12 +197,14 @@ export default function HomeScreen() {
                         className="bg-white py-3 px-10 rounded-full border border-[#E31837] mt-2 mb-5"
                         activeOpacity={0.7}
                       >
-                        <Text className="text-[#E31837] font-bold text-sm">Mostrar Mais</Text>
+                        <Text className="text-[#E31837] font-bold text-sm">
+                          Mostrar Mais
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
-              </>
+              </View>
             )}
           </View>
         ) : !catalog || refreshing ? (
@@ -224,7 +228,9 @@ export default function HomeScreen() {
             return (
               <View key={category.id} className="mx-0 mb-0">
                 <View className="flex-row items-center justify-between mx-4 mt-4 mb-4">
-                  <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">{category.name}</Text>
+                  <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
+                    {category.name}
+                  </Text>
                   <TouchableOpacity
                     onPress={() =>
                       router.push({
@@ -247,7 +253,9 @@ export default function HomeScreen() {
                   {category.products.map((product, index) => (
                     <View
                       key={product.id}
-                      className={index === category.products.length - 1 ? "mr-0" : "mr-3"}
+                      className={
+                        index === category.products.length - 1 ? "mr-0" : "mr-3"
+                      }
                     >
                       <ProductCard
                         product={product}
