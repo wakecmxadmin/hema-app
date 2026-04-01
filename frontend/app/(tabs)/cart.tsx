@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
-  TextInput,
   Animated,
   RefreshControl,
+  ActivityIndicator, // Adicionado para um load discreto
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,7 +17,6 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Swipeable } from "react-native-gesture-handler";
 
-// NativeWind styling – removed StyleSheet import
 import { useCart } from "@/context/CartContext";
 import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
@@ -29,18 +28,19 @@ const CartItemComponent = ({
   removeItem,
   validateWeight,
 }: any) => {
-  const inputRef = useRef<TextInput>(null);
   const swipeableRef = useRef<Swipeable>(null);
 
   const basePrice =
     item.product.type === "unit"
       ? item.product.price || 0
-      : item.product.price_per_kg || 0;
+      : (item.product.price_per_kg || 0) / 10;
 
   const itemTotalPrice =
     item.product.type === "unit"
-      ? parseFloat(basePrice.toString()) * (item.quantity || 0)
-      : (parseFloat(basePrice.toString()) * (item.weight || 0)) / 1000;
+      ? parseFloat((item.product.price || 0).toString()) * (item.quantity || 0)
+      : (parseFloat((item.product.price_per_kg || 0).toString()) *
+          (item.weight || 0)) /
+        1000;
 
   const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -81,18 +81,11 @@ const CartItemComponent = ({
       <Swipeable
         ref={swipeableRef}
         renderRightActions={renderRightActions}
-        friction={1.5}
-        rightThreshold={80}
         onSwipeableOpen={(direction) => {
-          if (direction === "right") {
-            removeItem(item.id);
-          }
+          if (direction === "right") removeItem(item.id);
         }}
       >
-        <View
-          className="flex-row p-[14px] bg-white rounded-[16px] mb-[16px] border border-[#F0F0F0] items-center shadow-sm"
-          style={{ marginBottom: 0 }}
-        >
+        <View className="flex-row p-[14px] bg-white rounded-[16px] border border-[#F0F0F0] items-center shadow-sm">
           <View className="w-[76px] h-[76px] bg-[#F9F9F9] rounded-[12px] justify-center items-center overflow-hidden">
             {item.product.image_url ? (
               <Image
@@ -109,14 +102,14 @@ const CartItemComponent = ({
             <View className="flex-row justify-between items-start">
               <View className="flex-1">
                 <Text
-                  className="text-[15px] text-[#222] font-bold mr-[8px]"
+                  className="text-[15px] text-[#222] font-bold"
                   numberOfLines={1}
                 >
                   {item.product.name}
                 </Text>
                 <Text className="text-[12px] text-[#888] mt-[2px] font-medium">
                   {formattedUnitPrice}{" "}
-                  {item.product.type === "unit" ? "/un" : "/kg"}
+                  {item.product.type === "unit" ? "/un" : "/100g"}
                 </Text>
               </View>
               <Text className="text-[16px] font-extrabold text-[#E31837]">
@@ -125,77 +118,65 @@ const CartItemComponent = ({
             </View>
 
             <View className="flex-row justify-between items-center">
-              <View className="min-w-[32px] items-center justify-center">
-                {item.product.type === "unit" ? (
-                  <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] p-[3px] border border-[#EEEEEE]">
-                    <TouchableOpacity
-                      onPress={() =>
-                        updateItem(item.id, {
-                          quantity: Math.max(1, (item.quantity || 0) - 1),
-                        })
-                      }
-                      className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
-                    >
-                      <Ionicons name="remove" size={16} color="#E31837" />
-                    </TouchableOpacity>
+              <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] p-[3px] border border-[#EEEEEE]">
+                <TouchableOpacity
+                  onPress={() => {
+                    if (item.product.type === "unit") {
+                      updateItem(item.id, {
+                        quantity: Math.max(1, (item.quantity || 0) - 1),
+                      });
+                    } else {
+                      const newWeight = Math.max(50, (item.weight || 0) - 100);
+                      if (newWeight === 50 && item.weight === 50)
+                        validateWeight(49);
+                      updateItem(item.id, { weight: newWeight });
+                    }
+                  }}
+                  className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
+                >
+                  <Ionicons name="remove" size={16} color="#E31837" />
+                </TouchableOpacity>
 
-                    <View style={{ minWidth: 30, alignItems: "center" }}>
-                      <Text className="text-[14px] font-bold text-[#1A1A1A]">
-                        {item.quantity}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() =>
-                        updateItem(item.id, {
-                          quantity: (item.quantity || 0) + 1,
-                        })
-                      }
-                      className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
-                    >
-                      <Ionicons name="add" size={16} color="#E31837" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] px-[12px] py-[4px] border border-[#EEEEEE] h-[36px]">
-                    <TextInput
-                      ref={inputRef}
-                      className="text-[14px] font-bold text-[#1A1A1A] min-w-[35px] text-right p-0 h-[28px]"
-                      keyboardType="numeric"
-                      defaultValue={String(item.weight)}
-                      maxLength={4}
-                      onEndEditing={(e) => {
-                        const value = parseInt(e.nativeEvent.text) || 0;
-                        if (value < 50) {
-                          validateWeight(0);
-                          updateItem(item.id, { weight: 50 });
-                          if (inputRef.current)
-                            inputRef.current.setNativeProps({ text: "50" });
-                        } else {
-                          updateItem(item.id, { weight: value });
-                        }
-                      }}
-                    />
-                    <Text className="text-[13px] font-bold text-[#888] ml-[2px] mr-[10px] mt-[1px]">
+                <View
+                  style={{
+                    minWidth: 45,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text className="text-[14px] font-bold text-[#1A1A1A]">
+                    {item.product.type === "unit" ? item.quantity : item.weight}
+                  </Text>
+                  {item.product.type !== "unit" && (
+                    <Text className="text-[12px] font-bold text-[#888] ml-[1px]">
                       g
                     </Text>
+                  )}
+                </View>
 
-                    <TouchableOpacity
-                      className="w-[24px] h-[24px] rounded-[12px] bg-white items-center justify-center shadow-sm"
-                      onPress={() => inputRef.current?.focus()}
-                    >
-                      <Ionicons name="pencil" size={14} color="#E31837" />
-                    </TouchableOpacity>
-                  </View>
-                )}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (item.product.type === "unit") {
+                      updateItem(item.id, {
+                        quantity: (item.quantity || 0) + 1,
+                      });
+                    } else {
+                      updateItem(item.id, { weight: (item.weight || 0) + 100 });
+                    }
+                  }}
+                  className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
+                >
+                  <Ionicons name="add" size={16} color="#E31837" />
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity
                 onPress={() => removeItem(item.id)}
-                className="flex-row items-center gap-[4px] p-[6px]"
+                className="flex-row items-center p-[6px]"
               >
                 <Ionicons name="trash-outline" size={16} color="#999" />
-                <Text className="text-[12px] text-[#A0A0A0] font-semibold">
+                <Text className="text-[12px] text-[#A0A0A0] font-semibold ml-1">
                   Remover
                 </Text>
               </TouchableOpacity>
@@ -209,12 +190,11 @@ const CartItemComponent = ({
 
 // --- CART SCREEN ---
 export default function CartScreen() {
-  const { removeItem, updateItem, refreshCart, items, cart, loading } =
-    useCart();
+  const { removeItem, updateItem, refreshCart, items, loading } = useCart();
   const router = useRouter();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -222,22 +202,44 @@ export default function CartScreen() {
     }, []),
   );
 
+  const optimisticSubtotal = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const price =
+        item.product.type === "unit"
+          ? item.product.price || 0
+          : item.product.price_per_kg || 0;
+      const total =
+        item.product.type === "unit"
+          ? parseFloat(price.toString()) * (item.quantity || 0)
+          : (parseFloat(price.toString()) * (item.weight || 0)) / 1000;
+      return acc + total;
+    }, 0);
+  }, [items]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshCart();
     setRefreshing(false);
   };
 
-  const handleRemoveItem = async (id: string) => {
-    setIsCalculating(true);
-    await removeItem(id);
-    setIsCalculating(false);
+  // FUNÇÃO DE REMOÇÃO OTIMISTA
+  const handleRemoveItem = (id: string) => {
+    // 1. Feedback visual instantâneo
+    Toast.show({ type: "success", text1: "Produto removido!" });
+
+    // 2. Dispara a chamada sem travar a renderização com await aqui
+    // Nota: O ideal é que seu removeItem dentro do Context
+    // já remova o item do estado local antes do fetch terminar.
+    setIsSyncing(true);
+    removeItem(id).finally(() => setIsSyncing(false));
   };
 
-  const handleUpdateItem = async (id: string, data: any) => {
-    setIsCalculating(true);
-    await updateItem(id, data);
-    setIsCalculating(false);
+  // FUNÇÃO DE UPDATE OTIMISTA
+  const handleUpdateItem = (id: string, data: any) => {
+    // Aqui não usamos await para o toast ou para a mudança visual
+    // O valor do subtotal mudará assim que o 'items' no context mudar
+    setIsSyncing(true);
+    updateItem(id, data).finally(() => setIsSyncing(false));
   };
 
   function validateWeight(weight: number) {
@@ -249,12 +251,10 @@ export default function CartScreen() {
   }
 
   const showListSkeleton = (loading && items.length === 0) || refreshing;
-  const showPriceSkeleton = loading || refreshing || isCalculating;
+  const showInitialPriceSkeleton = loading && items.length === 0;
 
   const renderCartItem = ({ item }: any) => {
-    if (showListSkeleton) {
-      return <CartItemSkeleton />;
-    }
+    if (showListSkeleton) return <CartItemSkeleton />;
     return (
       <CartItemComponent
         item={item}
@@ -270,13 +270,9 @@ export default function CartScreen() {
       <View className="flex-1">
         <StatusBar barStyle="dark-content" />
 
-        {/* 1. Área da Lista que ocupa o espaço flexível */}
         <View className="flex-1 px-4">
           <View className="py-5 mb-2">
-            <Text
-              className="text-2xl font-extrabold text-[#111]"
-              style={{ letterSpacing: -0.5 }}
-            >
+            <Text className="text-2xl font-extrabold text-[#111]">
               Meu Carrinho
             </Text>
           </View>
@@ -288,30 +284,29 @@ export default function CartScreen() {
               showListSkeleton ? `skel-${index}` : item.id
             }
             showsVerticalScrollIndicator={false}
-            /* Aumentei o padding bottom para garantir que o último item não fique escondido sob o rodapé */
-            contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: 150, flexGrow: 1 }}
+            // Performance: Adicione esta linha para evitar gargalos em listas grandes
+            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={showListSkeleton ? ["transparent"] : ["#E31837"]}
-                tintColor={showListSkeleton ? "transparent" : "#E31837"}
+                colors={["#E31837"]}
               />
             }
             ListEmptyComponent={
-              showListSkeleton ? null : (
-                <View className="items-center mt-15 flex-1 justify-center">
+              !showListSkeleton ? (
+                <View className="items-center mt-20 flex-1 justify-center">
                   <Ionicons name="cart-outline" size={64} color="#DDD" />
                   <Text className="text-base text-[#BBB] mt-2">
                     Seu carrinho está vazio.
                   </Text>
                 </View>
-              )
+              ) : null
             }
           />
         </View>
 
-        {/* 2. Área do Rodapé: Fixa na base usando absolute position */}
         {items.length > 0 && !showListSkeleton && (
           <View
             className="absolute bottom-0 left-0 right-0 p-6 pt-6 bg-white rounded-t-[32px]"
@@ -320,21 +315,35 @@ export default function CartScreen() {
               shadowOffset: { width: 0, height: -10 },
               shadowOpacity: 0.08,
               shadowRadius: 15,
-              elevation: 20, // Aumentei a elevação no Android
+              elevation: 20,
             }}
           >
             <View className="flex-row justify-between items-center mb-5">
-              <Text className="text-[16px] font-bold text-[#666]">
-                Subtotal
-              </Text>
-              {showPriceSkeleton ? (
+              <View className="flex-row items-center">
+                <Text className="text-[16px] font-bold text-[#666]">
+                  Subtotal
+                </Text>
+                {/* Loader discreto apenas para indicar que está salvando no banco */}
+                {isSyncing && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#E31837"
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </View>
+
+              {showInitialPriceSkeleton ? (
                 <PriceSkeleton />
               ) : (
-                <Text className="text-[24px] font-extrabold text-[#E31837]">
+                <Text
+                  // Removido o opacity: 0.5 que dava sensação de lag
+                  className="text-[24px] font-extrabold text-[#E31837]"
+                >
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
-                  }).format(parseFloat(cart?.total_price || "0"))}
+                  }).format(optimisticSubtotal)}
                 </Text>
               )}
             </View>
@@ -343,7 +352,6 @@ export default function CartScreen() {
               className="bg-[#E31837] h-[56px] rounded-full items-center justify-center flex-row shadow-sm"
               activeOpacity={0.8}
               onPress={() => router.push("/checkout")}
-              disabled={showPriceSkeleton}
             >
               <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
                 Finalizar Compra

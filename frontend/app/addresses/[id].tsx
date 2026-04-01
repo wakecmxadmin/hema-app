@@ -12,7 +12,11 @@ import {
   Switch,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// 1. Importe o useSafeAreaInsets
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Toast } from "@/util/toast";
@@ -25,6 +29,9 @@ import {
 
 export default function AddressFormScreen() {
   const router = useRouter();
+  // 2. Inicialize o hook
+  const insets = useSafeAreaInsets();
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const isEditing = id && id !== "new";
 
@@ -32,7 +39,7 @@ export default function AddressFormScreen() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Form State
+  // Form State (Mantido igual)
   const [label, setLabel] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [street, setStreet] = useState("");
@@ -47,10 +54,10 @@ export default function AddressFormScreen() {
     if (isEditing) loadAddressData();
   }, [id]);
 
+  // ... (Funções loadAddressData, handleCepSearch e handleSave permanecem iguais)
   const loadAddressData = async () => {
     setLoading(true);
     const response = await getAddresses();
-
     if (response.success && response.data) {
       const addr = response.data.find((a: any) => a.id === id);
       if (addr) {
@@ -74,10 +81,8 @@ export default function AddressFormScreen() {
   const handleCepSearch = async () => {
     const cleanCep = zipCode.replace(/\D/g, "");
     if (cleanCep.length !== 8) return;
-
     setLoadingCep(true);
     const response = await getAddressByCep(cleanCep);
-
     if (response.success && response.data) {
       setStreet(response.data.street);
       setNeighborhood(response.data.neighborhood);
@@ -93,7 +98,6 @@ export default function AddressFormScreen() {
       Alert.alert("Atenção", "Preencha todos os campos obrigatórios (*).");
       return;
     }
-
     const executeSave = async () => {
       setSaving(true);
       const payload = {
@@ -107,11 +111,9 @@ export default function AddressFormScreen() {
         state,
         is_default: isDefault,
       };
-
       const response = isEditing
         ? await updateAddress(id as string, payload)
         : await createAddress(payload);
-
       if (response.success) {
         Toast.show({
           type: "success",
@@ -127,7 +129,6 @@ export default function AddressFormScreen() {
       }
       setSaving(false);
     };
-
     if (isDefault) {
       setSaving(true);
       const response = await getAddresses();
@@ -177,7 +178,7 @@ export default function AddressFormScreen() {
           </Text>
         </View>
 
-        <ScrollView contentContainerClassName="p-5 pb-[120px]">
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
           <Text className="text-[13px] font-bold text-[#9CA3AF] tracking-[1px] mb-3 mt-2">
             IDENTIFICAÇÃO DO LOCAL
           </Text>
@@ -190,6 +191,7 @@ export default function AddressFormScreen() {
             />
           </View>
 
+          {/* ... (Demais campos de input permanecem iguais) */}
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
@@ -319,13 +321,28 @@ export default function AddressFormScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6]">
+      {/* RODAPÉ COM AJUSTE DINÂMICO */}
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F3F4F6]"
+        style={{
+          paddingTop: 16,
+          paddingHorizontal: 16,
+          // 3. Ajuste fino do padding inferior baseado nos insets do sistema
+          paddingBottom:
+            Platform.OS === "android"
+              ? insets.bottom > 0
+                ? insets.bottom + 10
+                : 20
+              : insets.bottom || 20,
+        }}
+      >
         <TouchableOpacity
-          className={`h-[56px] rounded-xl items-center justify-center ${
+          className={`h-[56px] rounded-xl items-center justify-center shadow-sm ${
             saving ? "bg-[#FCA5A5]" : "bg-[#E31837]"
           }`}
           onPress={handleSave}
           disabled={saving}
+          activeOpacity={0.8}
         >
           {saving ? (
             <ActivityIndicator color="#fff" />

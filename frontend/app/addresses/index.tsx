@@ -10,7 +10,11 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// 1. Importe o useSafeAreaInsets
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Toast } from "@/util/toast";
@@ -19,21 +23,23 @@ import { getAddresses, deleteAddress } from "@/services/addresses";
 
 export default function AddressListScreen() {
   const router = useRouter();
+  // 2. Inicialize o hook dos insets
+  const insets = useSafeAreaInsets();
+
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // ... (Funções fetchAddresses, onRefresh e handleDelete permanecem iguais)
+
   const fetchAddresses = async (isInitial = false) => {
     if (isInitial) setLoading(true);
-
     const response = await getAddresses();
-
     if (response.success && response.data) {
       setAddresses(response.data);
     } else {
       setAddresses([]);
     }
-
     setLoading(false);
     setRefreshing(false);
   };
@@ -105,7 +111,6 @@ export default function AddressListScreen() {
             </View>
           )}
         </View>
-
         <Text className="text-[14px] text-[#374151] leading-[20px]">
           {item.street}, {item.number}
         </Text>
@@ -116,7 +121,6 @@ export default function AddressListScreen() {
           {item.zip_code}
         </Text>
       </View>
-
       <View className="justify-between items-end ml-3">
         <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-2">
           <MaterialCommunityIcons
@@ -154,7 +158,12 @@ export default function AddressListScreen() {
           data={addresses}
           keyExtractor={(item) => item.id}
           renderItem={renderAddressItem}
-          contentContainerClassName="p-4 pb-[100px]"
+          // 3. Aumentamos o paddingBottom para o último item não ficar atrás do botão
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom:
+              Platform.OS === "android" ? insets.bottom + 100 : 120,
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -177,11 +186,25 @@ export default function AddressListScreen() {
         />
       )}
 
-      {/* BOTÃO FLUTUANTE */}
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6]">
+      {/* BOTÃO FLUTUANTE COM AJUSTE PARA ANDROID */}
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F3F4F6]"
+        style={{
+          paddingTop: 16,
+          paddingHorizontal: 16,
+          // 4. Aplicamos o ajuste dinâmico no padding bottom
+          paddingBottom:
+            Platform.OS === "android"
+              ? insets.bottom > 0
+                ? insets.bottom + 10
+                : 20
+              : insets.bottom || 20,
+        }}
+      >
         <TouchableOpacity
-          className="flex-row bg-[#E31837] h-[56px] rounded-xl items-center justify-center gap-2"
+          className="flex-row bg-[#E31837] h-[56px] rounded-xl items-center justify-center gap-2 shadow-sm"
           onPress={() => router.push("/addresses/new")}
+          activeOpacity={0.8}
         >
           <Ionicons name="add" size={24} color="#fff" />
           <Text className="text-white text-[16px] font-bold">

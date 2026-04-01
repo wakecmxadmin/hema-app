@@ -494,7 +494,7 @@ export default function CheckoutScreen() {
               }`}
             >
               {deliveryMethod === "pickup"
-                ? "Grátis"
+                ? "Isento"
                 : currentDeliveryFee === -1
                   ? "Região não atendida"
                   : formatPrice(currentDeliveryFee)}

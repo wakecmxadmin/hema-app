@@ -12,6 +12,15 @@ interface ProductCardProps {
   isCarousel?: boolean;
 }
 
+const formatName = (name: string) => {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 export function ProductCard({
   product,
   onPress,
@@ -20,8 +29,12 @@ export function ProductCard({
 }: ProductCardProps) {
   const isKg =
     product.price_per_kg !== null && product.price_per_kg !== undefined;
-  const displayPrice = isKg ? product.price_per_kg : product.price;
-  const unitLabel = isKg ? " /kg" : " /un";
+
+  // AJUSTE AQUI: Se for KG, divide por 10 para mostrar o preço de 100g
+  const displayPrice = isKg ? (product.price_per_kg || 0) / 10 : product.price;
+
+  // AJUSTE AQUI: Muda o sufixo de /kg para /100g
+  const unitLabel = isKg ? " /100g" : " /un";
 
   const formattedPrice = displayPrice
     ? displayPrice.toLocaleString("pt-BR", {
@@ -37,7 +50,7 @@ export function ProductCard({
       onPress={onPress}
       activeOpacity={0.9}
     >
-      {/* IMAGEM OU PLACEHOLDER */}
+      {/* ... (resto do componente igual) ... */}
       <View className="h-[150px] w-full items-center justify-center border-b border-[#F0F0F0] bg-[#fff] p-[10px]">
         {product.image_url ? (
           <Image
@@ -62,14 +75,13 @@ export function ProductCard({
         )}
       </View>
 
-      {/* INFORMAÇÕES DO PRODUTO */}
       <View className="flex-1 justify-between p-[12px] pb-[8px]">
         <View>
           <Text
             className="mb-[6px] min-h-[36px] text-[13px] leading-[18px] font-[600] text-[#222222]"
             numberOfLines={2}
           >
-            {product.name}
+            {formatName(product.name)}
           </Text>
           <Text className="mb-[10px] text-[16px] font-[800] text-[#E31837]">
             {formattedPrice}

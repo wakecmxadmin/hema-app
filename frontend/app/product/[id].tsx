@@ -15,7 +15,6 @@ import {
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
 import { getProductById, getSimilarProducts } from "@/services/products";
-import { formatProductPrice } from "@/util/formatProductPrice";
 import { Toast } from "@/util/toast";
 import { ProductDetailsSkeleton } from "@/components/ProductDetailSkeleton";
 
@@ -30,9 +29,35 @@ export default function ProductDetailsScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // --- NOVA FUNÇÃO: Capitalizar primeira letra de cada palavra ---
+  const formatName = (name: string) => {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const formatDisplayPrice = (prod: Product) => {
+    const isWeighted = prod.type !== "unit";
+    const priceValue = isWeighted
+      ? (prod.price_per_kg || 0) / 10
+      : prod.price || 0;
+
+    const formatted = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(priceValue);
+
+    return {
+      price: formatted,
+      label: isWeighted ? " /100g" : " /un",
+    };
+  };
+
   async function fetchData() {
     if (!id) return;
-
     const [productRes, similarRes] = await Promise.all([
       getProductById(id as string),
       getSimilarProducts(id as string),
@@ -64,8 +89,14 @@ export default function ProductDetailsScreen() {
     setRefreshing(false);
   };
 
-  const headerPositionStyle = {
-    top: Platform.OS === "ios" ? 50 : 30,
+  const handleAddToCart = async () => {
+    if (!product) return;
+    const payload = {
+      product_id: product.id,
+      price: product.type === "unit" ? product.price : product.price_per_kg,
+      ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
+    };
+    await addItem(payload);
   };
 
   if (loading) {
@@ -73,7 +104,7 @@ export default function ProductDetailsScreen() {
       <View className="flex-1 bg-white">
         <TouchableOpacity
           className="absolute left-4 z-10 bg-white rounded-[20px] p-2"
-          style={headerPositionStyle}
+          style={{ top: Platform.OS === "ios" ? 50 : 30 }}
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -83,55 +114,33 @@ export default function ProductDetailsScreen() {
     );
   }
 
-  if (!product) {
-    return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <Text className="text-[#333]">Produto não encontrado.</Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-5">
-          <Text className="text-[#E31837] font-bold">Voltar</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  if (!product) return null;
 
-  const handleAddToCart = async () => {
-    if (!product) return;
-
-    const payload = {
-      product_id: product.id,
-      price: product.type === "unit" ? product.price : product.price_per_kg,
-      ...(product.type === "unit" ? { quantity: 1 } : { weight: 50 }),
-    };
-
-    await addItem(payload);
-  };
+  const mainPriceInfo = formatDisplayPrice(product);
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
 
-      {/* Botão de Voltar Flutuante sobre a Imagem */}
       <TouchableOpacity
         className="absolute left-4 z-10 bg-white/80 rounded-[20px] p-2"
-        style={headerPositionStyle}
+        style={{ top: Platform.OS === "ios" ? 50 : 30 }}
         onPress={() => router.back()}
       >
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
 
       <ScrollView
-        contentContainerClassName="pb-[100px]"
+        contentContainerClassName="pb-[120px]" // Aumentado para não cobrir o conteúdo final
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={["#E31837"]}
-            tintColor="#E31837"
           />
         }
       >
-        {/* IMAGEM DO PRODUTO */}
         <View className="w-full aspect-square bg-white justify-center items-center pt-[70px]">
           {product.image_url ? (
             <Image
@@ -144,39 +153,38 @@ export default function ProductDetailsScreen() {
           )}
         </View>
 
-        {/* DETALHES */}
         <View className="p-5">
           <Text className="text-[#E31837] text-[12px] font-bold uppercase mb-2">
             Produto
           </Text>
+
+          {/* NOME FORMATADO */}
           <Text className="text-[22px] font-bold text-[#1A1A1A] mb-3">
-            {product.name}
+            {formatName(product.name)}
           </Text>
 
           <View className="flex-row items-baseline mb-6">
             <Text className="text-[28px] font-bold text-[#E31837]">
-              {formatProductPrice(product)}
+              {mainPriceInfo.price}
+            </Text>
+            <Text className="text-[16px] font-bold text-[#888] ml-1">
+              {mainPriceInfo.label}
             </Text>
           </View>
 
           <View className="h-[1px] bg-[#EAEAEA] my-5" />
-
           <Text className="text-[16px] font-bold text-[#333] mb-2.5">
             Descrição
           </Text>
-
           <Text
             className="text-[14px] leading-[20px] text-[#666] mb-1"
             numberOfLines={showFullDescription ? undefined : 3}
           >
-            {product.description ||
-              "Nenhuma descrição disponível para este produto."}
+            {product.description || "Nenhuma descrição disponível."}
           </Text>
-
           {product.description && (
             <TouchableOpacity
               onPress={() => setShowFullDescription(!showFullDescription)}
-              className="py-1"
             >
               <Text className="text-[#E31837] font-bold text-[14px]">
                 {showFullDescription ? "Ler menos" : "Ler mais..."}
@@ -185,42 +193,55 @@ export default function ProductDetailsScreen() {
           )}
         </View>
 
-        {/* PRODUTOS SIMILARES */}
         {similarProducts.length > 0 && (
           <View className="m-5">
             <Text className="text-[16px] font-bold mb-2.5">
               Produtos similares
             </Text>
-
-            {similarProducts.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => router.push(`/product/${item.id}`)}
-                className="flex-row mb-3"
-              >
-                <Image
-                  source={{ uri: item.image_url }}
-                  className="w-[60px] h-[60px] rounded-lg"
-                />
-                <View className="ml-2.5 flex-1">
-                  <Text numberOfLines={2}>{item.name}</Text>
-                  <Text className="font-bold">{formatProductPrice(item)}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {similarProducts.map((item) => {
+              const similarPriceInfo = formatDisplayPrice(item);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => router.push(`/product/${item.id}`)}
+                  className="flex-row mb-4 items-center"
+                >
+                  <Image
+                    source={{ uri: item.image_url }}
+                    className="w-[60px] h-[60px] rounded-lg"
+                  />
+                  <View className="ml-3 flex-1">
+                    {/* NOME FORMATADO NOS SIMILARES TAMBÉM */}
+                    <Text numberOfLines={1} className="text-[#333] font-medium">
+                      {formatName(item.name)}
+                    </Text>
+                    <Text className="font-bold text-[#E31837]">
+                      {similarPriceInfo.price}
+                      <Text className="text-[11px] text-[#888]">
+                        {" "}
+                        {similarPriceInfo.label}
+                      </Text>
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
 
-      {/* RODAPÉ FIXO */}
+      {/* RODAPÉ COM AJUSTE PARA ANDROID */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA] flex-row gap-[15px]"
-        style={{ paddingBottom: Platform.OS === "ios" ? 30 : 16 }}
+        className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA]"
+        style={{
+          // Aumentamos o padding para 32 no Android para subir o botão
+          paddingBottom: Platform.OS === "ios" ? 30 : 50,
+        }}
       >
         <TouchableOpacity
-          className="flex-1 bg-[#E31837] h-[50px] rounded-lg justify-center items-center"
-          activeOpacity={0.8}
+          className="bg-[#E31837] h-[50px] rounded-lg justify-center items-center shadow-sm"
           onPress={handleAddToCart}
+          activeOpacity={0.8}
         >
           <Text className="text-white text-[16px] font-bold">
             ADICIONAR AO CARRINHO

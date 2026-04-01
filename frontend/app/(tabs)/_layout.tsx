@@ -1,8 +1,9 @@
 import React from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
 import { useCart } from "@/context/CartContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BRAND_COLORS = {
   primary: "#E31837",
@@ -67,6 +68,7 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -77,12 +79,35 @@ export default function TabLayout() {
           backgroundColor: BRAND_COLORS.background,
           borderTopWidth: 1,
           borderTopColor: BRAND_COLORS.border,
-          minHeight: 65,
+
+          // --- AJUSTE DINÂMICO PARA ANDROID E IOS ---
+          // A altura deve ser uma base fixa + o tamanho da barra do sistema (insets.bottom)
+          height:
+            Platform.OS === "android"
+              ? 60 + insets.bottom // No Android, se houver botões, insets.bottom será ~48
+              : 85, // No iOS o Safe Area já costuma ser bem tratado
+
           paddingTop: 10,
+
+          // O preenchimento inferior agora é exatamente o espaço da barra do sistema + um respiro
+          paddingBottom:
+            Platform.OS === "android"
+              ? insets.bottom > 0
+                ? insets.bottom
+                : 10
+              : insets.bottom,
+
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "500",
+          // Ajuste fino para o texto não sumir
+          marginBottom: Platform.OS === "android" ? 8 : 0,
         },
       }}
     >
