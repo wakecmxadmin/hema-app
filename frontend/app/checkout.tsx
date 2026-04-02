@@ -198,7 +198,7 @@ export default function CheckoutScreen() {
   if (loading && items.length === 0) {
     return (
       <View className="flex-1 bg-[#F8F8F8] pt-10 justify-center items-center">
-        <ActivityIndicator size="large" color="#E31837" />
+        <ActivityIndicator size="large" color="#E30613" />
         <Text className="mt-2.5 text-[#666]">
           Carregando dados do pedido...
         </Text>
@@ -220,8 +220,8 @@ export default function CheckoutScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E31837"]}
-            tintColor="#E31837"
+            colors={["#E30613"]}
+            tintColor="#E30613"
           />
         }
       >
@@ -234,7 +234,7 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
                 deliveryMethod === "delivery"
-                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  ? "border-[#E30613] bg-[#FFF5F5]"
                   : "border-[#EAEAEA] bg-[#FAFAFA]"
               }`}
               onPress={() => setDeliveryMethod("delivery")}
@@ -242,12 +242,12 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="bike"
                 size={28}
-                color={deliveryMethod === "delivery" ? "#E31837" : "#999"}
+                color={deliveryMethod === "delivery" ? "#E30613" : "#999"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
                   deliveryMethod === "delivery"
-                    ? "text-[#E31837]"
+                    ? "text-[#E30613]"
                     : "text-[#666]"
                 }`}
               >
@@ -258,7 +258,7 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
                 deliveryMethod === "pickup"
-                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  ? "border-[#E30613] bg-[#FFF5F5]"
                   : "border-[#EAEAEA] bg-[#FAFAFA]"
               }`}
               onPress={() => setDeliveryMethod("pickup")}
@@ -266,11 +266,11 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="storefront-outline"
                 size={28}
-                color={deliveryMethod === "pickup" ? "#E31837" : "#999"}
+                color={deliveryMethod === "pickup" ? "#E30613" : "#999"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
-                  deliveryMethod === "pickup" ? "text-[#E31837]" : "text-[#666]"
+                  deliveryMethod === "pickup" ? "text-[#E30613]" : "text-[#666]"
                 }`}
               >
                 Retirar na Loja
@@ -285,7 +285,7 @@ export default function CheckoutScreen() {
                 <MaterialCommunityIcons
                   name="map-marker-radius"
                   size={24}
-                  color="#E31837"
+                  color="#E30613"
                 />
                 <View className="ml-2.5 flex-1">
                   <Text className="text-sm font-bold text-[#333] mb-1">
@@ -319,7 +319,7 @@ export default function CheckoutScreen() {
                     <MaterialCommunityIcons
                       name="plus-circle"
                       size={24}
-                      color="#E31837"
+                      color="#E30613"
                     />
                   </TouchableOpacity>
                 </View>
@@ -327,7 +327,7 @@ export default function CheckoutScreen() {
                 {loadingAddresses ? (
                   <ActivityIndicator
                     size="small"
-                    color="#E31837"
+                    color="#E30613"
                     style={{ marginVertical: 20 }}
                   />
                 ) : addresses.length === 0 ? (
@@ -340,7 +340,7 @@ export default function CheckoutScreen() {
                       key={address.id}
                       className={`flex-row items-center py-3 px-2.5 border rounded-lg mb-2 ${
                         selectedAddressId === address.id
-                          ? "border-[#E31837] bg-[#FFF5F5]"
+                          ? "border-[#E30613] bg-[#FFF5F5]"
                           : "border-[#EAEAEA]"
                       }`}
                       onPress={() => setSelectedAddressId(address.id)}
@@ -353,7 +353,7 @@ export default function CheckoutScreen() {
                         }
                         size={20}
                         color={
-                          selectedAddressId === address.id ? "#E31837" : "#999"
+                          selectedAddressId === address.id ? "#E30613" : "#999"
                         }
                       />
                       <View className="ml-3 flex-1">
@@ -375,9 +375,9 @@ export default function CheckoutScreen() {
                               <MaterialCommunityIcons
                                 name="star"
                                 size={12}
-                                color="#E31837"
+                                color="#E30613"
                               />
-                              <Text className="text-[10px] text-[#E31837] font-bold ml-0.5">
+                              <Text className="text-[10px] text-[#E30613] font-bold ml-0.5">
                                 Favorito
                               </Text>
                             </View>
@@ -406,7 +406,7 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
                 paymentMethod === "pix"
-                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  ? "border-[#E30613] bg-[#FFF5F5]"
                   : "border-[#EAEAEA] bg-[#FAFAFA]"
               }`}
               onPress={() => setPaymentMethod("pix")}
@@ -414,11 +414,11 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="qrcode"
                 size={24}
-                color={paymentMethod === "pix" ? "#E31837" : "#999"}
+                color={paymentMethod === "pix" ? "#E30613" : "#999"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
-                  paymentMethod === "pix" ? "text-[#E31837]" : "text-[#666]"
+                  paymentMethod === "pix" ? "text-[#E30613]" : "text-[#666]"
                 }`}
               >
                 PIX
@@ -428,7 +428,7 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
                 paymentMethod === "credit_card"
-                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  ? "border-[#E30613] bg-[#FFF5F5]"
                   : "border-[#EAEAEA] bg-[#FAFAFA]"
               }`}
               onPress={() => setPaymentMethod("credit_card")}
@@ -436,12 +436,12 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="credit-card-outline"
                 size={24}
-                color={paymentMethod === "credit_card" ? "#E31837" : "#999"}
+                color={paymentMethod === "credit_card" ? "#E30613" : "#999"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
                   paymentMethod === "credit_card"
-                    ? "text-[#E31837]"
+                    ? "text-[#E30613]"
                     : "text-[#666]"
                 }`}
               >
@@ -452,7 +452,7 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
                 paymentMethod === "cash"
-                  ? "border-[#E31837] bg-[#FFF5F5]"
+                  ? "border-[#E30613] bg-[#FFF5F5]"
                   : "border-[#EAEAEA] bg-[#FAFAFA]"
               }`}
               onPress={() => setPaymentMethod("cash")}
@@ -460,11 +460,11 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="cash"
                 size={24}
-                color={paymentMethod === "cash" ? "#E31837" : "#999"}
+                color={paymentMethod === "cash" ? "#E30613" : "#999"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
-                  paymentMethod === "cash" ? "text-[#E31837]" : "text-[#666]"
+                  paymentMethod === "cash" ? "text-[#E30613]" : "text-[#666]"
                 }`}
               >
                 Dinheiro
@@ -490,7 +490,7 @@ export default function CheckoutScreen() {
             <Text className="text-sm text-[#666]">Taxa de Entrega</Text>
             <Text
               className={`text-sm font-medium ${
-                currentDeliveryFee === -1 ? "text-[#E31837]" : "text-[#333]"
+                currentDeliveryFee === -1 ? "text-[#E30613]" : "text-[#333]"
               }`}
             >
               {deliveryMethod === "pickup"
@@ -503,7 +503,7 @@ export default function CheckoutScreen() {
 
           <View className="flex-row justify-between mt-2.5 pt-2.5 border-t border-[#EAEAEA]">
             <Text className="text-base font-bold text-[#1A1A1A]">Total</Text>
-            <Text className="text-lg font-bold text-[#E31837]">
+            <Text className="text-lg font-bold text-[#E30613]">
               {formatPrice(total)}
             </Text>
           </View>
@@ -524,7 +524,7 @@ export default function CheckoutScreen() {
         }}
       >
         <TouchableOpacity
-          className={`bg-[#E31837] h-[50px] rounded-md justify-center items-center mb-2.5 ${
+          className={`bg-[#E30613] h-[50px] rounded-md justify-center items-center mb-2.5 ${
             (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
           }`}
           activeOpacity={0.8}
@@ -574,7 +574,7 @@ export default function CheckoutScreen() {
               Recebemos seu pedido e já vamos começar a preparar.
             </Text>
             <TouchableOpacity
-              className="bg-[#E31837] py-3.5 px-6 rounded-lg w-full items-center"
+              className="bg-[#E30613] py-3.5 px-6 rounded-lg w-full items-center"
               onPress={() => {
                 setShowSuccessModal(false);
                 refreshCart();

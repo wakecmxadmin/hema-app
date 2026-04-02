@@ -19,8 +19,6 @@ export class PaymentsService {
   ): Promise<ProcessPaymentResult> {
     const { payment_method, total_price, order_id } = input;
 
-    // TODO: Instanciar o cliente do Mercado Pago aqui no futuro
-
     switch (payment_method) {
       case 'cash':
         console.log(`[PAYMENT] Order ${order_id} → Dinheiro → fluxo offline`);
@@ -35,10 +33,10 @@ export class PaymentsService {
         );
         return {
           orderStatus: 'waiting_payment',
-          paymentStatus: 'pending', // No futuro, o MP devolve um ID de transação e o payload do QRCode aqui
+          paymentStatus: 'pending', 
         };
 
-      case 'credit_card': // Padronizado com o DTO de Orders
+      case 'credit_card':
         console.log(
           `[PAYMENT] Order ${order_id} → Cartão → processar Token via MP`,
         );

@@ -9,8 +9,6 @@ import {
 import { useRouter } from "expo-router";
 import { CategoryBadgesService } from "@/services/category";
 
-const categoryOrder = ["Whey", "Creatina", "Snacks e Barras", "Pré-Treinos"];
-
 export function CategoryCarousel() {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
@@ -23,17 +21,7 @@ export function CategoryCarousel() {
       const response = await CategoryBadgesService.getCategories();
 
       if (response.success && response.data) {
-        const sortedData = [...response.data].sort((a, b) => {
-          const indexA = categoryOrder.indexOf(a.name);
-          const indexB = categoryOrder.indexOf(b.name);
-
-          if (indexA === -1) return 1;
-          if (indexB === -1) return -1;
-
-          return indexA - indexB;
-        });
-
-        setCategories(sortedData);
+        setCategories(response.data);
       } else {
         console.log(
           "Erro ao carregar categorias no carrossel:",
@@ -49,8 +37,8 @@ export function CategoryCarousel() {
 
   if (loading) {
     return (
-      <View className="h-[40px] items-center justify-center">
-        <ActivityIndicator size="small" color="#E31837" />
+      <View style={{ height: 52, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="small" color="#E30613" />
       </View>
     );
   }
@@ -58,25 +46,40 @@ export function CategoryCarousel() {
   if (categories.length === 0) return null;
 
   return (
-    <View className="my-[5px] mb-0 py-[10px]">
+    <View style={{ paddingVertical: 12 }}>
       <FlatList
         data={categories}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            className="rounded-[25px] bg-[#E31837] px-[20px] py-[10px] shadow-[0_2px_3px_rgba(227,24,55,0.2)]"
-            style={{ elevation: 4 }}
+            activeOpacity={0.72}
             onPress={() =>
               router.push({
                 pathname: "/category/[id]",
                 params: { id: item.id, name: item.name },
               })
             }
+            style={{
+              backgroundColor: "#F5F5F5",
+              borderRadius: 22,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderWidth: 1,
+              borderColor: "#EBEBEB",
+            }}
           >
-            <Text className="text-[14px] font-[700] capitalize text-[#FFFFFF]">{item.name}</Text>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: "#333333",
+              }}
+            >
+              {item.name}
+            </Text>
           </TouchableOpacity>
         )}
       />

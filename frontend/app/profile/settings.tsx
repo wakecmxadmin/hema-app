@@ -7,6 +7,8 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -14,6 +16,77 @@ import { useRouter } from "expo-router";
 import { Toast } from "@/util/toast";
 import { getCurrentUser } from "@/services/auth";
 import { updateProfile, deleteAccount } from "@/services/profile";
+
+// ─── Toggle row ───────────────────────────────────────────────────────────────
+
+interface ToggleRowProps {
+  icon: string;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  isLast?: boolean;
+}
+
+function ToggleRow({
+  icon,
+  iconBg,
+  iconColor,
+  title,
+  subtitle,
+  value,
+  onChange,
+  isLast = false,
+}: ToggleRowProps) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: "#F5F5F5",
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          backgroundColor: iconBg,
+          alignItems: "center",
+          justifyContent: "center",
+          marginRight: 14,
+          flexShrink: 0,
+        }}
+      >
+        <MaterialCommunityIcons name={icon as any} size={20} color={iconColor} />
+      </View>
+
+      <View style={{ flex: 1, marginRight: 12 }}>
+        <Text style={{ fontSize: 14, fontWeight: "600", color: "#1A1A1A", marginBottom: 2 }}>
+          {title}
+        </Text>
+        <Text style={{ fontSize: 12, color: "#AAAAAA", lineHeight: 17 }}>
+          {subtitle}
+        </Text>
+      </View>
+
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ true: "#E30613", false: "#E0E0E0" }}
+        thumbColor={Platform.OS === "android" ? (value ? "#FFF" : "#FFF") : undefined}
+        ios_backgroundColor="#E0E0E0"
+      />
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -27,16 +100,13 @@ export default function SettingsScreen() {
   useEffect(() => {
     async function loadSettings() {
       const response = await getCurrentUser();
-
       if (response.success && response.data) {
-        const user = response.data;
-        const userSettings = user.user_metadata?.settings;
+        const userSettings = response.data.user_metadata?.settings;
         if (userSettings) {
           setNotifications(userSettings.notifications ?? true);
           setPromotions(userSettings.promotions ?? false);
         }
       }
-
       setLoading(false);
     }
     loadSettings();
@@ -44,22 +114,11 @@ export default function SettingsScreen() {
 
   const handleSaveSettings = async () => {
     setSaving(true);
-
-    const response = await updateProfile({
-      settings: {
-        notifications,
-        promotions,
-      },
-    });
-
+    const response = await updateProfile({ settings: { notifications, promotions } });
     if (response.success) {
       Toast.show({ type: "success", text1: "Configurações salvas!" });
     } else {
-      Toast.show({
-        type: "error",
-        text1: "Erro ao salvar",
-        text2: response.message,
-      });
+      Toast.show({ type: "error", text1: "Erro ao salvar", text2: response.message });
     }
     setSaving(false);
   };
@@ -75,10 +134,8 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             const response = await deleteAccount();
-
             if (response.success) {
               Toast.show({ type: "success", text1: "Conta removida." });
-              // A navegação será tratada pelo AuthGuard, mas forçamos aqui para garantir
               router.replace("/auth");
             } else {
               Toast.show({
@@ -95,87 +152,213 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#E31837" />
+      <View style={{ flex: 1, backgroundColor: "#F7F7F8", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#E30613" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      {/* CABEÇALHO */}
-      <View className="flex-row items-center justify-between p-4 bg-white border-b border-[#EEE]">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F8" }} edges={["top", "bottom"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: "#F7F7F8",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: "#EBEBEB",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-[#1A1A1A]">Configurações</Text>
-        <View className="w-10" />
+
+        <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1A1A" }}>
+          Configurações
+        </Text>
+
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView className="flex-1 p-5">
-        <Text className="text-sm font-bold text-[#666] mb-2.5 uppercase">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Notificações */}
+        <Text
+          style={{
+            fontSize: 11,
+            fontWeight: "700",
+            color: "#AAAAAA",
+            textTransform: "uppercase",
+            letterSpacing: 0.8,
+            marginBottom: 8,
+            paddingHorizontal: 4,
+          }}
+        >
           Notificações
         </Text>
-        <View className="bg-white rounded-xl px-4 mb-6 border border-[#EEE]">
-          <View className="flex-row justify-between items-center py-4 border-b border-[#F5F5F5]">
-            <Text className="text-base text-[#333]">
-              Atualizações do Pedido
-            </Text>
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ true: "#E31837", false: "#DDD" }}
-            />
-          </View>
-          <View className="flex-row justify-between items-center py-4">
-            <Text className="text-base text-[#333]">Promoções e Ofertas</Text>
-            <Switch
-              value={promotions}
-              onValueChange={setPromotions}
-              trackColor={{ true: "#E31837", false: "#DDD" }}
-            />
-          </View>
+
+        <View
+          style={{
+            backgroundColor: "#FFF",
+            borderRadius: 20,
+            overflow: "hidden",
+            marginBottom: 20,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
+          <ToggleRow
+            icon="bell-ring-outline"
+            iconBg="#EFF6FF"
+            iconColor="#3B82F6"
+            title="Atualizações do Pedido"
+            subtitle="Receba alertas sobre o status dos seus pedidos"
+            value={notifications}
+            onChange={setNotifications}
+          />
+          <ToggleRow
+            icon="tag-outline"
+            iconBg="#FFF7ED"
+            iconColor="#F97316"
+            title="Promoções e Ofertas"
+            subtitle="Fique por dentro das melhores ofertas"
+            value={promotions}
+            onChange={setPromotions}
+            isLast
+          />
         </View>
 
-        <Text className="text-sm font-bold text-[#666] mb-2.5 uppercase">
+        {/* Privacidade */}
+        <Text
+          style={{
+            fontSize: 11,
+            fontWeight: "700",
+            color: "#AAAAAA",
+            textTransform: "uppercase",
+            letterSpacing: 0.8,
+            marginBottom: 8,
+            paddingHorizontal: 4,
+          }}
+        >
           Privacidade e Conta
         </Text>
-        <View className="bg-white rounded-xl px-4 mb-6 border border-[#EEE]">
+
+        <View
+          style={{
+            backgroundColor: "#FFF",
+            borderRadius: 20,
+            overflow: "hidden",
+            marginBottom: 24,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
           <TouchableOpacity
-            className="flex-row justify-between items-center py-4"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+            }}
             onPress={handleDeleteAccount}
+            activeOpacity={0.7}
           >
-            <Text className="text-base text-[#E31837] font-semibold">
-              Excluir minha conta
-            </Text>
-            <MaterialCommunityIcons
-              name="delete-outline"
-              size={20}
-              color="#E31837"
-            />
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: "#FEF2F2",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 14,
+                flexShrink: 0,
+              }}
+            >
+              <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#EF4444", marginBottom: 2 }}>
+                Excluir minha conta
+              </Text>
+              <Text style={{ fontSize: 12, color: "#AAAAAA", lineHeight: 17 }}>
+                Remove todos os dados permanentemente
+              </Text>
+            </View>
+
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#CCCCCC" />
           </TouchableOpacity>
         </View>
 
-        <Text className="text-center text-[#999] mt-10">
-          Versão do Aplicativo: 1.0.2 (Beta)
+        {/* App version */}
+        <Text
+          style={{
+            textAlign: "center",
+            fontSize: 12,
+            color: "#CCCCCC",
+            marginTop: 4,
+          }}
+        >
+          Versão 1.0.2 (Beta)
         </Text>
       </ScrollView>
 
-      {/* RODAPÉ */}
-      <View className="p-5 border-t border-[#EEE]">
+      {/* Footer */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          backgroundColor: "#F7F7F8",
+        }}
+      >
         <TouchableOpacity
-          className={`bg-[#E31837] p-4 rounded-lg items-center ${
-            saving ? "opacity-70" : ""
-          }`}
+          style={{
+            backgroundColor: saving ? "#F0A0A6" : "#E30613",
+            height: 56,
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 8,
+          }}
           onPress={handleSaveSettings}
           disabled={saving}
+          activeOpacity={0.85}
         >
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text className="text-white text-base font-bold">
-              Salvar Preferências
-            </Text>
+            <>
+              <MaterialCommunityIcons name="check" size={20} color="#FFF" />
+              <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+                Salvar Preferências
+              </Text>
+            </>
           )}
         </TouchableOpacity>
       </View>

@@ -107,7 +107,7 @@ export default function CategoryScreen() {
     return (
       <View className="py-5 items-center">
         {loadingMore ? (
-          <ActivityIndicator size="small" color="#E31837" />
+          <ActivityIndicator size="small" color="#E30613" />
         ) : (
           hasMore &&
           products.length > 0 && (
@@ -115,7 +115,7 @@ export default function CategoryScreen() {
               onPress={loadMoreProducts}
               className="bg-[#F5F5F5] py-3 px-6 rounded-lg border border-[#EAEAEA]"
             >
-              <Text className="text-[#E31837] font-semibold text-[14px]">
+              <Text className="text-[#E30613] font-semibold text-[14px]">
                 Mostrar Mais
               </Text>
             </TouchableOpacity>
@@ -186,8 +186,8 @@ export default function CategoryScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#E31837"]}
-              tintColor="#E31837"
+              colors={["#E30613"]}
+              tintColor="#E30613"
             />
           }
           renderItem={({ item }) => (

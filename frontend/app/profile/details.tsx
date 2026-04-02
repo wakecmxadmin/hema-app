@@ -17,6 +17,93 @@ import { Toast } from "@/util/toast";
 import { getCurrentUser } from "@/services/auth";
 import { updateProfile, getProfileData } from "@/services/profile";
 
+// ─── Shared field component ───────────────────────────────────────────────────
+
+interface FieldProps {
+  label: string;
+  icon: string;
+  value: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  keyboardType?: any;
+  maxLength?: number;
+  disabled?: boolean;
+  editable?: boolean;
+}
+
+function Field({
+  label,
+  icon,
+  value,
+  onChange,
+  placeholder,
+  keyboardType = "default",
+  maxLength,
+  disabled = false,
+  editable = true,
+}: FieldProps) {
+  const isReadOnly = disabled || !editable;
+
+  return (
+    <View style={{ marginBottom: 4 }}>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          color: "#AAAAAA",
+          textTransform: "uppercase",
+          letterSpacing: 0.8,
+          marginBottom: 8,
+          paddingHorizontal: 4,
+        }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: isReadOnly ? "#F0F0F0" : "#F5F5F5",
+          borderRadius: 14,
+          paddingHorizontal: 16,
+          height: 54,
+          borderWidth: 1.5,
+          borderColor: isReadOnly ? "#EBEBEB" : "transparent",
+        }}
+      >
+        <MaterialCommunityIcons
+          name={icon as any}
+          size={20}
+          color={isReadOnly ? "#CCCCCC" : "#AAAAAA"}
+          style={{ marginRight: 12 }}
+        />
+        <TextInput
+          style={{
+            flex: 1,
+            fontSize: 15,
+            color: isReadOnly ? "#AAAAAA" : "#1A1A1A",
+            fontWeight: isReadOnly ? "500" : "600",
+          }}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor="#CCCCCC"
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          editable={!isReadOnly}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        {isReadOnly && (
+          <MaterialCommunityIcons name="lock-outline" size={16} color="#CCCCCC" />
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function PersonalDetailsScreen() {
   const router = useRouter();
 
@@ -36,7 +123,6 @@ export default function PersonalDetailsScreen() {
       }
 
       const profileResponse = await getProfileData();
-
       if (profileResponse.success && profileResponse.data) {
         setName(profileResponse.data.name || "");
         setPhone(profileResponse.data.phone || "");
@@ -66,11 +152,7 @@ export default function PersonalDetailsScreen() {
 
     setSaving(true);
 
-    const response = await updateProfile({
-      name,
-      phone,
-      cpf,
-    });
+    const response = await updateProfile({ name, phone, cpf });
 
     if (response.success) {
       try {
@@ -78,116 +160,166 @@ export default function PersonalDetailsScreen() {
       } catch (e) {
         console.error("Erro ao salvar no AsyncStorage", e);
       }
-
-      Toast.show({
-        type: "success",
-        text1: "Sucesso!",
-        text2: response.message,
-      });
-
+      Toast.show({ type: "success", text1: "Sucesso!", text2: response.message });
       setTimeout(() => router.back(), 1500);
     } else {
-      Toast.show({
-        type: "error",
-        text1: "Erro ao salvar",
-        text2: response.message,
-      });
+      Toast.show({ type: "error", text1: "Erro ao salvar", text2: response.message });
       setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#E31837" />
+      <View style={{ flex: 1, backgroundColor: "#F7F7F8", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#E30613" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F8" }} edges={["top", "bottom"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
 
-      {/* CABEÇALHO */}
-      <View className="flex-row items-center justify-between p-4 bg-white border-b border-[#EEE]">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: "#F7F7F8",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: "#EBEBEB",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-[#1A1A1A]">Meus Dados</Text>
-        <View className="w-10" />
+
+        <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1A1A" }}>
+          Meus Dados
+        </Text>
+
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
-        className="flex-grow p-5"
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
-        <View className="mb-5">
-          <Text className="text-sm font-semibold text-[#333] mb-2">
-            Nome Completo
-          </Text>
-          <TextInput
-            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
+        {/* Form card */}
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 20,
+            padding: 20,
+            gap: 16,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
+          <Field
+            label="Nome Completo"
+            icon="account-outline"
             value={name}
-            onChangeText={setName}
-            autoCorrect={false}
+            onChange={setName}
             placeholder="Digite seu nome"
             editable={!saving}
           />
-        </View>
 
-        <View className="mb-5">
-          <Text className="text-sm font-semibold text-[#333] mb-2">E-mail</Text>
-          <TextInput
-            className="border border-[#DDD] rounded-lg p-[14px] text-base bg-[#F5F5F5] text-[#888]"
+          <Field
+            label="E-mail"
+            icon="email-outline"
             value={email}
-            editable={false}
+            disabled
           />
-        </View>
 
-        <View className="mb-5">
-          <Text className="text-sm font-semibold text-[#333] mb-2">
-            Celular
-          </Text>
-          <TextInput
-            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
+          <Field
+            label="Celular"
+            icon="phone-outline"
+            value={phone}
+            onChange={setPhone}
             placeholder="(00) 00000-0000"
             keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
             editable={!saving}
           />
-        </View>
 
-        <View className="mb-5">
-          <Text className="text-sm font-semibold text-[#333] mb-2">CPF</Text>
-          <TextInput
-            className="border border-[#DDD] rounded-lg p-[14px] text-base text-[#1A1A1A]"
+          <Field
+            label="CPF"
+            icon="card-account-details-outline"
+            value={cpf}
+            onChange={setCpf}
             placeholder="000.000.000-00"
             keyboardType="numeric"
-            value={cpf}
-            onChangeText={setCpf}
             maxLength={14}
             editable={!saving}
           />
         </View>
+
+        {/* Info note */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 16,
+            paddingHorizontal: 4,
+          }}
+        >
+          <MaterialCommunityIcons name="information-outline" size={15} color="#BBBBBB" />
+          <Text style={{ fontSize: 12, color: "#BBBBBB", flex: 1, lineHeight: 17 }}>
+            O e-mail não pode ser alterado. Entre em contato com o suporte se necessário.
+          </Text>
+        </View>
       </ScrollView>
 
-      {/* RODAPÉ */}
-      <View className="p-5 border-t border-[#EEE]">
+      {/* Footer */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          backgroundColor: "#F7F7F8",
+        }}
+      >
         <TouchableOpacity
-          className={`bg-[#E31837] p-4 rounded-lg items-center ${
-            saving ? "opacity-70" : ""
-          }`}
+          style={{
+            backgroundColor: saving ? "#F0A0A6" : "#E30613",
+            height: 56,
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 8,
+          }}
           onPress={handleSave}
           disabled={saving}
+          activeOpacity={0.85}
         >
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text className="text-white text-base font-bold">
-              Salvar Alterações
-            </Text>
+            <>
+              <MaterialCommunityIcons name="check" size={20} color="#FFF" />
+              <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+                Salvar Alterações
+              </Text>
+            </>
           )}
         </TouchableOpacity>
       </View>

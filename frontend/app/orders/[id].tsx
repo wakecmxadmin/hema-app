@@ -103,7 +103,7 @@ export default function OrderDetailsScreen() {
       case "pending":
         return { label: "Pendente", color: "#FFA000", bg: "#FFF8E1" };
       case "cancelled":
-        return { label: "Cancelado", color: "#E31837", bg: "#FDEDED" };
+        return { label: "Cancelado", color: "#E30613", bg: "#FDEDED" };
       default:
         return { label: status, color: "#666", bg: "#F5F5F5" };
     }
@@ -112,7 +112,7 @@ export default function OrderDetailsScreen() {
   if (loading || !order) {
     return (
       <View className="flex-1 bg-[#F5F5F5] justify-center items-center">
-        <ActivityIndicator size="large" color="#E31837" />
+        <ActivityIndicator size="large" color="#E30613" />
       </View>
     );
   }
@@ -155,8 +155,8 @@ export default function OrderDetailsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E31837"]}
-            tintColor="#E31837"
+            colors={["#E30613"]}
+            tintColor="#E30613"
           />
         }
       >
@@ -216,7 +216,7 @@ export default function OrderDetailsScreen() {
               <MaterialCommunityIcons
                 name="storefront"
                 size={24}
-                color="#E31837"
+                color="#E30613"
               />
               <View className="ml-3 flex-1">
                 <Text className="text-[14px] font-bold text-[#1A1A1A] mb-0.5">
@@ -232,7 +232,7 @@ export default function OrderDetailsScreen() {
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={24}
-                color="#E31837"
+                color="#E30613"
               />
               <View className="ml-3 flex-1">
                 <Text className="text-[14px] font-bold text-[#1A1A1A] mb-0.5">
@@ -272,7 +272,7 @@ export default function OrderDetailsScreen() {
             <Text className="text-[16px] font-bold text-[#1A1A1A]">
               Total Pago
             </Text>
-            <Text className="text-[18px] font-bold text-[#E31837]">
+            <Text className="text-[18px] font-bold text-[#E30613]">
               {formatPrice(order.total_price)}
             </Text>
           </View>
@@ -282,14 +282,14 @@ export default function OrderDetailsScreen() {
       {order.status === "pending" && (
         <View className="p-4 bg-white border-t border-[#EAEAEA]">
           <TouchableOpacity
-            className="py-3.5 rounded-lg border border-[#E31837] items-center"
+            className="py-3.5 rounded-lg border border-[#E30613] items-center"
             onPress={handleCancelOrder}
             disabled={canceling}
           >
             {canceling ? (
-              <ActivityIndicator color="#E31837" />
+              <ActivityIndicator color="#E30613" />
             ) : (
-              <Text className="text-[#E31837] text-[16px] font-bold">
+              <Text className="text-[#E30613] text-[16px] font-bold">
                 Cancelar Pedido
               </Text>
             )}

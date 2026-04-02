@@ -1,144 +1,71 @@
-import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  Easing,
-  Keyboard,
-  TextInput,
-  TouchableOpacity,
-  ViewStyle,
-} from "react-native";
+import React, { useRef, useState } from "react";
+import { View, TextInput, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+// Standalone pilled search bar — manages its own state.
+// Used when search is outside the HomeHeader (e.g. category screens).
 interface SearchBarProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  expanded: boolean;
-  onExpand: () => void;
-  onCollapse: () => void;
-  onSubmit?: () => void;
-  containerStyle?: ViewStyle;
+  onSearch: (query: string) => void;
+  placeholder?: string;
 }
 
-export default function SearchBar({
-  value,
-  onChangeText,
-  expanded,
-  onExpand,
-  onCollapse,
-  onSubmit,
-  containerStyle,
+export function SearchBar({
+  onSearch,
+  placeholder = "Buscar produtos...",
 }: SearchBarProps) {
-  const animation = useRef(new Animated.Value(0)).current;
-  const inputRef = useRef<TextInput>(null);
+  const [value, setValue] = useState("");
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    Animated.timing(animation, {
-      toValue: expanded ? 1 : 0,
-      duration: 250,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: false,
-    }).start(() => {
-      if (expanded) {
-        inputRef.current?.focus();
-      }
-    });
-  }, [expanded]);
+  const handleChange = (text: string) => {
+    setValue(text);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => onSearch(text), 500);
+  };
 
-  const width = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [44, 200], // largura final ajustável
-  });
+  const handleClear = () => {
+    setValue("");
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    onSearch("");
+  };
 
-  const opacity = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
+  const handleSubmit = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    onSearch(value);
+  };
 
   return (
-    <Animated.View
-      style={[
-        {
-          width,
-          height: 44,
-          backgroundColor: "#FFF",
-          borderRadius: 22,
-          flexDirection: "row",
-          alignItems: "center",
-          overflow: "hidden",
-        },
-        containerStyle,
-      ]}
-    >
-      {/* ÍCONE ESQUERDO */}
-      <TouchableOpacity
-        onPress={expanded ? onCollapse : onExpand}
-        style={{
-          width: 44,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+    <View className="px-4 py-3 bg-white border-b border-[#F0F0F0]">
+      <View
+        className="flex-row items-center bg-[#F5F5F5] h-[44px] px-4 gap-2"
+        style={{ borderRadius: 22 }}
       >
-        <MaterialCommunityIcons
-          name={expanded ? "chevron-right" : "magnify"}
-          size={24}
-          color="#999"
-        />
-      </TouchableOpacity>
+        <MaterialCommunityIcons name="magnify" size={20} color="#AAAAAA" />
 
-      {/* INPUT + BOTÃO LIMPAR */}
-      <Animated.View
-        style={{
-          flex: 1,
-          opacity,
-          flexDirection: "row",
-          alignItems: "center",
-          paddingRight: 6,
-        }}
-      >
         <TextInput
-          ref={inputRef}
-          placeholder="Buscar..."
-          placeholderTextColor="#999"
+          className="flex-1 text-[14px] text-[#333333] h-full"
+          placeholder={placeholder}
+          placeholderTextColor="#BBBBBB"
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={handleChange}
           returnKeyType="search"
-          onSubmitEditing={() => {
-            Keyboard.dismiss();
-            onSubmit?.();
-          }}
-          onBlur={() => {
-            if (!value) {
-              onCollapse();
-            }
-          }}
-          style={{
-            flex: 1,
-            fontSize: 14,
-            paddingVertical: 0,
-          }}
+          onSubmitEditing={handleSubmit}
+          autoCorrect={false}
+          autoCapitalize="none"
         />
 
-        {expanded && value.length > 0 && (
+        {value.length > 0 && (
           <TouchableOpacity
-            onPress={() => {
-              onChangeText("");
-              inputRef.current?.focus();
-            }}
-            style={{
-              width: 28,
-              height: 28,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            onPress={handleClear}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <MaterialCommunityIcons
               name="close-circle"
               size={18}
-              color="#999"
+              color="#CCCCCC"
             />
           </TouchableOpacity>
         )}
-      </Animated.View>
-    </Animated.View>
+      </View>
+    </View>
   );
 }

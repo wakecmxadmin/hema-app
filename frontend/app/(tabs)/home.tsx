@@ -7,19 +7,25 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
+
+const FEATURED_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.82);
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useHomeData } from "@/hooks/useHomeData";
 import { HomeHeader } from "@/components/HomeHeader";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { CategoryCarousel } from "@/components/CategoryCarousel";
+import { SectionHeader } from "@/components/SectionHeader";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
 import { searchProducts } from "@/services/search";
-import { CategoryCarousel } from "@/components/CategoryCarousel";
-import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
+import { Toast } from "@/util/toast";
 
 const SEARCH_LIMIT = 20;
 
@@ -31,7 +37,6 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
   const [isSearchingMore, setIsSearchingMore] = useState(false);
   const [searchOffset, setSearchOffset] = useState(0);
   const [hasMoreSearch, setHasMoreSearch] = useState(true);
@@ -41,13 +46,13 @@ export default function HomeScreen() {
       product.price_per_kg !== null && product.price_per_kg !== undefined;
     const isUnit = product.type === "unit" || !isKg;
 
-    const payload = {
+    await addItem({
       product_id: product.id,
       price: isUnit ? product.price : product.price_per_kg,
       ...(isUnit ? { quantity: 1 } : { weight: 50 }),
-    };
+    });
 
-    await addItem(payload);
+    Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
   };
 
   const handleSearch = async (query: string) => {
@@ -95,12 +100,20 @@ export default function HomeScreen() {
     setIsSearchingMore(false);
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-[#E31837]" edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor="#E31837" />
+  const navigateToProduct = (id: string) =>
+    router.push({ pathname: "/product/[id]", params: { id } });
 
+  const navigateToCategory = (id: string, name: string) =>
+    router.push({ pathname: "/category/[id]", params: { id, name } });
+
+  return (
+    <SafeAreaView className="flex-1 bg-[#E30613]" edges={["top"]}>
+      <StatusBar barStyle="light-content" backgroundColor="#E30613" />
+
+      {/* Sticky: hero header block (address + search inside) */}
       <HomeHeader onSearch={handleSearch} />
 
+      {/* Scrollable content */}
       <ScrollView
         className="flex-1 bg-white"
         showsVerticalScrollIndicator={false}
@@ -108,174 +121,292 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={refreshing && catalog ? ["transparent"] : ["#E31837"]}
-            tintColor={refreshing && catalog ? "transparent" : "#E31837"}
+            colors={refreshing && catalog ? ["transparent"] : ["#E30613"]}
+            tintColor={refreshing && catalog ? "transparent" : "#E30613"}
           />
         }
       >
-        <CategoryCarousel />
-
-        {/* 1. LOADING DA BUSCA (SKELETON EM GRADE) */}
         {isSearching ? (
-          <View className="flex-row flex-wrap justify-between px-4 mt-5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <View key={i} className="w-[48%] mb-4">
-                <ProductCardSkeleton />
-              </View>
-            ))}
-          </View>
+          <SearchSkeleton />
         ) : searchQuery.trim() !== "" ? (
-          /* 2. EXIBIÇÃO DOS RESULTADOS DA BUSCA */
-          <View className="mx-0 mb-0">
-            {searchResults.length > 0 &&
-            (searchResults[0].similarity_score ?? 1) < 0.3 ? (
-              <View style={{ marginBottom: 10 }}>
-                <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
-                  Poxa, não encontramos "{searchQuery}"
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#666",
-                    marginHorizontal: 18,
-                    marginTop: -10,
-                    marginBottom: 10,
-                  }}
-                >
-                  Mas separamos algumas sugestões parecidas para você:
-                </Text>
-              </View>
-            ) : searchResults.length > 0 ? (
-              <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
-                Resultados para "{searchQuery}"
-              </Text>
-            ) : null}
-
-            {/* Caso não encontre NADA */}
-            {searchResults.length === 0 ? (
-              <View className="items-center justify-center pt-15">
-                <MaterialCommunityIcons
-                  name="magnify-close"
-                  size={48}
-                  color="#CCC"
-                />
-                <Text className="mt-3 text-[#999] text-base">
-                  Nenhum produto encontrado
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {/* Grade de Produtos */}
-                <View className="flex-row flex-wrap justify-between mt-2 px-4">
-                  {searchResults.map((product, index) => (
-                    <View
-                      key={`${product.id}-${index}`}
-                      className="w-[48%] mb-4"
-                    >
-                      <ProductCard
-                        product={product}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/product/[id]",
-                            params: { id: product.id },
-                          })
-                        }
-                        onAdd={() => handleAddToCart(product)}
-                      />
-                    </View>
-                  ))}
-                </View>
-
-                {/* BOTÃO MOSTRAR MAIS */}
-                {hasMoreSearch && (
-                  <View className="py-7 items-center">
-                    {isSearchingMore ? (
-                      <ActivityIndicator size="small" color="#E31837" />
-                    ) : (
-                      <TouchableOpacity
-                        onPress={loadMoreSearchResults}
-                        className="bg-white py-3 px-10 rounded-full border border-[#E31837] mt-2 mb-5"
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-[#E31837] font-bold text-sm">
-                          Mostrar Mais
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
+          <SearchResults
+            query={searchQuery}
+            results={searchResults}
+            hasMore={hasMoreSearch}
+            isLoadingMore={isSearchingMore}
+            onLoadMore={loadMoreSearchResults}
+            onProductPress={navigateToProduct}
+            onAddToCart={handleAddToCart}
+          />
         ) : !catalog || refreshing ? (
-          <View className="mt-5">
-            {[1, 2].map((row) => (
-              <View key={row}>
-                <View className="h-5 w-38 bg-[#F0F0F0] ml-4 mb-4 rounded" />
-                <View className="flex-row pl-4 gap-3 mb-6">
-                  {[1, 2, 3].map((i) => (
-                    <ProductCardSkeleton key={i} isCarousel={true} />
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
+          <CatalogSkeleton />
         ) : (
-          catalog?.map((category) => {
-            if (!category.products || category.products.length === 0)
-              return null;
-
-            return (
-              <View key={category.id} className="mx-0 mb-0">
-                <View className="flex-row items-center justify-between mx-4 mt-4 mb-4">
-                  <Text className="text-xl font-bold text-[#1A1A1A] mx-4 mt-4 mb-2">
-                    {category.name}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/category/[id]",
-                        params: { id: category.id, name: category.name },
-                      })
-                    }
-                  >
-                    <Text style={{ color: "#E31837", fontWeight: "bold" }}>
-                      Ver todos
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingRight: 8, paddingLeft: 18 }}
-                >
-                  {category.products.map((product, index) => (
-                    <View
-                      key={product.id}
-                      className={
-                        index === category.products.length - 1 ? "mr-0" : "mr-3"
-                      }
-                    >
-                      <ProductCard
-                        product={product}
-                        isCarousel={true}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/product/[id]",
-                            params: { id: product.id },
-                          })
-                        }
-                        onAdd={() => handleAddToCart(product)}
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            );
-          })
+          <Catalog
+            catalog={catalog}
+            onProductPress={navigateToProduct}
+            onCategoryPress={navigateToCategory}
+            onAddToCart={handleAddToCart}
+          />
         )}
+
+        <View className="h-8" />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// ─── Search skeleton ──────────────────────────────────────────────────────────
+
+function SearchSkeleton() {
+  return (
+    <View className="flex-row flex-wrap justify-between px-4 pt-2">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <View key={i} className="w-[48%] mb-4">
+          <ProductCardSkeleton />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Search results ───────────────────────────────────────────────────────────
+
+interface SearchResultsProps {
+  query: string;
+  results: Product[];
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+  onProductPress: (id: string) => void;
+  onAddToCart: (product: Product) => void;
+}
+
+function SearchResults({
+  query,
+  results,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+  onProductPress,
+  onAddToCart,
+}: SearchResultsProps) {
+  const lowScore =
+    results.length > 0 && (results[0].similarity_score ?? 1) < 0.3;
+
+  return (
+    <View>
+      {results.length > 0 && (
+        <View className="px-4 mt-5 mb-3">
+          {lowScore ? (
+            <>
+              <Text className="text-[17px] font-[800] text-[#1A1A1A]">
+                Não encontramos "{query}"
+              </Text>
+              <Text className="text-[13px] text-[#888888] mt-1">
+                Separamos algumas sugestões para você:
+              </Text>
+            </>
+          ) : (
+            <Text className="text-[17px] font-[800] text-[#1A1A1A]">
+              Resultados para "{query}"
+            </Text>
+          )}
+        </View>
+      )}
+
+      {results.length === 0 ? (
+        <View className="items-center justify-center pt-16">
+          <MaterialCommunityIcons name="magnify-close" size={52} color="#DDD" />
+          <Text className="mt-3 text-[#AAAAAA] text-[15px]">
+            Nenhum produto encontrado
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View className="flex-row flex-wrap justify-between px-4">
+            {results.map((product, index) => (
+              <View
+                key={`${product.id}-${index}`}
+                className="w-[48%] mb-[14px]"
+              >
+                <ProductCard
+                  product={product}
+                  animationDelay={Math.min(index * 45, 260)}
+                  onPress={() => onProductPress(product.id)}
+                  onAdd={() => onAddToCart(product)}
+                />
+              </View>
+            ))}
+          </View>
+
+          {hasMore && (
+            <View className="py-6 items-center">
+              {isLoadingMore ? (
+                <ActivityIndicator size="small" color="#E30613" />
+              ) : (
+                <TouchableOpacity
+                  onPress={onLoadMore}
+                  className="bg-white px-10 py-3 border-[1.5px] border-[#E30613]"
+                  style={{ borderRadius: 25 }}
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-[#E30613] font-[700] text-[13px]">
+                    Mostrar mais
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+// ─── Catalog skeleton ─────────────────────────────────────────────────────────
+
+function CatalogSkeleton() {
+  return (
+    <View className="mt-2">
+      {/* Banner skeleton */}
+      <View
+        className="mx-4 mt-4 mb-3 bg-[#F0F0F0]"
+        style={{ height: 156, borderRadius: 16 }}
+      />
+
+      {/* Pills skeleton */}
+      <View className="flex-row px-4 gap-2 py-3">
+        {[100, 76, 116, 84].map((w, i) => (
+          <View
+            key={i}
+            className="h-9 bg-[#F0F0F0]"
+            style={{ width: w, borderRadius: 20 }}
+          />
+        ))}
+      </View>
+
+      {/* Section header skeleton */}
+      <View className="px-4 mt-5 mb-3">
+        <View className="h-3 w-16 bg-[#F0F0F0] rounded mb-2" />
+        <View className="h-5 w-36 bg-[#F0F0F0] rounded" />
+      </View>
+
+      {/* Featured cards skeleton */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+      >
+        {[1, 2, 3].map((i) => (
+          <ProductCardSkeleton key={i} isFeatured />
+        ))}
+      </ScrollView>
+
+      {/* Carousel skeletons */}
+      {[1, 2].map((row) => (
+        <View key={row} className="mt-6">
+          <View className="h-5 w-36 bg-[#F0F0F0] rounded mx-4 mb-3" />
+          <View className="flex-row gap-3 pl-4">
+            {[1, 2, 3].map((i) => (
+              <ProductCardSkeleton key={i} isCarousel />
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Catalog ──────────────────────────────────────────────────────────────────
+
+interface CatalogProps {
+  catalog: { id: string; name: string; products: Product[] }[];
+  onProductPress: (id: string) => void;
+  onCategoryPress: (id: string, name: string) => void;
+  onAddToCart: (product: Product) => void;
+}
+
+function Catalog({
+  catalog,
+  onProductPress,
+  onCategoryPress,
+  onAddToCart,
+}: CatalogProps) {
+  // Collect 1–2 products per category for the banner (variety)
+  const bannerProducts = catalog
+    .filter((cat) => cat.products.length > 0)
+    .flatMap((cat) => cat.products.slice(0, 2))
+    .slice(0, 6);
+
+  return (
+    <>
+      {/* Category pills */}
+      <CategoryCarousel />
+      
+      {/* Banner using real products */}
+      <BannerCarousel products={bannerProducts} onPress={onProductPress} />
+
+      {/* Product sections */}
+      {catalog.map((category, categoryIndex) => {
+        if (!category.products || category.products.length === 0) return null;
+
+        const isFeatured = categoryIndex === 0;
+
+        return (
+          <View key={category.id} className="mb-2">
+            <SectionHeader
+              title={category.name}
+              label={isFeatured ? "Destaques" : undefined}
+              onSeeAll={() => onCategoryPress(category.id, category.name)}
+            />
+
+            {isFeatured ? (
+              // First category → horizontal scroll of landscape cards
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingHorizontal: 16,
+                  gap: 12,
+                  paddingBottom: 4,
+                }}
+                decelerationRate="fast"
+                snapToInterval={FEATURED_CARD_WIDTH + 12}
+                snapToAlignment="start"
+              >
+                {category.products.slice(0, 5).map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isFeatured
+                    animationDelay={index * 70}
+                    onPress={() => onProductPress(product.id)}
+                    onAdd={() => onAddToCart(product)}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              // Other categories → horizontal carousel
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+              >
+                {category.products.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isCarousel
+                    animationDelay={index * 50}
+                    onPress={() => onProductPress(product.id)}
+                    onAdd={() => onAddToCart(product)}
+                  />
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        );
+      })}
+    </>
   );
 }

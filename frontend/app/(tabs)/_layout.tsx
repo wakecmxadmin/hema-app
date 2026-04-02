@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BRAND_COLORS = {
-  primary: "#E31837",
+  primary: "#E30613",
   inactive: "#8E8E8E",
   background: "#FFFFFF",
   border: "#F0F0F0",
@@ -124,6 +124,14 @@ export default function TabLayout() {
         options={{
           title: "Carrinho",
           tabBarIcon: ({ color }) => <CartIconWithBadge color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: "Pedidos",
+          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} />,
         }}
       />
 

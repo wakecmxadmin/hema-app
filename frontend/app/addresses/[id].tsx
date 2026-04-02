@@ -156,7 +156,7 @@ export default function AddressFormScreen() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#E31837" />
+        <ActivityIndicator size="large" color="#E30613" />
       </View>
     );
   }
@@ -212,7 +212,7 @@ export default function AddressFormScreen() {
             {loadingCep && (
               <ActivityIndicator
                 size="small"
-                color="#E31837"
+                color="#E30613"
                 style={{ marginTop: 25 }}
               />
             )}
@@ -315,7 +315,7 @@ export default function AddressFormScreen() {
               value={isDefault}
               onValueChange={setIsDefault}
               trackColor={{ false: "#D1D5DB", true: "#FECDD3" }}
-              thumbColor={isDefault ? "#E31837" : "#F9FAFB"}
+              thumbColor={isDefault ? "#E30613" : "#F9FAFB"}
             />
           </View>
         </ScrollView>
@@ -338,7 +338,7 @@ export default function AddressFormScreen() {
       >
         <TouchableOpacity
           className={`h-[56px] rounded-xl items-center justify-center shadow-sm ${
-            saving ? "bg-[#FCA5A5]" : "bg-[#E31837]"
+            saving ? "bg-[#FCA5A5]" : "bg-[#E30613]"
           }`}
           onPress={handleSave}
           disabled={saving}

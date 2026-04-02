@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,12 +20,64 @@ import { logout } from "../../services/auth";
 import { uploadAvatar } from "../../services/profile";
 import { Toast } from "@/util/toast";
 
-const MENU_OPTIONS = [
-  { id: "1", title: "Meus Pedidos", route: "/orders" },
-  { id: "2", title: "Endereços de Entrega", route: "/addresses" },
-  { id: "4", title: "Meus Dados", route: "/profile/details" },
-  { id: "5", title: "Configurações", route: "/profile/settings" },
+// ─── Menu config ──────────────────────────────────────────────────────────────
+
+interface MenuItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  iconBg: string;
+  iconColor: string;
+  route: string;
+}
+
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
+
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    title: "Minha Conta",
+    items: [
+      {
+        id: "dados",
+        title: "Meus Dados",
+        subtitle: "Nome, celular e CPF",
+        icon: "account-circle-outline",
+        iconBg: "#EFF6FF",
+        iconColor: "#3B82F6",
+        route: "/profile/details",
+      },
+      {
+        id: "enderecos",
+        title: "Endereços de Entrega",
+        subtitle: "Gerenciar endereços cadastrados",
+        icon: "map-marker-outline",
+        iconBg: "#F0FDF4",
+        iconColor: "#22C55E",
+        route: "/addresses",
+      },
+    ],
+  },
+  {
+    title: "Preferências",
+    items: [
+      {
+        id: "config",
+        title: "Configurações",
+        subtitle: "Notificações e privacidade",
+        icon: "cog-outline",
+        iconBg: "#F5F5F5",
+        iconColor: "#6B7280",
+        route: "/profile/settings",
+      },
+    ],
+  },
 ];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface UserState {
   name: string;
@@ -32,13 +85,14 @@ interface UserState {
   avatarUrl?: string | null;
 }
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function ProfileScreen() {
   const [user, setUser] = useState<UserState>({
     name: "",
     email: "",
     avatarUrl: null,
   });
-
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -46,18 +100,13 @@ export default function ProfileScreen() {
       const name = await AsyncStorage.getItem("@hema_user_name");
       const email = await AsyncStorage.getItem("@hema_user_email");
       const avatarUrl = await AsyncStorage.getItem("@hema_user_avatar");
-
-      if (name && email) {
-        setUser({ name, email, avatarUrl });
-      }
+      if (name && email) setUser({ name, email, avatarUrl });
     }
-
     loadProfile();
   }, []);
 
   const handleLogout = async () => {
     const response = await logout();
-
     if (response.success) {
       await AsyncStorage.clear();
       router.replace("/auth");
@@ -73,7 +122,7 @@ export default function ProfileScreen() {
   const handlePickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
+    if (!permissionResult.granted) {
       Alert.alert(
         "Permissão",
         "Precisamos de acesso à sua galeria para alterar a foto.",
@@ -91,7 +140,6 @@ export default function ProfileScreen() {
     if (!result.canceled && result.assets[0]) {
       setUploading(true);
       const asset = result.assets[0];
-
       const fileData = {
         uri: asset.uri,
         type: asset.mimeType || "image/jpeg",
@@ -99,7 +147,6 @@ export default function ProfileScreen() {
       };
 
       const response = await uploadAvatar(fileData);
-
       if (response.success && response.data) {
         setUser((prev) => ({ ...prev, avatarUrl: response.data as string }));
         await AsyncStorage.setItem(
@@ -110,96 +157,251 @@ export default function ProfileScreen() {
       } else {
         Toast.show({ type: "error", text1: "Ops!", text2: response.message });
       }
-
       setUploading(false);
     }
   };
 
   const getInitials = (name: string) => {
     if (!name) return "";
-    const names = name.trim().split(" ");
-    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
     return (
-      names[0].charAt(0) + names[names.length - 1].charAt(0)
+      parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
     ).toUpperCase();
   };
 
+  const cardShadow = {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <View className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" />
-        <ScrollView
-          className="flex-1 bg-white"
-          showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F7F7F8" }}
+      edges={["top"]}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        {/* Page title */}
+        <View
+          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 }}
         >
-          {/* SEÇÃO SUPERIOR: Avatar e Infos */}
-          <View className="items-center py-10 bg-white border-b border-[#F2F2F2]">
-            <TouchableOpacity onPress={handlePickImage} disabled={uploading}>
-              <View className="w-[100px] h-[100px] rounded-full bg-[#F5F5F5] border border-[#EEE] mb-4 overflow-hidden justify-center items-center">
-                {uploading ? (
-                  <ActivityIndicator color="#E31837" />
-                ) : user.avatarUrl ? (
-                  <Image
-                    source={{ uri: user.avatarUrl }}
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <Text className="text-[40px] text-[#CCC] font-semibold">
-                    {getInitials(user.name)}
-                  </Text>
-                )}
-              </View>
+          <Text style={{ fontSize: 26, fontWeight: "800", color: "#1A1A1A" }}>
+            Perfil
+          </Text>
+        </View>
 
-              <View className="absolute bottom-2.5 right-2.5 bg-[#E31837] rounded-xl p-1">
-                <MaterialCommunityIcons
-                  name="camera-plus"
-                  size={14}
-                  color="#FFF"
-                />
-              </View>
-            </TouchableOpacity>
-
-            <Text className="text-[22px] font-bold text-[#1A1A1A]">
-              {user.name}
-            </Text>
-            <Text className="text-sm text-[#666] mt-1">{user.email}</Text>
-          </View>
-
-          {/* Seção de Menu */}
-          <View className="mt-5 px-4">
-            {MENU_OPTIONS.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                className="flex-row items-center justify-between py-[18px] border-b border-[#F8F8F8]"
-                activeOpacity={0.6}
-                onPress={() => {
-                  if (item.route) router.push(item.route as any);
-                }}
-              >
-                <View className="flex-row items-center">
-                  <Text className="text-base text-[#333] font-normal">
-                    {item.title}
-                  </Text>
-                </View>
-                <Text className="text-lg text-[#BBB] font-light">›</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Botão Sair */}
-          <View className="mt-10 px-4 pb-10">
-            <TouchableOpacity
-              className="bg-[#E31837] py-[15px] rounded-full items-center justify-center"
-              onPress={handleLogout}
-              activeOpacity={0.8}
+        {/* Avatar + user info */}
+        <View
+          style={{
+            alignItems: "center",
+            paddingVertical: 28,
+            paddingHorizontal: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={handlePickImage}
+            disabled={uploading}
+            activeOpacity={0.8}
+          >
+            {/* Avatar */}
+            <View
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: 50,
+                backgroundColor: "#FFFFFF",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                borderWidth: 3,
+                borderColor: "#FFFFFF",
+                zIndex: 0,
+                ...cardShadow,
+              }}
             >
-              <Text className="text-white text-base font-bold">
-                Sair da Conta
-              </Text>
-            </TouchableOpacity>
+              {uploading ? (
+                <ActivityIndicator color="#E30613" size="large" />
+              ) : user.avatarUrl ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              ) : (
+                <Text
+                  style={{ fontSize: 36, color: "#CCCCCC", fontWeight: "700" }}
+                >
+                  {getInitials(user.name)}
+                </Text>
+              )}
+            </View>
+
+            {/* Camera badge */}
+            <View
+              style={{
+                position: "relative",
+                bottom: 12,
+                right: 2,
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: "#E30613",
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2.5,
+                borderColor: "#F7F7F8",
+                zIndex: 1,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="camera-plus"
+                size={14}
+                color="#FFF"
+              />
+            </View>
+          </TouchableOpacity>
+
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "800",
+              color: "#1A1A1A",
+              marginTop: 16,
+              textAlign: "center",
+            }}
+            numberOfLines={1}
+          >
+            {user.name || "Carregando..."}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "#AAAAAA",
+              marginTop: 4,
+              textAlign: "center",
+            }}
+            numberOfLines={1}
+          >
+            {user.email}
+          </Text>
+        </View>
+
+        {/* Menu sections */}
+        {MENU_SECTIONS.map((section) => (
+          <View key={section.title} style={{ marginBottom: 20 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: "#AAAAAA",
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                marginBottom: 8,
+                paddingHorizontal: 20,
+              }}
+            >
+              {section.title}
+            </Text>
+
+            <View
+              style={{
+                marginHorizontal: 16,
+                backgroundColor: "#FFF",
+                borderRadius: 20,
+                overflow: "hidden",
+                ...cardShadow,
+              }}
+            >
+              {section.items.map((item, index) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.65}
+                  onPress={() => router.push(item.route as any)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderTopWidth: index > 0 ? 1 : 0,
+                    borderTopColor: "#F5F5F5",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: item.iconBg,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 14,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={item.icon as any}
+                      size={20}
+                      color={item.iconColor}
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: "#1A1A1A",
+                        marginBottom: 2,
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#AAAAAA" }}>
+                      {item.subtitle}
+                    </Text>
+                  </View>
+
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={20}
+                    color="#CCCCCC"
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </ScrollView>
-      </View>
+        ))}
+
+        {/* Logout */}
+        <View style={{ marginHorizontal: 16, marginTop: 4 }}>
+          <TouchableOpacity
+            style={{
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: "#E30613",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+            }}
+            onPress={handleLogout}
+            activeOpacity={0.85}
+          >
+            <MaterialCommunityIcons name="logout" size={20} color="#FFF" />
+            <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+              Sair da Conta
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

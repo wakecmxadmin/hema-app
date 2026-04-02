@@ -8,7 +8,7 @@ import {
   Image,
   Animated,
   RefreshControl,
-  ActivityIndicator, // Adicionado para um load discreto
+  ActivityIndicator, 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -60,7 +60,7 @@ const CartItemComponent = ({
     });
 
     return (
-      <View className="flex-1 bg-[#E31837] justify-center items-end rounded-[10px]">
+      <View className="flex-1 bg-[#E30613] justify-center items-end rounded-[10px]">
         <Animated.View
           style={{
             opacity,
@@ -112,7 +112,7 @@ const CartItemComponent = ({
                   {item.product.type === "unit" ? "/un" : "/100g"}
                 </Text>
               </View>
-              <Text className="text-[16px] font-extrabold text-[#E31837]">
+              <Text className="text-[16px] font-extrabold text-[#E30613]">
                 {formattedItemTotal}
               </Text>
             </View>
@@ -134,7 +134,7 @@ const CartItemComponent = ({
                   }}
                   className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
                 >
-                  <Ionicons name="remove" size={16} color="#E31837" />
+                  <Ionicons name="remove" size={16} color="#E30613" />
                 </TouchableOpacity>
 
                 <View
@@ -167,7 +167,7 @@ const CartItemComponent = ({
                   }}
                   className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
                 >
-                  <Ionicons name="add" size={16} color="#E31837" />
+                  <Ionicons name="add" size={16} color="#E30613" />
                 </TouchableOpacity>
               </View>
 
@@ -227,17 +227,12 @@ export default function CartScreen() {
     // 1. Feedback visual instantâneo
     Toast.show({ type: "success", text1: "Produto removido!" });
 
-    // 2. Dispara a chamada sem travar a renderização com await aqui
-    // Nota: O ideal é que seu removeItem dentro do Context
-    // já remova o item do estado local antes do fetch terminar.
     setIsSyncing(true);
     removeItem(id).finally(() => setIsSyncing(false));
   };
 
   // FUNÇÃO DE UPDATE OTIMISTA
   const handleUpdateItem = (id: string, data: any) => {
-    // Aqui não usamos await para o toast ou para a mudança visual
-    // O valor do subtotal mudará assim que o 'items' no context mudar
     setIsSyncing(true);
     updateItem(id, data).finally(() => setIsSyncing(false));
   };
@@ -291,7 +286,7 @@ export default function CartScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#E31837"]}
+                colors={["#E30613"]}
               />
             }
             ListEmptyComponent={
@@ -327,7 +322,7 @@ export default function CartScreen() {
                 {isSyncing && (
                   <ActivityIndicator
                     size="small"
-                    color="#E31837"
+                    color="#E30613"
                     style={{ marginLeft: 8 }}
                   />
                 )}
@@ -338,7 +333,7 @@ export default function CartScreen() {
               ) : (
                 <Text
                   // Removido o opacity: 0.5 que dava sensação de lag
-                  className="text-[24px] font-extrabold text-[#E31837]"
+                  className="text-[24px] font-extrabold text-[#E30613]"
                 >
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
@@ -349,7 +344,7 @@ export default function CartScreen() {
             </View>
 
             <TouchableOpacity
-              className="bg-[#E31837] h-[56px] rounded-full items-center justify-center flex-row shadow-sm"
+              className="bg-[#E30613] h-[56px] rounded-full items-center justify-center flex-row shadow-sm"
               activeOpacity={0.8}
               onPress={() => router.push("/checkout")}
             >

@@ -62,7 +62,7 @@ export default function PaymentPage() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-[#F8F9FA]">
-        <ActivityIndicator size="large" color="#E31837" />
+        <ActivityIndicator size="large" color="#E30613" />
         <Text className="mt-[15px] text-[#666] text-base font-medium">
           Configurando check-out...
         </Text>
@@ -119,7 +119,7 @@ export default function PaymentPage() {
           </View>
 
           <View className="items-end justify-center min-w-[100px]">
-            <Text className="text-[20px] font-black text-[#E31837] text-right">
+            <Text className="text-[20px] font-black text-[#E30613] text-right">
               {formatPrice(total)}
             </Text>
           </View>
@@ -127,7 +127,7 @@ export default function PaymentPage() {
 
         {/* Alerta de Preparação */}
         <View className="flex-row bg-[#FFF1F2] mx-5 p-4 rounded-2xl mt-5 items-center border border-[#FFDFE1]">
-          <MaterialCommunityIcons name="clock-fast" size={24} color="#E31837" />
+          <MaterialCommunityIcons name="clock-fast" size={24} color="#E30613" />
           <Text className="flex-1 ml-3 text-[14px] text-[#C0162D] leading-[20px] font-medium">
             Assim que o pagamento for aprovado nossos funcionários vão começar a
             preparar o pedido
@@ -170,7 +170,7 @@ export default function PaymentPage() {
                 <MaterialCommunityIcons
                   name="content-copy"
                   size={22}
-                  color="#E31837"
+                  color="#E30613"
                 />
               </TouchableOpacity>
             </View>
@@ -236,9 +236,9 @@ export default function PaymentPage() {
 
         {/* Botão de Ação Final */}
         <TouchableOpacity
-          className="bg-[#E31837] mx-5 h-[60px] rounded-2xl items-center justify-center flex-row mt-8"
+          className="bg-[#E30613] mx-5 h-[60px] rounded-2xl items-center justify-center flex-row mt-8"
           style={{
-            shadowColor: "#E31837",
+            shadowColor: "#E30613",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,

@@ -105,7 +105,7 @@ export default function AddressListScreen() {
           </Text>
           {item.is_default && (
             <View className="bg-[#FFF1F2] px-2 py-0.5 rounded border border-[#FECDD3]">
-              <Text className="text-[10px] font-bold text-[#E31837] uppercase">
+              <Text className="text-[10px] font-bold text-[#E30613] uppercase">
                 Principal
               </Text>
             </View>
@@ -126,7 +126,7 @@ export default function AddressListScreen() {
           <MaterialCommunityIcons
             name="trash-can-outline"
             size={22}
-            color="#E31837"
+            color="#E30613"
           />
         </TouchableOpacity>
         <Ionicons name="chevron-forward" size={20} color="#CCC" />
@@ -151,7 +151,7 @@ export default function AddressListScreen() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#E31837" />
+          <ActivityIndicator size="large" color="#E30613" />
         </View>
       ) : (
         <FlatList
@@ -168,7 +168,7 @@ export default function AddressListScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#E31837"]}
+              colors={["#E30613"]}
             />
           }
           ListEmptyComponent={
@@ -202,7 +202,7 @@ export default function AddressListScreen() {
         }}
       >
         <TouchableOpacity
-          className="flex-row bg-[#E31837] h-[56px] rounded-xl items-center justify-center gap-2 shadow-sm"
+          className="flex-row bg-[#E30613] h-[56px] rounded-xl items-center justify-center gap-2 shadow-sm"
           onPress={() => router.push("/addresses/new")}
           activeOpacity={0.8}
         >

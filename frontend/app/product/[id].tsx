@@ -137,7 +137,7 @@ export default function ProductDetailsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E31837"]}
+            colors={["#E30613"]}
           />
         }
       >
@@ -154,7 +154,7 @@ export default function ProductDetailsScreen() {
         </View>
 
         <View className="p-5">
-          <Text className="text-[#E31837] text-[12px] font-bold uppercase mb-2">
+          <Text className="text-[#E30613] text-[12px] font-bold uppercase mb-2">
             Produto
           </Text>
 
@@ -164,7 +164,7 @@ export default function ProductDetailsScreen() {
           </Text>
 
           <View className="flex-row items-baseline mb-6">
-            <Text className="text-[28px] font-bold text-[#E31837]">
+            <Text className="text-[28px] font-bold text-[#E30613]">
               {mainPriceInfo.price}
             </Text>
             <Text className="text-[16px] font-bold text-[#888] ml-1">
@@ -186,7 +186,7 @@ export default function ProductDetailsScreen() {
             <TouchableOpacity
               onPress={() => setShowFullDescription(!showFullDescription)}
             >
-              <Text className="text-[#E31837] font-bold text-[14px]">
+              <Text className="text-[#E30613] font-bold text-[14px]">
                 {showFullDescription ? "Ler menos" : "Ler mais..."}
               </Text>
             </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function ProductDetailsScreen() {
                     <Text numberOfLines={1} className="text-[#333] font-medium">
                       {formatName(item.name)}
                     </Text>
-                    <Text className="font-bold text-[#E31837]">
+                    <Text className="font-bold text-[#E30613]">
                       {similarPriceInfo.price}
                       <Text className="text-[11px] text-[#888]">
                         {" "}
@@ -239,7 +239,7 @@ export default function ProductDetailsScreen() {
         }}
       >
         <TouchableOpacity
-          className="bg-[#E31837] h-[50px] rounded-lg justify-center items-center shadow-sm"
+          className="bg-[#E30613] h-[50px] rounded-lg justify-center items-center shadow-sm"
           onPress={handleAddToCart}
           activeOpacity={0.8}
         >
