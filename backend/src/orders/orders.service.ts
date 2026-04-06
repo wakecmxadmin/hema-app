@@ -283,8 +283,76 @@ export class OrdersService {
     }
   }
 
-  async updateStatus(orderId: string, status: string) {
-    // Preparando terreno para o Webhook do Mercado Pago
+  async updateStatus(orderId: string, mpStatus: string): Promise<void> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('id, status, user_id')
+      .eq('id', orderId)
+      .single();
+
+    if (error || !order) {
+      console.error(`[ORDER] Pedido ${orderId} não encontrado para atualização`);
+      return;
+    }
+
+    // Idempotência: ignorar se já está em status final
+    const finalStatuses = ['confirmed', 'cancelled'];
+    if (finalStatuses.includes(order.status)) {
+      console.log(
+        `[ORDER] Pedido ${orderId} já está em status final "${order.status}". Ignorando.`,
+      );
+      return;
+    }
+
+    const statusMap: Record<
+      string,
+      { status: string; payment_status: string }
+    > = {
+      approved: { status: 'confirmed', payment_status: 'paid' },
+      pending: { status: 'waiting_payment', payment_status: 'pending' },
+      in_process: { status: 'waiting_payment', payment_status: 'pending' },
+      rejected: { status: 'cancelled', payment_status: 'rejected' },
+      cancelled: { status: 'cancelled', payment_status: 'cancelled' },
+    };
+
+    const mapped = statusMap[mpStatus];
+    if (!mapped) {
+      console.warn(
+        `[ORDER] Status do MP desconhecido: "${mpStatus}". Ignorando.`,
+      );
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ status: mapped.status, payment_status: mapped.payment_status })
+      .eq('id', orderId);
+
+    if (updateError) {
+      console.error(
+        `[ORDER] Erro ao atualizar pedido ${orderId}:`,
+        updateError,
+      );
+      return;
+    }
+
+    console.log(
+      `[ORDER] Pedido ${orderId} atualizado → status="${mapped.status}" | payment_status="${mapped.payment_status}"`,
+    );
+
+    // Limpar carrinho após pagamento aprovado
+    if (mpStatus === 'approved') {
+      const cartResponse = await this.cartService.getCart(order.user_id);
+      const cart = cartResponse?.data?.cart;
+      if (cart) {
+        await supabase.from('cart_items').delete().eq('cart_id', cart.id);
+        await supabase
+          .from('carts')
+          .update({ total_price: 0 })
+          .eq('id', cart.id);
+        console.log(`[ORDER] Carrinho do usuário ${order.user_id} limpo após aprovação.`);
+      }
+    }
   }
 
   async confirmAndPayOrder(userId: string, orderId: string, paymentData: any) {

@@ -3,7 +3,7 @@
     "name": "Hema Cereais",
     "slug": "hemaapp",
     "owner": "codificaai",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hemaapp",
@@ -21,7 +21,7 @@
       "backgroundColor": "#EA1D2C"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "pro.codificaai.hema",
       "infoPlist": {
         "NSAppTransportSecurity": {

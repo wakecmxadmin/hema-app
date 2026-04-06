@@ -1,20 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Animated,
+  Animated as RNAnimated,
   ScrollView,
   Image,
   Dimensions,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-import { Address, getAddresses } from "@/services/addresses";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 
 interface HomeHeaderProps {
   onSearch: (query: string) => void;
+  headerOffset: SharedValue<number>;
 }
 
 // ─── Notification data ────────────────────────────────────────────────────────
@@ -67,29 +69,30 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function HomeHeader({ onSearch }: HomeHeaderProps) {
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
+  const [userName, setUserName] = useState<string | null>(null);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const addressDropAnim = useRef(new Animated.Value(0)).current;
-  const notifDropAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new RNAnimated.Value(0)).current;
+  const notifDropAnim = useRef(new RNAnimated.Value(0)).current;
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  }, []);
 
   useEffect(() => {
     let mounted = true;
-    getAddresses().then((response) => {
+    AsyncStorage.getItem("@hema_user_name").then((name) => {
       if (!mounted) return;
-      if (response.success && response.data && response.data.length > 0) {
-        setAddresses(response.data);
-        const defaultAddr =
-          response.data.find((a) => a.is_default) || response.data[0];
-        setSelectedAddress(defaultAddr);
+      if (name) {
+        setUserName(name.split(" ")[0]);
       }
-      Animated.timing(fadeAnim, {
+      RNAnimated.timing(fadeAnim, {
         toValue: 1,
         duration: 280,
         useNativeDriver: true,
@@ -100,39 +103,16 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
     };
   }, []);
 
-  // Animate address dropdown
   useEffect(() => {
-    Animated.timing(addressDropAnim, {
-      toValue: showAddressDropdown ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [showAddressDropdown]);
-
-  // Animate notification dropdown
-  useEffect(() => {
-    Animated.timing(notifDropAnim, {
+    RNAnimated.timing(notifDropAnim, {
       toValue: showNotifDropdown ? 1 : 0,
       duration: 200,
       useNativeDriver: true,
     }).start();
   }, [showNotifDropdown]);
 
-  const toggleAddressDropdown = () => {
-    if (addresses.length === 0) return;
-    setShowNotifDropdown(false); // close the other
-    setShowAddressDropdown((v) => !v);
-  };
-
-  const toggleNotifDropdown = () => {
-    setShowAddressDropdown(false); // close the other
-    setShowNotifDropdown((v) => !v);
-  };
-
-  const closeAll = () => {
-    setShowAddressDropdown(false);
-    setShowNotifDropdown(false);
-  };
+  const toggleNotifDropdown = () => setShowNotifDropdown((v) => !v);
+  const closeAll = () => setShowNotifDropdown(false);
 
   const handleSearchChange = (text: string) => {
     setSearchValue(text);
@@ -151,20 +131,9 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
     onSearch(searchValue);
   };
 
-  const addressLabel = selectedAddress
-    ? selectedAddress.label ||
-      `${selectedAddress.street}, ${selectedAddress.number}`
-    : null;
-
-  const addressDetail = selectedAddress
-    ? `${selectedAddress.street}, ${selectedAddress.number}`
-    : null;
-
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
-  const anyDropdownOpen = showAddressDropdown || showNotifDropdown;
 
-  // Shared dropdown animation helpers
-  const dropdownStyle = (anim: Animated.Value) => ({
+  const dropdownStyle = (anim: RNAnimated.Value) => ({
     opacity: anim,
     transform: [
       {
@@ -176,66 +145,70 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
     ],
   });
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -headerOffset.value }],
+  }));
+
   return (
-    <View style={{ zIndex: 50, backgroundColor: "#FFFFFF" }}>
-      {/* ── Hero block ─────────────────────────────────────────────────── */}
-      <View
-        className="bg-[#E30613] px-4 pt-4 pb-6"
-        style={{
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          elevation: 8,
+          backgroundColor: "#E30613",
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
-          zIndex: 10,
-        }}
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+        },
+        animatedStyle,
+      ]}
+    >
+      <View
+        style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}
       >
-        {/* Row: logo + address + bell */}
-        <View className="flex-row items-center gap-3 mb-6 z-20">
-          {/* Logo */}
+        <View className="flex-row items-center gap-3 mb-6">
           <Image
             source={require("@/assets/images/adaptive-icon.png")}
             style={{ width: 48, height: 48, borderRadius: 24 }}
             resizeMode="cover"
           />
 
-          {/* Address selector */}
-          <TouchableOpacity
-            className="flex-1"
-            activeOpacity={0.75}
-            onPress={toggleAddressDropdown}
-          >
-            <Text className="text-[10px] font-[600] text-white/65 uppercase tracking-widest leading-4">
-              Entregar em
-            </Text>
-            <Animated.View
-              className="flex-row items-center gap-1"
-              style={{ opacity: fadeAnim }}
+          <View style={{ flex: 1, justifyContent: "center", marginLeft: 4 }}>
+            <Text
+              style={{
+                fontSize: 12, 
+                fontWeight: "600",
+                color: "rgba(255,255,255,0.75)",
+                textTransform: "uppercase",
+                letterSpacing: 1, 
+                marginBottom: -2, 
+              }}
             >
-              <View className="flex-1 flex-shrink">
-                <Text
-                  className="text-[15px] font-[800] text-white"
-                  numberOfLines={1}
-                >
-                  {addressLabel ?? "Carregando..."}
-                </Text>
-                {selectedAddress && addressDetail !== addressLabel && (
-                  <Text
-                    className="text-[11px] text-white/70 mt-[1px]"
-                    numberOfLines={1}
-                  >
-                    {addressDetail}
-                  </Text>
-                )}
-              </View>
-              {addresses.length > 0 && (
-                <MaterialCommunityIcons
-                  name={showAddressDropdown ? "chevron-up" : "chevron-down"}
-                  size={16}
-                  color="rgba(255,255,255,0.8)"
-                />
-              )}
-            </Animated.View>
-          </TouchableOpacity>
+              {greeting}
+            </Text>
 
-          {/* Bell button */}
+            <RNAnimated.View style={{ opacity: fadeAnim }}>
+              <Text
+                style={{
+                  fontSize: 20, 
+                  fontWeight: "700",
+                  color: "#FFF",
+                  letterSpacing: -0.5, 
+                }}
+                numberOfLines={1}
+              >
+                {userName ?? "Seja Bem vindo!"}
+              </Text>
+            </RNAnimated.View>
+          </View>
+
           <TouchableOpacity
             style={{
               width: 42,
@@ -255,7 +228,6 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
               size={22}
               color="#FFF"
             />
-            {/* Unread badge */}
             {unreadCount > 0 && (
               <View
                 style={{
@@ -274,7 +246,6 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Search bar */}
         <View
           style={{
             flexDirection: "row",
@@ -289,7 +260,6 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
             shadowOpacity: 0.18,
             shadowRadius: 10,
             elevation: 6,
-            marginBottom: 15,
           }}
         >
           <MaterialCommunityIcons name="magnify" size={22} color="#BBBBBB" />
@@ -326,8 +296,8 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
         </View>
       </View>
 
-      {/* ── Backdrop (fecha ambos os dropdowns) ────────────────────────── */}
-      {anyDropdownOpen && (
+      {/* ── Backdrop CORRIGIDO PARA O IOS ───────────────────────────────── */}
+      {showNotifDropdown && (
         <TouchableOpacity
           activeOpacity={1}
           style={{
@@ -337,146 +307,14 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
             width: SCREEN_WIDTH * 2,
             height: SCREEN_HEIGHT * 2,
             zIndex: 30,
+            backgroundColor: "transparent",
           }}
           onPress={closeAll}
         />
       )}
 
-      {/* ── Address dropdown ────────────────────────────────────────────── */}
-      <Animated.View
-        pointerEvents={showAddressDropdown ? "auto" : "none"}
-        style={[
-          {
-            position: "absolute",
-            top: 72,
-            left: 60,
-            right: 16,
-            backgroundColor: "#FFF",
-            borderRadius: 18,
-            zIndex: 40,
-            maxHeight: 300,
-            overflow: "hidden",
-            flexDirection: "column",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.14,
-            shadowRadius: 14,
-            elevation: 10,
-          },
-          dropdownStyle(addressDropAnim),
-        ]}
-      >
-        <View
-          style={{
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: "#F5F5F5",
-          }}
-        >
-          <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1A1A" }}>
-            Seus endereços
-          </Text>
-        </View>
-
-        <ScrollView
-          bounces={false}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 8 }}
-        >
-          {addresses.map((addr) => {
-            const isSelected = addr.id === selectedAddress?.id;
-            return (
-              <TouchableOpacity
-                key={addr.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  marginHorizontal: 8,
-                  marginTop: 4,
-                  borderRadius: 12,
-                  backgroundColor: isSelected ? "#FFF5F5" : "#FFF",
-                }}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSelectedAddress(addr);
-                  setShowAddressDropdown(false);
-                }}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: isSelected ? "#FFE8EA" : "#F5F5F5",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name="map-marker-outline"
-                    size={17}
-                    color={isSelected ? "#E30613" : "#888888"}
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  {addr.label ? (
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: "700",
-                        color: "#E30613",
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        marginBottom: 3,
-                      }}
-                    >
-                      {addr.label}
-                    </Text>
-                  ) : null}
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: "#1A1A1A",
-                    }}
-                    numberOfLines={1}
-                  >
-                    {addr.street}, {addr.number}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      color: "#888888",
-                      marginTop: 2,
-                    }}
-                  >
-                    {addr.neighborhood}
-                  </Text>
-                </View>
-
-                {isSelected && (
-                  <MaterialCommunityIcons
-                    name="check-circle"
-                    size={19}
-                    color="#E30613"
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </Animated.View>
-
       {/* ── Notification dropdown ───────────────────────────────────────── */}
-      <Animated.View
+      <RNAnimated.View
         pointerEvents={showNotifDropdown ? "auto" : "none"}
         style={[
           {
@@ -487,6 +325,7 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
             backgroundColor: "#FFF",
             borderRadius: 18,
             zIndex: 40,
+            elevation: 20,
             maxHeight: 340,
             overflow: "hidden",
             flexDirection: "column",
@@ -494,157 +333,167 @@ export function HomeHeader({ onSearch }: HomeHeaderProps) {
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.14,
             shadowRadius: 14,
-            elevation: 10,
           },
           dropdownStyle(notifDropAnim),
         ]}
       >
-        {/* Header */}
         <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: "#F5F5F5",
-          }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          style={{ flex: 1 }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1A1A" }}>
-              Notificações
-            </Text>
-            {unreadCount > 0 && (
-              <View
-                style={{
-                  backgroundColor: "#E30613",
-                  borderRadius: 10,
-                  paddingHorizontal: 7,
-                  paddingVertical: 2,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 11, fontWeight: "700", color: "#FFF" }}
-                >
-                  {unreadCount}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setShowNotifDropdown(false)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          <View
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: "#F5F5F5",
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+              paddingTop: 16,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: "#F5F5F5",
             }}
           >
-            <MaterialCommunityIcons name="close" size={15} color="#555" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 8 }}
-        >
-          {MOCK_NOTIFICATIONS.map((notif) => (
             <View
-              key={notif.id}
-              style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                marginHorizontal: 8,
-                marginTop: 4,
-                borderRadius: 12,
-                backgroundColor: !notif.read ? "#FFF5F5" : "#FFF",
-              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
             >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: !notif.read ? "#FFE8EA" : "#F5F5F5",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                  flexShrink: 0,
-                }}
+              <Text
+                style={{ fontSize: 14, fontWeight: "800", color: "#1A1A1A" }}
               >
-                <MaterialCommunityIcons
-                  name={notif.icon as any}
-                  size={17}
-                  color={!notif.read ? "#E30613" : "#888888"}
-                />
-              </View>
-
-              <View style={{ flex: 1 }}>
+                Notificações
+              </Text>
+              {unreadCount > 0 && (
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 3,
+                    backgroundColor: "#E30613",
+                    borderRadius: 10,
+                    paddingHorizontal: 7,
+                    paddingVertical: 2,
                   }}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: "#1A1A1A",
-                      flex: 1,
-                      marginRight: 8,
-                    }}
-                    numberOfLines={1}
+                    style={{ fontSize: 11, fontWeight: "700", color: "#FFF" }}
                   >
-                    {notif.title}
-                  </Text>
-                  <Text
-                    style={{ fontSize: 11, color: "#AAAAAA", flexShrink: 0 }}
-                  >
-                    {notif.time}
+                    {unreadCount}
                   </Text>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#666666",
-                    lineHeight: 17,
-                  }}
-                  numberOfLines={2}
-                >
-                  {notif.body}
-                </Text>
-              </View>
-
-              {!notif.read && (
-                <View
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 3.5,
-                    backgroundColor: "#E30613",
-                    marginTop: 6,
-                    marginLeft: 8,
-                    flexShrink: 0,
-                  }}
-                />
               )}
             </View>
-          ))}
-        </ScrollView>
-      </Animated.View>
-    </View>
+
+            <TouchableOpacity
+              onPress={() => setShowNotifDropdown(false)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: "#F5F5F5",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialCommunityIcons name="close" size={15} color="#555" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 8 }}
+          >
+            {MOCK_NOTIFICATIONS.map((notif) => (
+              <View
+                key={notif.id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  marginHorizontal: 8,
+                  marginTop: 4,
+                  borderRadius: 12,
+                  backgroundColor: !notif.read ? "#FFF5F5" : "#FFF",
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: !notif.read ? "#FFE8EA" : "#F5F5F5",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                    flexShrink: 0,
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={notif.icon as any}
+                    size={17}
+                    color={!notif.read ? "#E30613" : "#888888"}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 3,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#1A1A1A",
+                        flex: 1,
+                        marginRight: 8,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {notif.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#AAAAAA",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {notif.time}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{ fontSize: 12, color: "#666666", lineHeight: 17 }}
+                    numberOfLines={2}
+                  >
+                    {notif.body}
+                  </Text>
+                </View>
+
+                {!notif.read && (
+                  <View
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 3.5,
+                      backgroundColor: "#E30613",
+                      marginTop: 6,
+                      marginLeft: 8,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </RNAnimated.View>
+    </Animated.View>
   );
 }

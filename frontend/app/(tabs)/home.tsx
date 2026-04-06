@@ -9,8 +9,17 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+} from "react-native-reanimated";
 
 const FEATURED_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.82);
+
+// Height of the floating header — must match HomeHeader's rendered height.
+export const HEADER_HEIGHT = 160;
+const MAX_TRANSLATE_Y = 330;
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -33,6 +42,25 @@ export default function HomeScreen() {
   const router = useRouter();
   const { catalog, refreshing, onRefresh } = useHomeData();
   const { addItem } = useCart();
+
+  // ── Collapsible header via Reanimated ──
+  const headerOffset = useSharedValue(0);
+  const lastScrollY = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const currentY = Math.max(event.contentOffset.y, 0);
+      const diff = currentY - lastScrollY.value;
+
+      headerOffset.value = Math.min(
+        Math.max(headerOffset.value + diff, 0),
+        MAX_TRANSLATE_Y,
+      );
+
+      lastScrollY.value = currentY;
+    },
+  });
+  // ─────────────────────────────────────────────────────────────────────────
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -107,55 +135,60 @@ export default function HomeScreen() {
     router.push({ pathname: "/category/[id]", params: { id, name } });
 
   return (
-    <SafeAreaView className="flex-1 bg-[#E30613]" edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#E30613" }}
+      edges={["top"]}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#E30613" />
 
-      {/* Sticky: hero header block (address + search inside) */}
-      <HomeHeader onSearch={handleSearch} />
+      <View style={{ flex: 1 }}>
+        <Animated.ScrollView
+          style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+          contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+          showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              progressViewOffset={HEADER_HEIGHT}
+              colors={refreshing && catalog ? ["transparent"] : ["#E30613"]}
+              tintColor={refreshing && catalog ? "transparent" : "#E30613"}
+            />
+          }
+        >
+          {isSearching ? (
+            <SearchSkeleton />
+          ) : searchQuery.trim() !== "" ? (
+            <SearchResults
+              query={searchQuery}
+              results={searchResults}
+              hasMore={hasMoreSearch}
+              isLoadingMore={isSearchingMore}
+              onLoadMore={loadMoreSearchResults}
+              onProductPress={navigateToProduct}
+              onAddToCart={handleAddToCart}
+            />
+          ) : !catalog || refreshing ? (
+            <CatalogSkeleton />
+          ) : (
+            <Catalog
+              catalog={catalog}
+              onProductPress={navigateToProduct}
+              onCategoryPress={navigateToCategory}
+              onAddToCart={handleAddToCart}
+            />
+          )}
 
-      {/* Scrollable content */}
-      <ScrollView
-        className="flex-1 bg-white"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={refreshing && catalog ? ["transparent"] : ["#E30613"]}
-            tintColor={refreshing && catalog ? "transparent" : "#E30613"}
-          />
-        }
-      >
-        {isSearching ? (
-          <SearchSkeleton />
-        ) : searchQuery.trim() !== "" ? (
-          <SearchResults
-            query={searchQuery}
-            results={searchResults}
-            hasMore={hasMoreSearch}
-            isLoadingMore={isSearchingMore}
-            onLoadMore={loadMoreSearchResults}
-            onProductPress={navigateToProduct}
-            onAddToCart={handleAddToCart}
-          />
-        ) : !catalog || refreshing ? (
-          <CatalogSkeleton />
-        ) : (
-          <Catalog
-            catalog={catalog}
-            onProductPress={navigateToProduct}
-            onCategoryPress={navigateToCategory}
-            onAddToCart={handleAddToCart}
-          />
-        )}
+          <View className="h-8" />
+        </Animated.ScrollView>
 
-        <View className="h-8" />
-      </ScrollView>
+        <HomeHeader onSearch={handleSearch} headerOffset={headerOffset} />
+      </View>
     </SafeAreaView>
   );
 }
-
-// ─── Search skeleton ──────────────────────────────────────────────────────────
 
 function SearchSkeleton() {
   return (
@@ -168,8 +201,6 @@ function SearchSkeleton() {
     </View>
   );
 }
-
-// ─── Search results ───────────────────────────────────────────────────────────
 
 interface SearchResultsProps {
   query: string;
@@ -192,7 +223,6 @@ function SearchResults({
 }: SearchResultsProps) {
   const lowScore =
     results.length > 0 && (results[0].similarity_score ?? 1) < 0.3;
-
   return (
     <View>
       {results.length > 0 && (
@@ -238,7 +268,6 @@ function SearchResults({
               </View>
             ))}
           </View>
-
           {hasMore && (
             <View className="py-6 items-center">
               {isLoadingMore ? (
@@ -263,18 +292,13 @@ function SearchResults({
   );
 }
 
-// ─── Catalog skeleton ─────────────────────────────────────────────────────────
-
 function CatalogSkeleton() {
   return (
     <View className="mt-2">
-      {/* Banner skeleton */}
       <View
         className="mx-4 mt-4 mb-3 bg-[#F0F0F0]"
         style={{ height: 156, borderRadius: 16 }}
       />
-
-      {/* Pills skeleton */}
       <View className="flex-row px-4 gap-2 py-3">
         {[100, 76, 116, 84].map((w, i) => (
           <View
@@ -284,14 +308,10 @@ function CatalogSkeleton() {
           />
         ))}
       </View>
-
-      {/* Section header skeleton */}
       <View className="px-4 mt-5 mb-3">
         <View className="h-3 w-16 bg-[#F0F0F0] rounded mb-2" />
         <View className="h-5 w-36 bg-[#F0F0F0] rounded" />
       </View>
-
-      {/* Featured cards skeleton */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -301,8 +321,6 @@ function CatalogSkeleton() {
           <ProductCardSkeleton key={i} isFeatured />
         ))}
       </ScrollView>
-
-      {/* Carousel skeletons */}
       {[1, 2].map((row) => (
         <View key={row} className="mt-6">
           <View className="h-5 w-36 bg-[#F0F0F0] rounded mx-4 mb-3" />
@@ -317,8 +335,6 @@ function CatalogSkeleton() {
   );
 }
 
-// ─── Catalog ──────────────────────────────────────────────────────────────────
-
 interface CatalogProps {
   catalog: { id: string; name: string; products: Product[] }[];
   onProductPress: (id: string) => void;
@@ -332,7 +348,6 @@ function Catalog({
   onCategoryPress,
   onAddToCart,
 }: CatalogProps) {
-  // Collect 1–2 products per category for the banner (variety)
   const bannerProducts = catalog
     .filter((cat) => cat.products.length > 0)
     .flatMap((cat) => cat.products.slice(0, 2))
@@ -340,16 +355,10 @@ function Catalog({
 
   return (
     <>
-      {/* Category pills */}
       <CategoryCarousel />
-      
-      {/* Banner using real products */}
       <BannerCarousel products={bannerProducts} onPress={onProductPress} />
-
-      {/* Product sections */}
       {catalog.map((category, categoryIndex) => {
         if (!category.products || category.products.length === 0) return null;
-
         const isFeatured = categoryIndex === 0;
 
         return (
@@ -359,9 +368,7 @@ function Catalog({
               label={isFeatured ? "Destaques" : undefined}
               onSeeAll={() => onCategoryPress(category.id, category.name)}
             />
-
             {isFeatured ? (
-              // First category → horizontal scroll of landscape cards
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -386,7 +393,6 @@ function Catalog({
                 ))}
               </ScrollView>
             ) : (
-              // Other categories → horizontal carousel
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

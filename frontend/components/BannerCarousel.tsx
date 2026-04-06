@@ -76,135 +76,144 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
               onPress={() => onPress(item.id)}
               style={{ width: CARD_WIDTH }}
             >
+              {/* 1. CONTAINER EXTERNO: Responsável apenas pela sombra no iOS/Android. SEM overflow: hidden */}
               <View
                 style={{
                   borderRadius: 20,
-                  height: 180,
-                  overflow: "hidden",
-                  backgroundColor: "#FFF5F5",
-                  flexDirection: "row",
+                  margin: 8,
+                  marginBottom: 18,
+                  backgroundColor: "#FFF", // Necessário para a sombra ter onde se apoiar no iOS
                   shadowColor: "#E30613",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.18,
                   shadowRadius: 12,
                   elevation: 6,
-                  margin: 8,
                 }}
               >
-                {/* Decorative accent stripe */}
+                {/* 2. CONTAINER INTERNO: Mascara o conteúdo para ficar com borda redonda. COM overflow: hidden */}
                 <View
                   style={{
-                    flex: 1,
-                    padding: 20,
-                    paddingLeft: 24,
-                    justifyContent: "space-between",
-                    backgroundColor: "#E30613", // Fundo vermelho mantido
+                    borderRadius: 20,
+                    height: 180,
+                    overflow: "hidden",
+                    flexDirection: "row",
                   }}
                 >
-                  {/* Badge */}
+                  {/* Decorative accent stripe */}
                   <View
                     style={{
-                      alignSelf: "flex-start",
-                      backgroundColor: "#FFFFFF", // Fundo branco para contrastar com o vermelho
-                      borderRadius: 20,
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      shadowColor: "#000", // Leve sombra para destacar o badge
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 3,
-                      elevation: 2,
+                      flex: 1,
+                      padding: 20,
+                      paddingLeft: 24,
+                      justifyContent: "space-between",
+                      backgroundColor: "#E30613",
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        fontWeight: "900",
-                        color: "#E30613", // Texto vermelho para combinar com o tema
-                        textTransform: "uppercase",
-                        letterSpacing: 1,
-                      }}
-                    >
-                      Ofertas
-                    </Text>
-                  </View>
-
-                  {/* Product name + price */}
-                  <View>
-                    <Text
-                      style={{
-                        color: "#FFFFFF", // Branco puro para máximo contraste e legibilidade
-                        fontSize: 17,
-                        fontWeight: "800",
-                        lineHeight: 22,
-                        marginBottom: 10,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {item.name
-                        .toLowerCase()
-                        .split(" ")
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() + word.slice(1),
-                        )
-                        .join(" ")}
-                    </Text>
-
+                    {/* Badge */}
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "baseline",
-                        gap: 4,
+                        alignSelf: "flex-start",
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 20,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 3,
+                        elevation: 2,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 26,
+                          fontSize: 10,
                           fontWeight: "900",
-                          color: "#FFFFFF", // Preço em branco puro
+                          color: "#E30613",
+                          textTransform: "uppercase",
+                          letterSpacing: 1,
                         }}
                       >
-                        {formatPrice(price)}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "600",
-                          color: "rgba(255, 255, 255, 0.75)", // Branco translúcido para dar hierarquia (unidade menos chamativa que o preço)
-                        }}
-                      >
-                        {unitLabel}
+                        Ofertas
                       </Text>
                     </View>
-                  </View>
-                </View>
 
-                {/* Right image */}
-                <View
-                  style={{
-                    width: 148,
-                    backgroundColor: "#fff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 10,
-                  }}
-                >
-                  {item.image_url ? (
-                    <Image
-                      source={{ uri: item.image_url }}
-                      style={{ width: "100%", height: "100%" }}
-                      contentFit="contain"
-                      transition={300}
-                      cachePolicy="disk"
-                    />
-                  ) : (
-                    <MaterialCommunityIcons
-                      name="image-off-outline"
-                      size={40}
-                      color="#CCC"
-                    />
-                  )}
+                    {/* Product name + price */}
+                    <View>
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 17,
+                          fontWeight: "800",
+                          lineHeight: 22,
+                          marginBottom: 10,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {item.name
+                          .toLowerCase()
+                          .split(" ")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1),
+                          )
+                          .join(" ")}
+                      </Text>
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "baseline",
+                          gap: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 26,
+                            fontWeight: "900",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          {formatPrice(price)}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: "600",
+                            color: "rgba(255, 255, 255, 0.75)",
+                          }}
+                        >
+                          {unitLabel}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Right image */}
+                  <View
+                    style={{
+                      width: 148,
+                      backgroundColor: "#fff",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 10,
+                    }}
+                  >
+                    {item.image_url ? (
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={{ width: "100%", height: "100%" }}
+                        contentFit="contain"
+                        transition={300}
+                        cachePolicy="disk"
+                      />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="image-off-outline"
+                        size={40}
+                        color="#CCC"
+                      />
+                    )}
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
