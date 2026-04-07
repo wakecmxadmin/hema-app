@@ -13,6 +13,7 @@ export class CartService {
         .from('products')
         .select('*')
         .eq('id', product_id)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (productError || !product) {

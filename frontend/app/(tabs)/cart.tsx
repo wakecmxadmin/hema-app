@@ -77,7 +77,7 @@ const CartItemComponent = ({
   };
 
   return (
-    <View style={{ marginBottom: 15 }}>
+    <View style={{ marginBottom: 12 }}>
       <Swipeable
         ref={swipeableRef}
         renderRightActions={renderRightActions}
@@ -85,40 +85,118 @@ const CartItemComponent = ({
           if (direction === "right") removeItem(item.id);
         }}
       >
-        <View className="flex-row p-[14px] bg-white rounded-[16px] border border-[#F0F0F0] items-center shadow-sm">
-          <View className="w-[76px] h-[76px] bg-[#F9F9F9] rounded-[12px] justify-center items-center overflow-hidden">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "#F0F0F0",
+            padding: 12,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
+        >
+          {/* Imagem — tamanho fixo, alinhada ao centro vertical */}
+          <View
+            style={{
+              width: 84,
+              height: 84,
+              borderRadius: 10,
+              backgroundColor: "#F9F9F9",
+              overflow: "hidden",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              marginRight: 12,
+            }}
+          >
             {item.product.image_url ? (
               <Image
                 source={{ uri: item.product.image_url }}
-                className="w-full h-full"
+                style={{ width: "100%", height: "100%" }}
                 resizeMode="cover"
               />
             ) : (
-              <Ionicons name="image-outline" size={20} color="#CCC" />
+              <Ionicons name="image-outline" size={22} color="#CCC" />
             )}
           </View>
 
-          <View className="flex-1 ml-[14px] h-[76px] justify-between">
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <Text
-                  className="text-[15px] text-[#222] font-bold"
-                  numberOfLines={1}
-                >
-                  {item.product.name}
-                </Text>
-                <Text className="text-[12px] text-[#888] mt-[2px] font-medium">
-                  {formattedUnitPrice}{" "}
-                  {item.product.type === "unit" ? "/un" : "/100g"}
-                </Text>
-              </View>
-              <Text className="text-[16px] font-extrabold text-[#E30613]">
-                {formattedItemTotal}
+          {/* Conteúdo — ocupa todo o espaço restante */}
+          <View style={{ flex: 1 }}>
+            {/* Linha 1: Nome + Lixeira */}
+            <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: "#1A1A1A",
+                  lineHeight: 20,
+                  marginRight: 8,
+                }}
+                numberOfLines={2}
+              >
+                {item.product.name}
               </Text>
+              <TouchableOpacity
+                onPress={() => removeItem(item.id)}
+                style={{ padding: 2, marginTop: 1 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="trash-outline" size={17} color="#CCCCCC" />
+              </TouchableOpacity>
             </View>
 
-            <View className="flex-row justify-between items-center">
-              <View className="flex-row items-center bg-[#F8F8F8] rounded-[20px] p-[3px] border border-[#EEEEEE]">
+            {/* Linha 2: Preço unitário */}
+            <Text
+              style={{
+                fontSize: 12,
+                color: "#999",
+                fontWeight: "500",
+                marginTop: 3,
+              }}
+            >
+              {formattedUnitPrice}{" "}
+              {item.product.type === "unit" ? "/un" : "/100g"}
+            </Text>
+
+            {/* Linha 3: Total + Controle de quantidade */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#E30613",
+                }}
+              >
+                {formattedItemTotal}
+              </Text>
+
+              {/* Controle de quantidade */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#F8F8F8",
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: "#EEEEEE",
+                  paddingHorizontal: 4,
+                  paddingVertical: 3,
+                }}
+              >
                 <TouchableOpacity
                   onPress={() => {
                     if (item.product.type === "unit") {
@@ -132,24 +210,36 @@ const CartItemComponent = ({
                       updateItem(item.id, { weight: newWeight });
                     }
                   }}
-                  className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
                 >
-                  <Ionicons name="remove" size={16} color="#E30613" />
+                  <Ionicons name="remove" size={14} color="#E30613" />
                 </TouchableOpacity>
 
                 <View
                   style={{
-                    minWidth: 45,
-                    alignItems: "center",
+                    minWidth: 42,
                     flexDirection: "row",
+                    alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Text className="text-[14px] font-bold text-[#1A1A1A]">
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1A1A" }}>
                     {item.product.type === "unit" ? item.quantity : item.weight}
                   </Text>
                   {item.product.type !== "unit" && (
-                    <Text className="text-[12px] font-bold text-[#888] ml-[1px]">
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#999", marginLeft: 1 }}>
                       g
                     </Text>
                   )}
@@ -165,21 +255,23 @@ const CartItemComponent = ({
                       updateItem(item.id, { weight: (item.weight || 0) + 100 });
                     }
                   }}
-                  className="w-[28px] h-[28px] rounded-[14px] bg-white items-center justify-center shadow-sm"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
                 >
-                  <Ionicons name="add" size={16} color="#E30613" />
+                  <Ionicons name="add" size={14} color="#E30613" />
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                onPress={() => removeItem(item.id)}
-                className="flex-row items-center p-[6px]"
-              >
-                <Ionicons name="trash-outline" size={16} color="#999" />
-                <Text className="text-[12px] text-[#A0A0A0] font-semibold ml-1">
-                  Remover
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -266,10 +358,18 @@ export default function CartScreen() {
         <StatusBar barStyle="dark-content" />
 
         <View className="flex-1 px-4">
-          <View className="py-5 mb-2">
-            <Text className="text-2xl font-extrabold text-[#111]">
+          <View className="flex-row items-center" style={{ paddingVertical: 16, marginBottom: 8 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#111" />
+            </TouchableOpacity>
+            <Text className="flex-1 text-center text-[20px] font-extrabold text-[#111]">
               Meu Carrinho
             </Text>
+            <View style={{ width: 36 }} />
           </View>
 
           <FlatList

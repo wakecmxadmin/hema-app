@@ -74,7 +74,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const response = await cartService.addCartItemService(data);
 
       if (response.success) {
-        Toast.show({ type: "success", text1: response.message }); // "Produto adicionado ao carrinho"
         await refreshCart(); // Puxa os IDs reais do banco
         return true;
       } else {
@@ -124,7 +123,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const response = await cartService.removeCartItemService(id);
 
       if (response.success) {
-        Toast.show({ type: "success", text1: response.message }); 
         await refreshCart();
       } else {
         setItems(previousItems);

@@ -30,6 +30,7 @@ export class ProductsService {
         `,
         )
         .in('name', targetCategories)
+        .eq('products.is_active', true)
         .not('products.image_url', 'is', null)
         .limit(10, { foreignTable: 'products' })
         .order('name', { ascending: false });
@@ -59,6 +60,7 @@ export class ProductsService {
         .from('products')
         .select('*')
         .eq('id', id)
+        .eq('is_active', true)
         .single();
 
       if (error || !data) {
@@ -101,6 +103,7 @@ export class ProductsService {
         .from('products')
         .select('id, category_id')
         .eq('id', productId)
+        .eq('is_active', true)
         .single();
 
       if (error || !product) {
@@ -115,6 +118,7 @@ export class ProductsService {
         .from('products')
         .select('id, name, price, price_per_kg, image_url, type')
         .eq('category_id', product.category_id)
+        .eq('is_active', true)
         .neq('id', productId)
         .limit(10);
 
@@ -150,6 +154,7 @@ export class ProductsService {
         .from('products')
         .select('id, name, price, price_per_kg, image_url, type')
         .eq('category_id', categoryId)
+        .eq('is_active', true)
         .range(offset, to);
 
       if (error) throw error;
