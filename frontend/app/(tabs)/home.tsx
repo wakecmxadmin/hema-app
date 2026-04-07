@@ -60,7 +60,6 @@ export default function HomeScreen() {
       lastScrollY.value = currentY;
     },
   });
-  // ─────────────────────────────────────────────────────────────────────────
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -139,7 +138,7 @@ export default function HomeScreen() {
       style={{ flex: 1, backgroundColor: "#E30613" }}
       edges={["top"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#E30613" />
+      <StatusBar barStyle="dark-content" backgroundColor="#E30613" />
 
       <View style={{ flex: 1 }}>
         <Animated.ScrollView

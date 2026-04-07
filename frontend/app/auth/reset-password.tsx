@@ -80,13 +80,13 @@ export default function ResetPasswordScreen() {
         options={{
           headerShown: true,
           title: "Nova Senha",
-          headerTintColor: "#EA1D2C",
+          headerTintColor: "#E30613",
           headerShadowVisible: false,
         }}
       />
 
       <View className="flex-1 px-7 justify-center">
-        <Text className="text-[32px] font-black text-[#EA1D2C] mb-2">
+        <Text className="text-[32px] font-black text-[#E30613] mb-2">
           Criar nova senha
         </Text>
         <Text className="text-base text-[#666] mb-8">
@@ -117,7 +117,7 @@ export default function ResetPasswordScreen() {
         </View>
 
         <TouchableOpacity
-          className="bg-[#EA1D2C] h-[58px] rounded-[16px] justify-center items-center"
+          className="bg-[#E30613] h-[58px] rounded-[16px] justify-center items-center"
           onPress={handleUpdatePassword}
           disabled={isLoading || !newPassword || !confirmPassword}
         >

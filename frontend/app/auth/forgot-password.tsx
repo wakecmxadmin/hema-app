@@ -83,7 +83,7 @@ export default function ForgotPasswordScreen() {
         keyboardDismissMode="on-drag"
       >
         <View className="mb-10">
-          <Text className="text-[36px] font-black text-[#EA1D2C] mb-3 tracking-[-1px]">
+          <Text className="text-[36px] font-black text-[#E30613] mb-3 tracking-[-1px]">
             Recuperar senha
           </Text>
           <Text className="text-[16px] text-[#666666] leading-6 font-medium">
@@ -95,7 +95,7 @@ export default function ForgotPasswordScreen() {
         <View
           className={`rounded-2xl h-[60px] mb-8 justify-center ${
             isFocused
-              ? "bg-white border-2 border-[#EA1D2C]"
+              ? "bg-white border-2 border-[#E30613]"
               : "bg-[#F9F9F9] border border-[#E8E8E8]"
           }`}
           style={inputShadow}
@@ -115,12 +115,12 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <TouchableOpacity
-          className="bg-[#EA1D2C] h-[60px] rounded-2xl justify-center items-center"
+          className="bg-[#E30613] h-[60px] rounded-2xl justify-center items-center"
           activeOpacity={0.8}
           onPress={handleReset}
           disabled={isLoading}
           style={{
-            shadowColor: "#EA1D2C",
+            shadowColor: "#E30613",
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.3,
             shadowRadius: 10,

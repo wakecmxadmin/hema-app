@@ -8,10 +8,6 @@ export class PaymentsController {
   @Post('mercadopago')
   @HttpCode(HttpStatus.OK)
   handleWebhook(@Body() payload: any) {
-    this.paymentsService.handleMercadoPagoWebhook(payload).catch((err) => {
-      console.error('[WEBHOOK] Erro no processamento assíncrono:', err);
-    });
-
     return { received: true };
   }
 }
