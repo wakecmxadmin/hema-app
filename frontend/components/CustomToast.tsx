@@ -15,7 +15,7 @@ export function SuccessToast({ text1, text2 }: Props) {
         alignItems: "center",
         backgroundColor: "#E9F9F1",
         padding: 16,
-        borderRadius: 18,
+        borderRadius: 16,
         marginHorizontal: 20,
         shadowColor: "#000",
         shadowOpacity: 0.08,
@@ -23,7 +23,6 @@ export function SuccessToast({ text1, text2 }: Props) {
         elevation: 3,
       }}
     >
-      {/* Ícone */}
       <View
         style={{
           width: 44,
@@ -38,7 +37,6 @@ export function SuccessToast({ text1, text2 }: Props) {
         <Ionicons name="checkmark" size={24} color="#FFF" />
       </View>
 
-      {/* Texto */}
       <View style={{ flex: 1 }}>
         <Text
           style={{
@@ -73,9 +71,9 @@ export function ErrorToast({ text1, text2 }: Props) {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#FDECEC", 
+        backgroundColor: "#FDECEC",
         padding: 16,
-        borderRadius: 18,
+        borderRadius: 16,
         marginHorizontal: 20,
         shadowColor: "#000",
         shadowOpacity: 0.08,
@@ -83,7 +81,6 @@ export function ErrorToast({ text1, text2 }: Props) {
         elevation: 3,
       }}
     >
-      {/* Ícone */}
       <View
         style={{
           width: 44,
@@ -98,7 +95,6 @@ export function ErrorToast({ text1, text2 }: Props) {
         <Ionicons name="close" size={24} color="#FFF" />
       </View>
 
-      {/* Texto */}
       <View style={{ flex: 1 }}>
         <Text
           style={{

@@ -21,7 +21,11 @@ export function CategoryCarousel() {
       const response = await CategoryBadgesService.getCategories();
 
       if (response.success && response.data) {
-        setCategories(response.data);
+        const cleanedAndSortedData = response.data
+          .filter((item: any) => item.name && item.name.trim().length > 0)
+          .sort((a: any, b: any) => b.name.localeCompare(a.name));
+
+        setCategories(cleanedAndSortedData);
       } else {
         console.log(
           "Erro ao carregar categorias no carrossel:",
@@ -37,8 +41,10 @@ export function CategoryCarousel() {
 
   if (loading) {
     return (
-      <View style={{ height: 52, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="small" color="#E30613" />
+      <View
+        style={{ height: 52, alignItems: "center", justifyContent: "center" }}
+      >
+        <ActivityIndicator size="small" color="#8C0000" />
       </View>
     );
   }
@@ -68,14 +74,14 @@ export function CategoryCarousel() {
               paddingHorizontal: 16,
               paddingVertical: 10,
               borderWidth: 1,
-              borderColor: "#EBEBEB",
+              borderColor: "#E0E0E0",
             }}
           >
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: "600",
-                color: "#333333",
+                color: "#121212",
               }}
             >
               {item.name}

@@ -40,9 +40,9 @@ function getStatusConfig(status: string) {
     case "completed":
       return { label: "Entregue", color: "#10B981", bg: "#ECFDF5", icon: "check-circle-outline" as const };
     case "cancelled":
-      return { label: "Cancelado", color: "#EF4444", bg: "#FEF2F2", icon: "close-circle-outline" as const };
+      return { label: "Cancelado", color: "#8C0000", bg: "#FEF2F2", icon: "close-circle-outline" as const };
     default:
-      return { label: status, color: "#6B7280", bg: "#F3F4F6", icon: "information-outline" as const };
+      return { label: status, color: "#666666", bg: "#F5F5F5", icon: "information-outline" as const };
   }
 }
 
@@ -69,17 +69,17 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      className="bg-white rounded-2xl mb-3 overflow-hidden"
+      className="bg-surface rounded-card mb-3 overflow-hidden"
       style={{
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowRadius: 6,
+        elevation: 2,
       }}
     >
       {/* Top row: status + date */}
-      <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-[#F5F5F5]">
+      <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-200">
         <View
           className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full"
           style={{ backgroundColor: statusConfig.bg }}
@@ -95,21 +95,21 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
         </View>
 
         <View className="items-end">
-          <Text className="text-[12px] font-[600] text-[#888]">{date}</Text>
-          <Text className="text-[11px] text-[#AAAAAA]">{time}</Text>
+          <Text className="text-[12px] font-[600] text-text-secondary">{date}</Text>
+          <Text className="text-[11px] text-neutral-300">{time}</Text>
         </View>
       </View>
 
       {/* Middle: order ID + items */}
       <View className="px-4 py-3">
-        <Text className="text-[13px] font-[800] text-[#1A1A1A] mb-2">
+        <Text className="text-[13px] font-[800] text-text-primary mb-2">
           Pedido #{order.id.substring(0, 8).toUpperCase()}
         </Text>
 
         {displayItems.map((item: any) => (
           <View key={item.id} className="flex-row items-center mb-1">
-            <View className="w-1.5 h-1.5 rounded-full bg-[#CCCCCC] mr-2" />
-            <Text className="text-[13px] text-[#555555]" numberOfLines={1}>
+            <View className="w-1.5 h-1.5 rounded-full bg-neutral-300 mr-2" />
+            <Text className="text-[13px] text-text-secondary" numberOfLines={1}>
               {item.product_name}
               {item.quantity ? ` × ${item.quantity}` : item.weight ? ` — ${item.weight}g` : ""}
             </Text>
@@ -117,28 +117,28 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
         ))}
 
         {extraCount > 0 && (
-          <Text className="text-[12px] text-[#AAAAAA] mt-0.5 ml-3.5">
+          <Text className="text-[12px] text-neutral-300 mt-0.5 ml-3.5">
             + {extraCount} {extraCount === 1 ? "item" : "itens"}
           </Text>
         )}
       </View>
 
       {/* Bottom: total + CTA */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-t border-[#F5F5F5] bg-[#FAFAFA]">
+      <View className="flex-row items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-100">
         <View>
-          <Text className="text-[11px] text-[#AAAAAA] font-[500]">Total</Text>
-          <Text className="text-[16px] font-[800] text-[#1A1A1A]">
+          <Text className="text-[11px] text-neutral-300 font-[500]">Total</Text>
+          <Text className="text-[16px] font-[800] text-text-primary">
             {formatPrice(order.total_price)}
           </Text>
         </View>
 
         <TouchableOpacity
           onPress={onPress}
-          className="flex-row items-center gap-1 bg-[#E30613] px-4 py-2.5 rounded-full"
+          className="flex-row items-center gap-1 bg-brand px-4 py-2.5 rounded-full"
           activeOpacity={0.8}
         >
-          <Text className="text-[12px] font-[700] text-white">Ver detalhes</Text>
-          <MaterialCommunityIcons name="arrow-right" size={14} color="#FFF" />
+          <Text className="text-[12px] font-[700] text-brand-on">Ver detalhes</Text>
+          <MaterialCommunityIcons name="arrow-right" size={14} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -181,12 +181,12 @@ export default function OrdersTabScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F7F7F8]" edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+    <SafeAreaView className="flex-1 bg-surface-secondary" edges={["top"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
       {/* Header */}
-      <View className="px-5 pt-4 pb-3 bg-[#F7F7F8]">
-        <Text className="text-[26px] font-[800] text-[#1A1A1A]">Meus Pedidos</Text>
+      <View className="px-5 pt-4 pb-3 bg-surface-secondary">
+        <Text className="text-[26px] font-[800] text-text-primary">Meus Pedidos</Text>
       </View>
 
       {/* Filter pills */}
@@ -199,13 +199,13 @@ export default function OrdersTabScreen() {
               onPress={() => setActiveFilter(f.key)}
               className={`px-4 py-2 rounded-full border ${
                 isActive
-                  ? "bg-[#E30613] border-[#E30613]"
-                  : "bg-white border-[#E8E8E8]"
+                  ? "bg-brand border-brand"
+                  : "bg-surface border-neutral-200"
               }`}
               activeOpacity={0.75}
             >
               <Text
-                className={`text-[13px] font-[600] ${isActive ? "text-white" : "text-[#666666]"}`}
+                className={`text-[13px] font-[600] ${isActive ? "text-brand-on" : "text-text-secondary"}`}
               >
                 {f.label}
               </Text>
@@ -216,7 +216,7 @@ export default function OrdersTabScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#E30613" />
+          <ActivityIndicator size="large" color="#8C0000" />
         </View>
       ) : (
         <FlatList
@@ -238,25 +238,25 @@ export default function OrdersTabScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#E30613"]}
-              tintColor="#E30613"
+              colors={["#8C0000"]}
+              tintColor="#8C0000"
             />
           }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center pt-16">
-              <MaterialCommunityIcons name="receipt-text-outline" size={64} color="#DDDDDD" />
-              <Text className="text-[16px] font-[600] text-[#AAAAAA] mt-4 text-center">
+              <MaterialCommunityIcons name="receipt-text-outline" size={64} color="#C2C2C2" />
+              <Text className="text-[16px] font-[600] text-neutral-300 mt-4 text-center">
                 {activeFilter === "all"
                   ? "Você ainda não fez nenhum pedido."
                   : "Nenhum pedido nesta categoria."}
               </Text>
               {activeFilter === "all" && (
                 <TouchableOpacity
-                  className="mt-5 bg-[#E30613] px-6 py-3 rounded-full"
+                  className="mt-5 bg-brand px-6 py-3 rounded-full"
                   onPress={() => router.push("/(tabs)/home")}
                   activeOpacity={0.8}
                 >
-                  <Text className="text-white font-[700] text-[14px]">Ir para a loja</Text>
+                  <Text className="text-brand-on font-[700] text-[14px]">Ir para a loja</Text>
                 </TouchableOpacity>
               )}
             </View>

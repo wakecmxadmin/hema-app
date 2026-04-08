@@ -18,20 +18,7 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isFocused, setIsFocused] = useState(false); // Estado para animar a borda do input
-
-  // Sombra suave para o input (mantendo a identidade do app)
-  const inputShadow = Platform.select({
-    ios: {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-    },
-    android: {
-      elevation: 2,
-    },
-  });
+  const [isFocused, setIsFocused] = useState(false);
 
   async function handleReset() {
     if (!email)
@@ -42,11 +29,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(false);
 
     if (response.success) {
-      Toast.show({
-        type: "success",
-        text1: "Sucesso!",
-        text2: response.message,
-      });
+      Toast.show({ type: "success", text1: "Sucesso!", text2: response.message });
       router.back();
     } else {
       Toast.show({ type: "error", text1: "Erro", text2: response.message });
@@ -55,7 +38,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen
@@ -63,75 +46,70 @@ export default function ForgotPasswordScreen() {
           headerShown: true,
           title: "",
           headerShadowVisible: false,
-          // Adicionado um paddingzinho no botão de voltar para facilitar o clique
           headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="p-2 -ml-2"
-            >
-              <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
+              <Ionicons name="arrow-back" size={24} color="#121212" />
             </TouchableOpacity>
           ),
         }}
       />
 
-      {/* Trocamos a View estática por um ScrollView */}
       <ScrollView
-        contentContainerClassName="flex-grow justify-center px-7 pb-20"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <View className="mb-10">
-          <Text className="text-[36px] font-black text-[#E30613] mb-3 tracking-[-1px]">
+        <View style={{ marginBottom: 40 }}>
+          <Text style={{ fontSize: 28, fontWeight: "900", color: "#8C0000", marginBottom: 12, letterSpacing: -0.5 }}>
             Recuperar senha
           </Text>
-          <Text className="text-[16px] text-[#666666] leading-6 font-medium">
-            Digite seu e-mail cadastrado e enviaremos um link para você criar
-            uma nova senha.
+          <Text style={{ fontSize: 15, color: "#666666", lineHeight: 22, fontWeight: "500" }}>
+            Digite seu e-mail cadastrado e enviaremos um link para você criar uma nova senha.
           </Text>
         </View>
 
-        <View
-          className={`rounded-2xl h-[60px] mb-8 justify-center ${
-            isFocused
-              ? "bg-white border-2 border-[#E30613]"
-              : "bg-[#F9F9F9] border border-[#E8E8E8]"
-          }`}
-          style={inputShadow}
-        >
+        <Text style={s.label}>E-mail</Text>
+        <View style={[s.inputBox, isFocused && s.inputBoxFocused, { marginBottom: 32 }]}>
           <TextInput
-            className="flex-1 px-5 text-[16px] text-[#1A1A1A]"
-            placeholder="E-mail"
-            placeholderTextColor="#999"
+            style={s.input}
+            placeholder="seuemail@exemplo.com"
+            placeholderTextColor="#C2C2C2"
             value={email}
             onChangeText={setEmail}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
             editable={!isLoading}
+            returnKeyType="done"
+            onSubmitEditing={handleReset}
           />
         </View>
 
         <TouchableOpacity
-          className="bg-[#E30613] h-[60px] rounded-2xl justify-center items-center"
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={handleReset}
           disabled={isLoading}
           style={{
-            shadowColor: "#E30613",
-            shadowOffset: { width: 0, height: 6 },
+            height: 56,
+            borderRadius: 8,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "#8C0000",
+            shadowColor: "#8C0000",
+            shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
-            shadowRadius: 10,
+            shadowRadius: 8,
             elevation: 6,
           }}
         >
           {isLoading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text className="text-[16px] font-bold uppercase tracking-[0.5px] text-white">
-              Enviar Link
+            <Text style={{ fontSize: 16, fontWeight: "700", color: "#FFFFFF" }}>
+              Enviar link
             </Text>
           )}
         </TouchableOpacity>
@@ -139,3 +117,36 @@ export default function ForgotPasswordScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+const s = {
+  label: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#C2C2C2",
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  inputBox: {
+    height: 54,
+    borderRadius: 8,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    paddingHorizontal: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  inputBoxFocused: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#8C0000",
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#121212",
+    paddingVertical: 0,
+    includeFontPadding: false,
+  },
+};

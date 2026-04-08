@@ -13,11 +13,11 @@ export function SectionHeader({ title, label, onSeeAll }: SectionHeaderProps) {
     <View className="flex-row items-flex-end justify-between px-4 mt-6 mb-3">
       <View>
         {label ? (
-          <Text className="text-[10px] font-[800] text-[#E30613] uppercase tracking-widest mb-[2px]">
+          <Text className="text-[10px] font-[800] text-brand uppercase tracking-widest mb-[2px]">
             {label}
           </Text>
         ) : null}
-        <Text className="text-[18px] font-[800] text-[#1A1A1A]">{title}</Text>
+        <Text className="text-[18px] font-[800] text-text-primary">{title}</Text>
       </View>
 
       {onSeeAll ? (
@@ -27,10 +27,10 @@ export function SectionHeader({ title, label, onSeeAll }: SectionHeaderProps) {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <Text className="text-[13px] font-[600] text-[#E30613]">
+          <Text className="text-[13px] font-[600] text-brand">
             Ver todos
           </Text>
-          <MaterialCommunityIcons name="chevron-right" size={16} color="#E30613" />
+          <MaterialCommunityIcons name="chevron-right" size={16} color="#8C0000" />
         </TouchableOpacity>
       ) : null}
     </View>

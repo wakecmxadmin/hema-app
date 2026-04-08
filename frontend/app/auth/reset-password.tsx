@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/services/supabase";
 import { resetPassword } from "../../services/auth";
 import { Toast } from "@/util/toast";
@@ -17,115 +18,150 @@ export default function ResetPasswordScreen() {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<"new" | "confirm" | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Evento Auth no Reset:", event);
         if (event === "PASSWORD_RECOVERY" || session) {
           setIsReady(true);
         }
-      },
+      }
     );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
   }, []);
 
   async function handleUpdatePassword() {
-    if (!isReady) {
+    if (!isReady)
       return Toast.show({ type: "error", text1: "Link inválido ou expirado." });
-    }
 
-    if (newPassword.length < 6) {
-      return Toast.show({
-        type: "error",
-        text1: "A senha deve ter pelo menos 6 caracteres.",
-      });
-    }
+    if (newPassword.length < 6)
+      return Toast.show({ type: "error", text1: "A senha deve ter pelo menos 6 caracteres." });
 
-    if (newPassword !== confirmPassword) {
+    if (newPassword !== confirmPassword)
       return Toast.show({ type: "error", text1: "As senhas não coincidem." });
-    }
 
     setIsLoading(true);
     const response = await resetPassword(newPassword);
     setIsLoading(false);
 
     if (response.success) {
-      Toast.show({
-        type: "success",
-        text1: "Senha atualizada!",
-        text2: "Sua senha foi alterada com sucesso.",
-      });
+      Toast.show({ type: "success", text1: "Senha atualizada!", text2: "Sua senha foi alterada com sucesso." });
       router.replace("/(tabs)/home");
     } else {
-      Toast.show({
-        type: "error",
-        text1: "Erro ao atualizar",
-        text2: response.message,
-      });
+      Toast.show({ type: "error", text1: "Erro ao atualizar", text2: response.message });
     }
   }
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen
         options={{
           headerShown: true,
           title: "Nova Senha",
-          headerTintColor: "#E30613",
+          headerTintColor: "#8C0000",
           headerShadowVisible: false,
         }}
       />
 
-      <View className="flex-1 px-7 justify-center">
-        <Text className="text-[32px] font-black text-[#E30613] mb-2">
+      <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: "center" }}>
+        <Text style={{ fontSize: 28, fontWeight: "900", color: "#8C0000", marginBottom: 8, letterSpacing: -0.5 }}>
           Criar nova senha
         </Text>
-        <Text className="text-base text-[#666] mb-8">
-          Quase lá! Digite sua nova senha abaixo para recuperar o acesso à sua
-          conta.
+        <Text style={{ fontSize: 14, color: "#666666", marginBottom: 32, lineHeight: 20 }}>
+          Quase lá! Digite sua nova senha abaixo para recuperar o acesso à sua conta.
         </Text>
 
-        <View className="bg-[#F9F9F9] border border-[#E8E8E8] rounded-[16px] mb-4 p-5">
+        {/* Nova senha */}
+        <Text style={s.label}>Nova senha</Text>
+        <View
+          style={[
+            s.inputBox,
+            { flexDirection: "row", alignItems: "center" },
+            focusedInput === "new" && s.inputBoxFocused,
+            { marginBottom: 16 },
+          ]}
+        >
           <TextInput
-            className="h-10 px-5 text-base text-[#1A1A1A]"
-            placeholder="Nova senha"
-            placeholderTextColor="#999"
+            style={[s.input, { flex: 1 }]}
+            placeholder="••••••••"
+            placeholderTextColor="#C2C2C2"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry
+            onFocus={() => setFocusedInput("new")}
+            onBlur={() => setFocusedInput(null)}
+            secureTextEntry={!showNew}
+            editable={!isLoading}
+            returnKeyType="next"
           />
+          <TouchableOpacity onPress={() => setShowNew(!showNew)} style={{ padding: 4 }}>
+            <Feather name={showNew ? "eye" : "eye-off"} size={20} color="#C2C2C2" />
+          </TouchableOpacity>
         </View>
 
-        <View className="bg-[#F9F9F9] border border-[#E8E8E8] rounded-[16px] mb-8 p-5">
+        {/* Confirmar senha */}
+        <Text style={s.label}>Confirmar senha</Text>
+        <View
+          style={[
+            s.inputBox,
+            { flexDirection: "row", alignItems: "center" },
+            focusedInput === "confirm" && s.inputBoxFocused,
+            { marginBottom: 32 },
+          ]}
+        >
           <TextInput
-            className="h-10 px-5 text-base text-[#1A1A1A]"
-            placeholder="Confirme a nova senha"
-            placeholderTextColor="#999"
+            style={[s.input, { flex: 1 }]}
+            placeholder="••••••••"
+            placeholderTextColor="#C2C2C2"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            onFocus={() => setFocusedInput("confirm")}
+            onBlur={() => setFocusedInput(null)}
+            secureTextEntry={!showConfirm}
+            editable={!isLoading}
+            returnKeyType="done"
+            onSubmitEditing={handleUpdatePassword}
           />
+          <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={{ padding: 4 }}>
+            <Feather name={showConfirm ? "eye" : "eye-off"} size={20} color="#C2C2C2" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          className="bg-[#E30613] h-[58px] rounded-[16px] justify-center items-center"
+          activeOpacity={0.85}
           onPress={handleUpdatePassword}
           disabled={isLoading || !newPassword || !confirmPassword}
+          style={{
+            height: 56,
+            borderRadius: 8,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: newPassword && confirmPassword ? "#8C0000" : "#F5F5F5",
+            shadowColor: "#8C0000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: newPassword && confirmPassword ? 0.3 : 0,
+            shadowRadius: 8,
+            elevation: newPassword && confirmPassword ? 6 : 0,
+          }}
         >
           {isLoading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text className="text-white font-bold uppercase">
-              Atualizar Senha
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: newPassword && confirmPassword ? "#FFFFFF" : "#C2C2C2",
+              }}
+            >
+              Atualizar senha
             </Text>
           )}
         </TouchableOpacity>
@@ -133,3 +169,36 @@ export default function ResetPasswordScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+const s = {
+  label: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#C2C2C2",
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  inputBox: {
+    height: 54,
+    borderRadius: 8,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    paddingHorizontal: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  inputBoxFocused: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#8C0000",
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#121212",
+    paddingVertical: 0,
+    includeFontPadding: false,
+  },
+};

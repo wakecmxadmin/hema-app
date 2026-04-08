@@ -107,15 +107,15 @@ export default function CategoryScreen() {
     return (
       <View className="py-5 items-center">
         {loadingMore ? (
-          <ActivityIndicator size="small" color="#E30613" />
+          <ActivityIndicator size="small" color="#8C0000" />
         ) : (
           hasMore &&
           products.length > 0 && (
             <TouchableOpacity
               onPress={loadMoreProducts}
-              className="bg-[#F5F5F5] py-3 px-6 rounded-lg border border-[#EAEAEA]"
+              className="bg-neutral-100 py-3 px-6 rounded-btn border border-neutral-200"
             >
-              <Text className="text-[#E30613] font-semibold text-[14px]">
+              <Text className="text-brand font-semibold text-[14px]">
                 Mostrar Mais
               </Text>
             </TouchableOpacity>
@@ -139,23 +139,23 @@ export default function CategoryScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FA]" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface-secondary" edges={["top"]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* HEADER */}
       <View
-        className="flex-row items-center px-5 py-4 bg-white rounded-b-2xl z-10"
+        className="flex-row items-center px-5 py-4 bg-surface rounded-b-card z-10"
         style={headerShadow}
       >
         <TouchableOpacity
-          className="p-2 bg-[#F0F0F0] rounded-full"
+          className="p-2 bg-neutral-100 rounded-full"
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
+          <Ionicons name="chevron-back" size={24} color="#121212" />
         </TouchableOpacity>
-        <Text className="text-[22px] font-extrabold ml-3 capitalize text-[#1A1A1A] tracking-[0.3px]">
+        <Text className="text-[22px] font-extrabold ml-3 capitalize text-text-primary tracking-[0.3px]">
           {name}
         </Text>
       </View>
@@ -186,8 +186,8 @@ export default function CategoryScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#E30613"]}
-              tintColor="#E30613"
+              colors={["#8C0000"]}
+              tintColor="#8C0000"
             />
           }
           renderItem={({ item }) => (
@@ -201,8 +201,8 @@ export default function CategoryScreen() {
           )}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center mt-20 px-6">
-              <Ionicons name="basket-outline" size={64} color="#ccc" />
-              <Text className="text-center mt-4 text-[#666] text-base leading-6">
+              <Ionicons name="basket-outline" size={64} color="#C2C2C2" />
+              <Text className="text-center mt-4 text-text-secondary text-base leading-6">
                 Poxa, ainda não temos produtos na categoria "{name}".
               </Text>
             </View>

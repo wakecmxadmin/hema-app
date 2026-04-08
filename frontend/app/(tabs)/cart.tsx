@@ -8,7 +8,7 @@ import {
   Image,
   Animated,
   RefreshControl,
-  ActivityIndicator, 
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -60,7 +60,7 @@ const CartItemComponent = ({
     });
 
     return (
-      <View className="flex-1 bg-[#E30613] justify-center items-end rounded-[10px]">
+      <View className="flex-1 bg-brand justify-center items-end rounded-btn">
         <Animated.View
           style={{
             opacity,
@@ -89,10 +89,10 @@ const CartItemComponent = ({
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#fff",
+            backgroundColor: "#FFFFFF",
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: "#F0F0F0",
+            borderColor: "#E0E0E0",
             padding: 12,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
@@ -101,13 +101,13 @@ const CartItemComponent = ({
             elevation: 2,
           }}
         >
-          {/* Imagem — tamanho fixo, alinhada ao centro vertical */}
+          {/* Imagem */}
           <View
             style={{
               width: 84,
               height: 84,
-              borderRadius: 10,
-              backgroundColor: "#F9F9F9",
+              borderRadius: 8,
+              backgroundColor: "#F5F5F5",
               overflow: "hidden",
               alignItems: "center",
               justifyContent: "center",
@@ -122,11 +122,11 @@ const CartItemComponent = ({
                 resizeMode="cover"
               />
             ) : (
-              <Ionicons name="image-outline" size={22} color="#CCC" />
+              <Ionicons name="image-outline" size={22} color="#C2C2C2" />
             )}
           </View>
 
-          {/* Conteúdo — ocupa todo o espaço restante */}
+          {/* Conteúdo */}
           <View style={{ flex: 1 }}>
             {/* Linha 1: Nome + Lixeira */}
             <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
@@ -135,7 +135,7 @@ const CartItemComponent = ({
                   flex: 1,
                   fontSize: 15,
                   fontWeight: "700",
-                  color: "#1A1A1A",
+                  color: "#121212",
                   lineHeight: 20,
                   marginRight: 8,
                 }}
@@ -148,7 +148,7 @@ const CartItemComponent = ({
                 style={{ padding: 2, marginTop: 1 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="trash-outline" size={17} color="#CCCCCC" />
+                <Ionicons name="trash-outline" size={17} color="#C2C2C2" />
               </TouchableOpacity>
             </View>
 
@@ -156,7 +156,7 @@ const CartItemComponent = ({
             <Text
               style={{
                 fontSize: 12,
-                color: "#999",
+                color: "#C2C2C2",
                 fontWeight: "500",
                 marginTop: 3,
               }}
@@ -178,7 +178,7 @@ const CartItemComponent = ({
                 style={{
                   fontSize: 16,
                   fontWeight: "800",
-                  color: "#E30613",
+                  color: "#8C0000",
                 }}
               >
                 {formattedItemTotal}
@@ -189,10 +189,10 @@ const CartItemComponent = ({
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: "#F8F8F8",
+                  backgroundColor: "#F5F5F5",
                   borderRadius: 20,
                   borderWidth: 1,
-                  borderColor: "#EEEEEE",
+                  borderColor: "#E0E0E0",
                   paddingHorizontal: 4,
                   paddingVertical: 3,
                 }}
@@ -214,7 +214,7 @@ const CartItemComponent = ({
                     width: 28,
                     height: 28,
                     borderRadius: 14,
-                    backgroundColor: "#fff",
+                    backgroundColor: "#FFFFFF",
                     alignItems: "center",
                     justifyContent: "center",
                     shadowColor: "#000",
@@ -224,7 +224,7 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="remove" size={14} color="#E30613" />
+                  <Ionicons name="remove" size={14} color="#8C0000" />
                 </TouchableOpacity>
 
                 <View
@@ -235,11 +235,11 @@ const CartItemComponent = ({
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1A1A" }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#121212" }}>
                     {item.product.type === "unit" ? item.quantity : item.weight}
                   </Text>
                   {item.product.type !== "unit" && (
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#999", marginLeft: 1 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#C2C2C2", marginLeft: 1 }}>
                       g
                     </Text>
                   )}
@@ -259,7 +259,7 @@ const CartItemComponent = ({
                     width: 28,
                     height: 28,
                     borderRadius: 14,
-                    backgroundColor: "#fff",
+                    backgroundColor: "#FFFFFF",
                     alignItems: "center",
                     justifyContent: "center",
                     shadowColor: "#000",
@@ -269,7 +269,7 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="add" size={14} color="#E30613" />
+                  <Ionicons name="add" size={14} color="#8C0000" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -314,16 +314,12 @@ export default function CartScreen() {
     setRefreshing(false);
   };
 
-  // FUNÇÃO DE REMOÇÃO OTIMISTA
   const handleRemoveItem = (id: string) => {
-    // 1. Feedback visual instantâneo
     Toast.show({ type: "success", text1: "Produto removido!" });
-
     setIsSyncing(true);
     removeItem(id).finally(() => setIsSyncing(false));
   };
 
-  // FUNÇÃO DE UPDATE OTIMISTA
   const handleUpdateItem = (id: string, data: any) => {
     setIsSyncing(true);
     updateItem(id, data).finally(() => setIsSyncing(false));
@@ -353,7 +349,7 @@ export default function CartScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
       <View className="flex-1">
         <StatusBar barStyle="dark-content" />
 
@@ -364,9 +360,9 @@ export default function CartScreen() {
               style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="arrow-back" size={24} color="#111" />
+              <Ionicons name="arrow-back" size={24} color="#121212" />
             </TouchableOpacity>
-            <Text className="flex-1 text-center text-[20px] font-extrabold text-[#111]">
+            <Text className="flex-1 text-center text-[20px] font-extrabold text-text-primary">
               Meu Carrinho
             </Text>
             <View style={{ width: 36 }} />
@@ -380,20 +376,19 @@ export default function CartScreen() {
             }
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 150, flexGrow: 1 }}
-            // Performance: Adicione esta linha para evitar gargalos em listas grandes
             removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#E30613"]}
+                colors={["#8C0000"]}
               />
             }
             ListEmptyComponent={
               !showListSkeleton ? (
                 <View className="items-center mt-20 flex-1 justify-center">
-                  <Ionicons name="cart-outline" size={64} color="#DDD" />
-                  <Text className="text-base text-[#BBB] mt-2">
+                  <Ionicons name="cart-outline" size={64} color="#C2C2C2" />
+                  <Text className="text-base text-neutral-300 mt-2">
                     Seu carrinho está vazio.
                   </Text>
                 </View>
@@ -404,8 +399,10 @@ export default function CartScreen() {
 
         {items.length > 0 && !showListSkeleton && (
           <View
-            className="absolute bottom-0 left-0 right-0 p-6 pt-6 bg-white rounded-t-[32px]"
+            className="absolute bottom-0 left-0 right-0 p-6 pt-6 bg-surface"
             style={{
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -10 },
               shadowOpacity: 0.08,
@@ -415,14 +412,13 @@ export default function CartScreen() {
           >
             <View className="flex-row justify-between items-center mb-5">
               <View className="flex-row items-center">
-                <Text className="text-[16px] font-bold text-[#666]">
+                <Text className="text-[16px] font-bold text-text-secondary">
                   Subtotal
                 </Text>
-                {/* Loader discreto apenas para indicar que está salvando no banco */}
                 {isSyncing && (
                   <ActivityIndicator
                     size="small"
-                    color="#E30613"
+                    color="#8C0000"
                     style={{ marginLeft: 8 }}
                   />
                 )}
@@ -431,10 +427,7 @@ export default function CartScreen() {
               {showInitialPriceSkeleton ? (
                 <PriceSkeleton />
               ) : (
-                <Text
-                  // Removido o opacity: 0.5 que dava sensação de lag
-                  className="text-[24px] font-extrabold text-[#E30613]"
-                >
+                <Text className="text-[24px] font-extrabold text-brand">
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -444,17 +437,17 @@ export default function CartScreen() {
             </View>
 
             <TouchableOpacity
-              className="bg-[#E30613] h-[56px] rounded-full items-center justify-center flex-row shadow-sm"
+              className="bg-brand h-14 rounded-full items-center justify-center flex-row"
               activeOpacity={0.8}
               onPress={() => router.push("/checkout")}
             >
-              <Text className="text-white text-[16px] font-bold uppercase tracking-wider">
+              <Text className="text-brand-on text-[16px] font-bold uppercase tracking-wider">
                 Finalizar Compra
               </Text>
               <Ionicons
                 name="arrow-forward"
                 size={20}
-                color="#FFF"
+                color="#FFFFFF"
                 style={{ marginLeft: 8 }}
               />
             </TouchableOpacity>

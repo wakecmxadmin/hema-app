@@ -43,8 +43,8 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
     <View className="mt-5 mb-3">
       {/* Section label */}
       <View className="px-4 mb-3 flex-row items-center gap-2">
-        <View className="w-1 h-4 bg-[#E30613] rounded-full" />
-        <Text className="text-[13px] font-[800] text-[#1A1A1A] uppercase tracking-widest">
+        <View className="w-1 h-4 bg-brand rounded-full" />
+        <Text className="text-[13px] font-[800] text-text-primary uppercase tracking-widest">
           Ofertas em Destaque
         </Text>
       </View>
@@ -79,11 +79,11 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
               {/* 1. CONTAINER EXTERNO: Responsável apenas pela sombra no iOS/Android. SEM overflow: hidden */}
               <View
                 style={{
-                  borderRadius: 20,
+                  borderRadius: 16,
                   margin: 8,
                   marginBottom: 18,
-                  backgroundColor: "#FFF", // Necessário para a sombra ter onde se apoiar no iOS
-                  shadowColor: "#E30613",
+                  backgroundColor: "#FFFFFF",
+                  shadowColor: "#8C0000",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.18,
                   shadowRadius: 12,
@@ -93,7 +93,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                 {/* 2. CONTAINER INTERNO: Mascara o conteúdo para ficar com borda redonda. COM overflow: hidden */}
                 <View
                   style={{
-                    borderRadius: 20,
+                    borderRadius: 16,
                     height: 180,
                     overflow: "hidden",
                     flexDirection: "row",
@@ -106,7 +106,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       padding: 20,
                       paddingLeft: 24,
                       justifyContent: "space-between",
-                      backgroundColor: "#E30613",
+                      backgroundColor: "#8C0000",
                     }}
                   >
                     {/* Badge */}
@@ -114,7 +114,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       style={{
                         alignSelf: "flex-start",
                         backgroundColor: "#FFFFFF",
-                        borderRadius: 20,
+                        borderRadius: 16,
                         paddingHorizontal: 10,
                         paddingVertical: 4,
                         shadowColor: "#000",
@@ -128,7 +128,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                         style={{
                           fontSize: 10,
                           fontWeight: "900",
-                          color: "#E30613",
+                          color: "#8C0000",
                           textTransform: "uppercase",
                           letterSpacing: 1,
                         }}
@@ -192,7 +192,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                   <View
                     style={{
                       width: 148,
-                      backgroundColor: "#fff",
+                      backgroundColor: "#FFFFFF",
                       alignItems: "center",
                       justifyContent: "center",
                       padding: 10,
@@ -210,7 +210,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       <MaterialCommunityIcons
                         name="image-off-outline"
                         size={40}
-                        color="#CCC"
+                        color="#C2C2C2"
                       />
                     )}
                   </View>
@@ -239,7 +239,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                 height: 6,
                 borderRadius: 3,
                 width: i === activeIndex ? 20 : 6,
-                backgroundColor: i === activeIndex ? "#E30613" : "#DDDDDD",
+                backgroundColor: i === activeIndex ? "#8C0000" : "#E0E0E0",
               }}
             />
           ))}

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; // <-- Import adicionado
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
@@ -50,7 +50,7 @@ function calculateDeliveryFee(city?: string): number {
 export default function CheckoutScreen() {
   const router = useRouter();
   const { items, loading, cart, refreshCart } = useCart();
-  const insets = useSafeAreaInsets(); // <-- Hook adicionado para pegar as margens seguras
+  const insets = useSafeAreaInsets();
 
   const [deliveryMethod, setDeliveryMethod] =
     useState<DeliveryMethod>("delivery");
@@ -197,9 +197,9 @@ export default function CheckoutScreen() {
 
   if (loading && items.length === 0) {
     return (
-      <View className="flex-1 bg-[#F8F8F8] pt-10 justify-center items-center">
-        <ActivityIndicator size="large" color="#E30613" />
-        <Text className="mt-2.5 text-[#666]">
+      <View className="flex-1 bg-surface-secondary pt-10 justify-center items-center">
+        <ActivityIndicator size="large" color="#8C0000" />
+        <Text className="mt-2.5 text-text-secondary">
           Carregando dados do pedido...
         </Text>
       </View>
@@ -207,7 +207,7 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#F8F8F8] pt-10">
+    <View className="flex-1 bg-surface-secondary pt-10">
       <StatusBar barStyle="dark-content" />
 
       <ScrollView
@@ -220,35 +220,35 @@ export default function CheckoutScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E30613"]}
-            tintColor="#E30613"
+            colors={["#8C0000"]}
+            tintColor="#8C0000"
           />
         }
       >
         {/* 1. MÉTODO DE ENTREGA */}
-        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
-          <Text className="text-base font-bold text-[#333] mb-3">
+        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+          <Text className="text-base font-bold text-text-primary mb-3">
             Como deseja receber?
           </Text>
           <View className="flex-row justify-between gap-2.5">
             <TouchableOpacity
-              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+              className={`flex-1 border-[1.5px] rounded-btn py-3 px-2 items-center ${
                 deliveryMethod === "delivery"
-                  ? "border-[#E30613] bg-[#FFF5F5]"
-                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+                  ? "border-brand bg-brand/5"
+                  : "border-neutral-200 bg-neutral-100"
               }`}
               onPress={() => setDeliveryMethod("delivery")}
             >
               <MaterialCommunityIcons
                 name="bike"
                 size={28}
-                color={deliveryMethod === "delivery" ? "#E30613" : "#999"}
+                color={deliveryMethod === "delivery" ? "#8C0000" : "#C2C2C2"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
                   deliveryMethod === "delivery"
-                    ? "text-[#E30613]"
-                    : "text-[#666]"
+                    ? "text-brand"
+                    : "text-text-secondary"
                 }`}
               >
                 Delivery
@@ -256,21 +256,21 @@ export default function CheckoutScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
+              className={`flex-1 border-[1.5px] rounded-btn py-3 px-2 items-center ${
                 deliveryMethod === "pickup"
-                  ? "border-[#E30613] bg-[#FFF5F5]"
-                  : "border-[#EAEAEA] bg-[#FAFAFA]"
+                  ? "border-brand bg-brand/5"
+                  : "border-neutral-200 bg-neutral-100"
               }`}
               onPress={() => setDeliveryMethod("pickup")}
             >
               <MaterialCommunityIcons
                 name="storefront-outline"
                 size={28}
-                color={deliveryMethod === "pickup" ? "#E30613" : "#999"}
+                color={deliveryMethod === "pickup" ? "#8C0000" : "#C2C2C2"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
-                  deliveryMethod === "pickup" ? "text-[#E30613]" : "text-[#666]"
+                  deliveryMethod === "pickup" ? "text-brand" : "text-text-secondary"
                 }`}
               >
                 Retirar na Loja
@@ -279,29 +279,29 @@ export default function CheckoutScreen() {
           </View>
 
           {/* DADOS DE ENTREGA / RETIRADA */}
-          <View className="mt-4 border-t border-[#EAEAEA] pt-4">
+          <View className="mt-4 border-t border-neutral-200 pt-4">
             {deliveryMethod === "pickup" ? (
-              <View className="flex-row bg-[#F5F5F5] p-3 rounded-lg items-start">
+              <View className="flex-row bg-neutral-100 p-3 rounded-btn items-start">
                 <MaterialCommunityIcons
                   name="map-marker-radius"
                   size={24}
-                  color="#E30613"
+                  color="#8C0000"
                 />
                 <View className="ml-2.5 flex-1">
-                  <Text className="text-sm font-bold text-[#333] mb-1">
+                  <Text className="text-sm font-bold text-text-primary mb-1">
                     Endereço de Retirada
                   </Text>
-                  <Text className="text-[13px] text-[#666] mb-0.5">
+                  <Text className="text-[13px] text-text-secondary mb-0.5">
                     R. São José dos Pinhais, 187 - Sítio Cercado
                   </Text>
-                  <Text className="text-[13px] text-[#666] mb-0.5">
+                  <Text className="text-[13px] text-text-secondary mb-0.5">
                     Curitiba - PR, 81910-010
                   </Text>
-                  <Text className="text-xs text-[#666] mt-1.5 font-medium">
+                  <Text className="text-xs text-text-secondary mt-1.5 font-medium">
                     <MaterialCommunityIcons
                       name="clock-outline"
                       size={14}
-                      color="#666"
+                      color="#666666"
                     />{" "}
                     09hAM às 18h30PM (Fechado aos domingos)
                   </Text>
@@ -310,7 +310,7 @@ export default function CheckoutScreen() {
             ) : (
               <View>
                 <View className="flex-row justify-between items-center mb-3">
-                  <Text className="text-sm font-semibold text-[#333]">
+                  <Text className="text-sm font-semibold text-text-primary">
                     Selecione o Endereço
                   </Text>
                   <TouchableOpacity
@@ -319,7 +319,7 @@ export default function CheckoutScreen() {
                     <MaterialCommunityIcons
                       name="plus-circle"
                       size={24}
-                      color="#E30613"
+                      color="#8C0000"
                     />
                   </TouchableOpacity>
                 </View>
@@ -327,21 +327,21 @@ export default function CheckoutScreen() {
                 {loadingAddresses ? (
                   <ActivityIndicator
                     size="small"
-                    color="#E30613"
+                    color="#8C0000"
                     style={{ marginVertical: 20 }}
                   />
                 ) : addresses.length === 0 ? (
-                  <Text className="text-sm text-[#999] italic text-center mt-2.5">
+                  <Text className="text-sm text-neutral-300 italic text-center mt-2.5">
                     Nenhum endereço cadastrado.
                   </Text>
                 ) : (
                   addresses.map((address) => (
                     <TouchableOpacity
                       key={address.id}
-                      className={`flex-row items-center py-3 px-2.5 border rounded-lg mb-2 ${
+                      className={`flex-row items-center py-3 px-2.5 border rounded-btn mb-2 ${
                         selectedAddressId === address.id
-                          ? "border-[#E30613] bg-[#FFF5F5]"
-                          : "border-[#EAEAEA]"
+                          ? "border-brand bg-brand/5"
+                          : "border-neutral-200"
                       }`}
                       onPress={() => setSelectedAddressId(address.id)}
                     >
@@ -353,37 +353,37 @@ export default function CheckoutScreen() {
                         }
                         size={20}
                         color={
-                          selectedAddressId === address.id ? "#E30613" : "#999"
+                          selectedAddressId === address.id ? "#8C0000" : "#C2C2C2"
                         }
                       />
                       <View className="ml-3 flex-1">
                         {address.label && (
-                          <Text className="text-sm font-bold text-[#333] mb-0.5">
+                          <Text className="text-sm font-bold text-text-primary mb-0.5">
                             {address.label}
                           </Text>
                         )}
 
                         <View className="flex-row items-center">
                           <Text
-                            className="text-sm font-semibold text-[#333] flex-shrink"
+                            className="text-sm font-semibold text-text-primary flex-shrink"
                             numberOfLines={1}
                           >
                             {address.street}, {address.number}
                           </Text>
                           {address.is_default && (
-                            <View className="flex-row items-center bg-[#FFF5F5] border border-[rgba(227,24,55,0.3)] px-1.5 py-0.5 rounded ml-2">
+                            <View className="flex-row items-center bg-brand/5 border border-brand/30 px-1.5 py-0.5 rounded-sm ml-2">
                               <MaterialCommunityIcons
                                 name="star"
                                 size={12}
-                                color="#E30613"
+                                color="#8C0000"
                               />
-                              <Text className="text-[10px] text-[#E30613] font-bold ml-0.5">
+                              <Text className="text-[10px] text-brand font-bold ml-0.5">
                                 Favorito
                               </Text>
                             </View>
                           )}
                         </View>
-                        <Text className="text-xs text-[#666] mt-0.5">
+                        <Text className="text-xs text-text-secondary mt-0.5">
                           {address.neighborhood} - {address.city}/
                           {address.state}
                           {address.complement ? ` • ${address.complement}` : ""}
@@ -398,99 +398,61 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 2. FORMA DE PAGAMENTO */}
-        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
-          <Text className="text-base font-bold text-[#333] mb-3">
+        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+          <Text className="text-base font-bold text-text-primary mb-3">
             Forma de Pagamento
           </Text>
           <View className="flex-row justify-between gap-2.5">
-            <TouchableOpacity
-              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
-                paymentMethod === "pix"
-                  ? "border-[#E30613] bg-[#FFF5F5]"
-                  : "border-[#EAEAEA] bg-[#FAFAFA]"
-              }`}
-              onPress={() => setPaymentMethod("pix")}
-            >
-              <MaterialCommunityIcons
-                name="qrcode"
-                size={24}
-                color={paymentMethod === "pix" ? "#E30613" : "#999"}
-              />
-              <Text
-                className={`text-[13px] font-semibold mt-1.5 ${
-                  paymentMethod === "pix" ? "text-[#E30613]" : "text-[#666]"
-                }`}
-              >
-                PIX
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
-                paymentMethod === "credit_card"
-                  ? "border-[#E30613] bg-[#FFF5F5]"
-                  : "border-[#EAEAEA] bg-[#FAFAFA]"
-              }`}
-              onPress={() => setPaymentMethod("credit_card")}
-            >
-              <MaterialCommunityIcons
-                name="credit-card-outline"
-                size={24}
-                color={paymentMethod === "credit_card" ? "#E30613" : "#999"}
-              />
-              <Text
-                className={`text-[13px] font-semibold mt-1.5 ${
-                  paymentMethod === "credit_card"
-                    ? "text-[#E30613]"
-                    : "text-[#666]"
-                }`}
-              >
-                Cartão
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-1 border-[1.5px] rounded-lg py-3 px-2 items-center ${
-                paymentMethod === "cash"
-                  ? "border-[#E30613] bg-[#FFF5F5]"
-                  : "border-[#EAEAEA] bg-[#FAFAFA]"
-              }`}
-              onPress={() => setPaymentMethod("cash")}
-            >
-              <MaterialCommunityIcons
-                name="cash"
-                size={24}
-                color={paymentMethod === "cash" ? "#E30613" : "#999"}
-              />
-              <Text
-                className={`text-[13px] font-semibold mt-1.5 ${
-                  paymentMethod === "cash" ? "text-[#E30613]" : "text-[#666]"
-                }`}
-              >
-                Dinheiro
-              </Text>
-            </TouchableOpacity>
+            {(["pix", "credit_card", "cash"] as PaymentMethod[]).map((method) => {
+              const isActive = paymentMethod === method;
+              const icons = { pix: "qrcode", credit_card: "credit-card-outline", cash: "cash" } as const;
+              const labels = { pix: "PIX", credit_card: "Cartão", cash: "Dinheiro" };
+              return (
+                <TouchableOpacity
+                  key={method}
+                  className={`flex-1 border-[1.5px] rounded-btn py-3 px-2 items-center ${
+                    isActive
+                      ? "border-brand bg-brand/5"
+                      : "border-neutral-200 bg-neutral-100"
+                  }`}
+                  onPress={() => setPaymentMethod(method)}
+                >
+                  <MaterialCommunityIcons
+                    name={icons[method]}
+                    size={24}
+                    color={isActive ? "#8C0000" : "#C2C2C2"}
+                  />
+                  <Text
+                    className={`text-[13px] font-semibold mt-1.5 ${
+                      isActive ? "text-brand" : "text-text-secondary"
+                    }`}
+                  >
+                    {labels[method]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* 3. RESUMO DOS VALORES */}
-        <View className="bg-white rounded-lg p-4 mb-4 border border-[#EAEAEA]">
-          <Text className="text-base font-bold text-[#333] mb-3">
+        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+          <Text className="text-base font-bold text-text-primary mb-3">
             Resumo da Compra
           </Text>
           <View className="flex-row justify-between mb-2">
-            <Text className="text-sm text-[#666]">
+            <Text className="text-sm text-text-secondary">
               Subtotal ({items?.length || 0} itens)
             </Text>
-            <Text className="text-sm text-[#333] font-medium">
+            <Text className="text-sm text-text-primary font-medium">
               {formatPrice(subtotal)}
             </Text>
           </View>
           <View className="flex-row justify-between mb-2">
-            <Text className="text-sm text-[#666]">Taxa de Entrega</Text>
+            <Text className="text-sm text-text-secondary">Taxa de Entrega</Text>
             <Text
               className={`text-sm font-medium ${
-                currentDeliveryFee === -1 ? "text-[#E30613]" : "text-[#333]"
+                currentDeliveryFee === -1 ? "text-brand" : "text-text-primary"
               }`}
             >
               {deliveryMethod === "pickup"
@@ -501,9 +463,9 @@ export default function CheckoutScreen() {
             </Text>
           </View>
 
-          <View className="flex-row justify-between mt-2.5 pt-2.5 border-t border-[#EAEAEA]">
-            <Text className="text-base font-bold text-[#1A1A1A]">Total</Text>
-            <Text className="text-lg font-bold text-[#E30613]">
+          <View className="flex-row justify-between mt-2.5 pt-2.5 border-t border-neutral-200">
+            <Text className="text-base font-bold text-text-primary">Total</Text>
+            <Text className="text-lg font-bold text-brand">
               {formatPrice(total)}
             </Text>
           </View>
@@ -512,9 +474,8 @@ export default function CheckoutScreen() {
 
       {/* 4. FOOTER */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA]"
+        className="absolute bottom-0 left-0 right-0 bg-surface p-4 border-t border-neutral-200"
         style={{
-          // Ajuste dinâmico: soma 16px de margem + o tamanho da barra de navegação nativa do Android/iOS
           paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 24,
           elevation: 10,
           shadowColor: "#000",
@@ -524,7 +485,7 @@ export default function CheckoutScreen() {
         }}
       >
         <TouchableOpacity
-          className={`bg-[#E30613] h-[50px] rounded-md justify-center items-center mb-2.5 ${
+          className={`bg-brand h-[50px] rounded-btn justify-center items-center mb-2.5 ${
             (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
           }`}
           activeOpacity={0.8}
@@ -532,9 +493,9 @@ export default function CheckoutScreen() {
           disabled={isCreatingOrder || currentDeliveryFee === -1}
         >
           {isCreatingOrder ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text className="text-white text-base font-bold">
+            <Text className="text-brand-on text-base font-bold">
               Confirmar Pedido
             </Text>
           )}
@@ -545,7 +506,7 @@ export default function CheckoutScreen() {
           onPress={() => router.back()}
           disabled={isCreatingOrder}
         >
-          <Text className="text-[#666] text-sm font-medium">
+          <Text className="text-text-secondary text-sm font-medium">
             Voltar e revisar carrinho
           </Text>
         </TouchableOpacity>
@@ -554,7 +515,7 @@ export default function CheckoutScreen() {
       <Modal visible={showSuccessModal} transparent={true} animationType="fade">
         <View className="flex-1 bg-black/60 justify-center items-center p-5">
           <View
-            className="bg-white rounded-[16px] p-[30px] items-center w-full max-w-[340px]"
+            className="bg-surface rounded-card p-[30px] items-center w-full max-w-[340px]"
             style={{
               elevation: 10,
               shadowColor: "#000",
@@ -565,23 +526,23 @@ export default function CheckoutScreen() {
             <MaterialCommunityIcons
               name="check-decagram"
               size={80}
-              color="#4CAF50"
+              color="#28A745"
             />
-            <Text className="text-[24px] font-bold text-[#1A1A1A] mt-4 text-center">
+            <Text className="text-[24px] font-bold text-text-primary mt-4 text-center">
               Pedido Confirmado!
             </Text>
-            <Text className="text-base text-[#666] text-center mt-2 mb-6 leading-[22px]">
+            <Text className="text-base text-text-secondary text-center mt-2 mb-6 leading-[22px]">
               Recebemos seu pedido e já vamos começar a preparar.
             </Text>
             <TouchableOpacity
-              className="bg-[#E30613] py-3.5 px-6 rounded-lg w-full items-center"
+              className="bg-brand py-3.5 px-6 rounded-btn w-full items-center"
               onPress={() => {
                 setShowSuccessModal(false);
                 refreshCart();
                 router.replace("/(tabs)/home");
               }}
             >
-              <Text className="text-white text-base font-bold">Concluir</Text>
+              <Text className="text-brand-on text-base font-bold">Concluir</Text>
             </TouchableOpacity>
           </View>
         </View>

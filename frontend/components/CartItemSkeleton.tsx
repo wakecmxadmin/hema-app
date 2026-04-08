@@ -5,9 +5,9 @@ import { PulseView } from "./PulseView"; // Nosso motor de animação
 export function CartItemSkeleton() {
   return (
     <View className="mb-[15px]">
-      <View className="mb-0 flex-row items-center border border-[#F0F0F0] rounded-[16px] bg-[#FFF] p-[14px]">
+      <View className="mb-0 flex-row items-center border border-neutral-200 rounded-card bg-surface p-[14px]">
         {/* Imagem Quadrada */}
-        <PulseView className="h-[76px] w-[76px] overflow-hidden rounded-[8px] items-center justify-center bg-[#F9F9F9]" />
+        <PulseView className="h-[76px] w-[76px] overflow-hidden rounded-btn items-center justify-center bg-neutral-100" />
 
         <View className="ml-[14px] flex-1 h-[76px] justify-between">
           <View className="flex-row items-start justify-between">

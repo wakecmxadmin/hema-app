@@ -84,7 +84,7 @@ export default function AddressListScreen() {
 
   const renderAddressItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      className="flex-row bg-white rounded-xl p-4 mb-3 border border-[#E5E7EB]"
+      className="flex-row bg-surface rounded-card p-4 mb-3 border border-neutral-200"
       style={
         Platform.OS === "ios"
           ? {
@@ -100,24 +100,24 @@ export default function AddressListScreen() {
     >
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-[16px] font-bold text-[#111827] mr-2">
+          <Text className="text-[16px] font-bold text-text-primary mr-2">
             {item.label || "Endereço"}
           </Text>
           {item.is_default && (
-            <View className="bg-[#FFF1F2] px-2 py-0.5 rounded border border-[#FECDD3]">
-              <Text className="text-[10px] font-bold text-[#E30613] uppercase">
+            <View className="bg-brand/5 px-2 py-0.5 rounded-sm border border-brand/20">
+              <Text className="text-[10px] font-bold text-brand uppercase">
                 Principal
               </Text>
             </View>
           )}
         </View>
-        <Text className="text-[14px] text-[#374151] leading-[20px]">
+        <Text className="text-[14px] text-text-primary leading-[20px]">
           {item.street}, {item.number}
         </Text>
-        <Text className="text-[13px] text-[#6B7280] mt-0.5">
+        <Text className="text-[13px] text-text-secondary mt-0.5">
           {item.neighborhood} • {item.city}/{item.state}
         </Text>
-        <Text className="text-[13px] text-[#6B7280] mt-0.5">
+        <Text className="text-[13px] text-text-secondary mt-0.5">
           {item.zip_code}
         </Text>
       </View>
@@ -126,24 +126,24 @@ export default function AddressListScreen() {
           <MaterialCommunityIcons
             name="trash-can-outline"
             size={22}
-            color="#E30613"
+            color="#8C0000"
           />
         </TouchableOpacity>
-        <Ionicons name="chevron-forward" size={20} color="#CCC" />
+        <Ionicons name="chevron-forward" size={20} color="#C2C2C2" />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
-      <View className="flex-row items-center px-4 py-3 border-b border-[#F3F4F6] bg-white">
+      <View className="flex-row items-center px-4 py-3 border-b border-neutral-200 bg-surface">
         <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color="#121212" />
         </TouchableOpacity>
-        <Text className="flex-1 text-[18px] font-bold text-[#1A1A1A] text-center mr-8">
+        <Text className="flex-1 text-[18px] font-bold text-text-primary text-center mr-8">
           Meus Endereços
         </Text>
         <View className="w-10" />
@@ -151,14 +151,13 @@ export default function AddressListScreen() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#E30613" />
+          <ActivityIndicator size="large" color="#8C0000" />
         </View>
       ) : (
         <FlatList
           data={addresses}
           keyExtractor={(item) => item.id}
           renderItem={renderAddressItem}
-          // 3. Aumentamos o paddingBottom para o último item não ficar atrás do botão
           contentContainerStyle={{
             padding: 16,
             paddingBottom:
@@ -168,7 +167,7 @@ export default function AddressListScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#E30613"]}
+              colors={["#8C0000"]}
             />
           }
           ListEmptyComponent={
@@ -176,9 +175,9 @@ export default function AddressListScreen() {
               <MaterialCommunityIcons
                 name="map-marker-off-outline"
                 size={64}
-                color="#CCC"
+                color="#C2C2C2"
               />
-              <Text className="mt-4 text-[16px] text-[#999]">
+              <Text className="mt-4 text-[16px] text-neutral-300">
                 Nenhum endereço cadastrado.
               </Text>
             </View>
@@ -188,11 +187,10 @@ export default function AddressListScreen() {
 
       {/* BOTÃO FLUTUANTE COM AJUSTE PARA ANDROID */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F3F4F6]"
+        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-neutral-200"
         style={{
           paddingTop: 16,
           paddingHorizontal: 16,
-          // 4. Aplicamos o ajuste dinâmico no padding bottom
           paddingBottom:
             Platform.OS === "android"
               ? insets.bottom > 0
@@ -202,12 +200,12 @@ export default function AddressListScreen() {
         }}
       >
         <TouchableOpacity
-          className="flex-row bg-[#E30613] h-[56px] rounded-xl items-center justify-center gap-2 shadow-sm"
+          className="flex-row bg-brand h-[56px] rounded-btn items-center justify-center gap-2"
           onPress={() => router.push("/addresses/new")}
           activeOpacity={0.8}
         >
-          <Ionicons name="add" size={24} color="#fff" />
-          <Text className="text-white text-[16px] font-bold">
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+          <Text className="text-brand-on text-[16px] font-bold">
             Adicionar Novo Endereço
           </Text>
         </TouchableOpacity>

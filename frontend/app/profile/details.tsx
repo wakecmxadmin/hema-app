@@ -50,7 +50,7 @@ function Field({
         style={{
           fontSize: 11,
           fontWeight: "700",
-          color: "#AAAAAA",
+          color: "#C2C2C2",
           textTransform: "uppercase",
           letterSpacing: 0.8,
           marginBottom: 8,
@@ -63,31 +63,31 @@ function Field({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: isReadOnly ? "#F0F0F0" : "#F5F5F5",
-          borderRadius: 14,
+          backgroundColor: isReadOnly ? "#E0E0E0" : "#F5F5F5",
+          borderRadius: 8,
           paddingHorizontal: 16,
           height: 54,
           borderWidth: 1.5,
-          borderColor: isReadOnly ? "#EBEBEB" : "transparent",
+          borderColor: isReadOnly ? "#E0E0E0" : "transparent",
         }}
       >
         <MaterialCommunityIcons
           name={icon as any}
           size={20}
-          color={isReadOnly ? "#CCCCCC" : "#AAAAAA"}
+          color="#C2C2C2"
           style={{ marginRight: 12 }}
         />
         <TextInput
           style={{
             flex: 1,
             fontSize: 15,
-            color: isReadOnly ? "#AAAAAA" : "#1A1A1A",
+            color: isReadOnly ? "#C2C2C2" : "#121212",
             fontWeight: isReadOnly ? "500" : "600",
           }}
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor="#CCCCCC"
+          placeholderTextColor="#C2C2C2"
           keyboardType={keyboardType}
           maxLength={maxLength}
           editable={!isReadOnly}
@@ -95,7 +95,7 @@ function Field({
           autoCapitalize="none"
         />
         {isReadOnly && (
-          <MaterialCommunityIcons name="lock-outline" size={16} color="#CCCCCC" />
+          <MaterialCommunityIcons name="lock-outline" size={16} color="#C2C2C2" />
         )}
       </View>
     </View>
@@ -170,15 +170,15 @@ export default function PersonalDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F7F7F8", justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#E30613" />
+      <View style={{ flex: 1, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#8C0000" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F8" }} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F5" }} edges={["top", "bottom"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
       {/* Header */}
       <View
@@ -188,7 +188,7 @@ export default function PersonalDetailsScreen() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingVertical: 14,
-          backgroundColor: "#F7F7F8",
+          backgroundColor: "#F5F5F5",
         }}
       >
         <TouchableOpacity
@@ -196,17 +196,17 @@ export default function PersonalDetailsScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
-            backgroundColor: "#EBEBEB",
+            borderRadius: 8,
+            backgroundColor: "#E0E0E0",
             alignItems: "center",
             justifyContent: "center",
           }}
           activeOpacity={0.7}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#1A1A1A" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#121212" />
         </TouchableOpacity>
 
-        <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1A1A" }}>
+        <Text style={{ fontSize: 17, fontWeight: "800", color: "#121212" }}>
           Meus Dados
         </Text>
 
@@ -224,7 +224,7 @@ export default function PersonalDetailsScreen() {
         <View
           style={{
             backgroundColor: "#FFFFFF",
-            borderRadius: 20,
+            borderRadius: 16,
             padding: 20,
             gap: 16,
             shadowColor: "#000",
@@ -282,8 +282,8 @@ export default function PersonalDetailsScreen() {
             paddingHorizontal: 4,
           }}
         >
-          <MaterialCommunityIcons name="information-outline" size={15} color="#BBBBBB" />
-          <Text style={{ fontSize: 12, color: "#BBBBBB", flex: 1, lineHeight: 17 }}>
+          <MaterialCommunityIcons name="information-outline" size={15} color="#C2C2C2" />
+          <Text style={{ fontSize: 12, color: "#C2C2C2", flex: 1, lineHeight: 17 }}>
             O e-mail não pode ser alterado. Entre em contato com o suporte se necessário.
           </Text>
         </View>
@@ -294,14 +294,14 @@ export default function PersonalDetailsScreen() {
         style={{
           paddingHorizontal: 16,
           paddingVertical: 16,
-          backgroundColor: "#F7F7F8",
+          backgroundColor: "#F5F5F5",
         }}
       >
         <TouchableOpacity
           style={{
-            backgroundColor: saving ? "#F0A0A6" : "#E30613",
+            backgroundColor: saving ? "#B50000" : "#8C0000",
             height: 56,
-            borderRadius: 28,
+            borderRadius: 16,
             alignItems: "center",
             justifyContent: "center",
             flexDirection: "row",
@@ -312,11 +312,11 @@ export default function PersonalDetailsScreen() {
           activeOpacity={0.85}
         >
           {saving ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <MaterialCommunityIcons name="check" size={20} color="#FFF" />
-              <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+              <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
                 Salvar Alterações
               </Text>
             </>

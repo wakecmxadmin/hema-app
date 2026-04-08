@@ -135,10 +135,10 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#E30613" }}
+      style={{ flex: 1, backgroundColor: "#D91A21" }}
       edges={["top"]}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#E30613" />
+      <StatusBar barStyle="light-content" />
 
       <View style={{ flex: 1 }}>
         <Animated.ScrollView
@@ -152,8 +152,8 @@ export default function HomeScreen() {
               refreshing={refreshing}
               onRefresh={onRefresh}
               progressViewOffset={HEADER_HEIGHT}
-              colors={refreshing && catalog ? ["transparent"] : ["#E30613"]}
-              tintColor={refreshing && catalog ? "transparent" : "#E30613"}
+              colors={refreshing && catalog ? ["transparent"] : ["#8C0000"]}
+              tintColor={refreshing && catalog ? "transparent" : "#8C0000"}
             />
           }
         >
@@ -228,15 +228,15 @@ function SearchResults({
         <View className="px-4 mt-5 mb-3">
           {lowScore ? (
             <>
-              <Text className="text-[17px] font-[800] text-[#1A1A1A]">
+              <Text className="text-[17px] font-[800] text-text-primary">
                 Não encontramos "{query}"
               </Text>
-              <Text className="text-[13px] text-[#888888] mt-1">
+              <Text className="text-[13px] text-neutral-300 mt-1">
                 Separamos algumas sugestões para você:
               </Text>
             </>
           ) : (
-            <Text className="text-[17px] font-[800] text-[#1A1A1A]">
+            <Text className="text-[17px] font-[800] text-text-primary">
               Resultados para "{query}"
             </Text>
           )}
@@ -245,8 +245,8 @@ function SearchResults({
 
       {results.length === 0 ? (
         <View className="items-center justify-center pt-16">
-          <MaterialCommunityIcons name="magnify-close" size={52} color="#DDD" />
-          <Text className="mt-3 text-[#AAAAAA] text-[15px]">
+          <MaterialCommunityIcons name="magnify-close" size={52} color="#C2C2C2" />
+          <Text className="mt-3 text-neutral-300 text-[15px]">
             Nenhum produto encontrado
           </Text>
         </View>
@@ -270,15 +270,15 @@ function SearchResults({
           {hasMore && (
             <View className="py-6 items-center">
               {isLoadingMore ? (
-                <ActivityIndicator size="small" color="#E30613" />
+                <ActivityIndicator size="small" color="#8C0000" />
               ) : (
                 <TouchableOpacity
                   onPress={onLoadMore}
-                  className="bg-white px-10 py-3 border-[1.5px] border-[#E30613]"
+                  className="bg-surface px-10 py-3 border-[1.5px] border-brand"
                   style={{ borderRadius: 25 }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-[#E30613] font-[700] text-[13px]">
+                  <Text className="text-brand font-[700] text-[13px]">
                     Mostrar mais
                   </Text>
                 </TouchableOpacity>
@@ -295,21 +295,21 @@ function CatalogSkeleton() {
   return (
     <View className="mt-2">
       <View
-        className="mx-4 mt-4 mb-3 bg-[#F0F0F0]"
+        className="mx-4 mt-4 mb-3 bg-neutral-100"
         style={{ height: 156, borderRadius: 16 }}
       />
       <View className="flex-row px-4 gap-2 py-3">
         {[100, 76, 116, 84].map((w, i) => (
           <View
             key={i}
-            className="h-9 bg-[#F0F0F0]"
+            className="h-9 bg-neutral-100"
             style={{ width: w, borderRadius: 20 }}
           />
         ))}
       </View>
       <View className="px-4 mt-5 mb-3">
-        <View className="h-3 w-16 bg-[#F0F0F0] rounded mb-2" />
-        <View className="h-5 w-36 bg-[#F0F0F0] rounded" />
+        <View className="h-3 w-16 bg-neutral-100 rounded mb-2" />
+        <View className="h-5 w-36 bg-neutral-100 rounded" />
       </View>
       <ScrollView
         horizontal
@@ -322,7 +322,7 @@ function CatalogSkeleton() {
       </ScrollView>
       {[1, 2].map((row) => (
         <View key={row} className="mt-6">
-          <View className="h-5 w-36 bg-[#F0F0F0] rounded mx-4 mb-3" />
+          <View className="h-5 w-36 bg-neutral-100 rounded mx-4 mb-3" />
           <View className="flex-row gap-3 pl-4">
             {[1, 2, 3].map((i) => (
               <ProductCardSkeleton key={i} isCarousel />

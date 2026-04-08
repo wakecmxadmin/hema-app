@@ -75,25 +75,25 @@ export function ProductCard({
     return (
       <Animated.View style={[animStyle, { width: cardWidth }]}>
         <TouchableOpacity
-          className="bg-[#FAFAFA] overflow-hidden"
+          className="bg-surface overflow-hidden"
           style={{
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: "#EBEBEB",
+            borderColor: "#E0E0E0",
             flexDirection: "row",
             height: 140,
-            elevation: 3,
+            elevation: 2,
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.07,
-            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 6,
           }}
           onPress={onPress}
           activeOpacity={0.87}
         >
           {/* Image */}
           <View
-            className="bg-[#F0F0F0] flex-shrink-0"
+            className="bg-neutral-100 flex-shrink-0"
             style={{ width: 130 }}
           >
             {product.image_url ? (
@@ -109,36 +109,36 @@ export function ProductCard({
                 <MaterialCommunityIcons
                   name="image-off-outline"
                   size={26}
-                  color="#CCC"
+                  color="#C2C2C2"
                 />
               </View>
             )}
           </View>
 
           {/* Content */}
-          <View className="flex-1 p-[13px] justify-between">
+          <View className="flex-1 p-3 justify-between">
             <Text
-              className="text-[13px] font-[700] text-[#1A1A1A] leading-[19px]"
+              className="text-[13px] font-[700] text-text-primary leading-[19px]"
               numberOfLines={2}
             >
               {formatName(product.name)}
             </Text>
 
             <View>
-              <Text className="text-[17px] font-[800] text-[#E30613]">
+              <Text className="text-[17px] font-[800] text-brand">
                 {formattedPrice}
-                <Text className="text-[10px] font-[500] text-[#888888]">
+                <Text className="text-[10px] font-[500] text-neutral-300">
                   {" "}
                   {unitLabel}
                 </Text>
               </Text>
 
               <TouchableOpacity
-                className="mt-[7px] items-center justify-center bg-[#E30613]"
+                className="mt-2 items-center justify-center bg-brand"
                 style={{ borderRadius: 8, paddingVertical: 9 }}
                 onPress={onAdd}
               >
-                <Text className="text-[12px] font-[800] text-white uppercase tracking-wider">
+                <Text className="text-[12px] font-[800] text-brand-on uppercase tracking-wider">
                   Adicionar
                 </Text>
               </TouchableOpacity>
@@ -154,12 +154,12 @@ export function ProductCard({
     return (
       <Animated.View style={animStyle}>
         <TouchableOpacity
-          className="bg-white overflow-hidden"
+          className="bg-surface overflow-hidden"
           style={{
             width: 156,
-            borderRadius: 14,
+            borderRadius: 16,
             borderWidth: 1,
-            borderColor: "#EAEAEA",
+            borderColor: "#E0E0E0",
             elevation: 2,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
@@ -169,7 +169,7 @@ export function ProductCard({
           onPress={onPress}
           activeOpacity={0.87}
         >
-          <View className="bg-[#F5F5F5]" style={{ height: 126, width: "100%" }}>
+          <View className="bg-neutral-100" style={{ height: 126, width: "100%" }}>
             {product.image_url ? (
               <Image
                 source={{ uri: product.image_url }}
@@ -183,35 +183,35 @@ export function ProductCard({
                 <MaterialCommunityIcons
                   name="image-off-outline"
                   size={22}
-                  color="#CCC"
+                  color="#C2C2C2"
                 />
               </View>
             )}
           </View>
 
-          <View className="p-[10px]">
+          <View className="p-2">
             <Text
-              className="text-[12px] font-[600] text-[#222222] leading-[16px] mb-[5px]"
+              className="text-[12px] font-[600] text-text-primary leading-[16px] mb-1"
               numberOfLines={2}
               style={{ minHeight: 32 }}
             >
               {formatName(product.name)}
             </Text>
 
-            <Text className="text-[15px] font-[800] text-[#E30613] mb-[8px]">
+            <Text className="text-[15px] font-[800] text-brand mb-2">
               {formattedPrice}
-              <Text className="text-[10px] font-[400] text-[#888888]">
+              <Text className="text-[10px] font-[400] text-neutral-300">
                 {" "}
                 {unitLabel}
               </Text>
             </Text>
 
             <TouchableOpacity
-              className="items-center justify-center bg-[#E30613]"
+              className="items-center justify-center bg-brand"
               style={{ borderRadius: 8, paddingVertical: 8 }}
               onPress={onAdd}
             >
-              <Text className="text-[11px] font-[800] text-white uppercase tracking-wider">
+              <Text className="text-[11px] font-[800] text-brand-on uppercase tracking-wider">
                 Adicionar
               </Text>
             </TouchableOpacity>
@@ -225,14 +225,14 @@ export function ProductCard({
   return (
     <Animated.View style={[animStyle, { flex: 1 }]}>
       <TouchableOpacity
-        className="bg-white flex-1 overflow-hidden"
+        className="bg-surface flex-1 overflow-hidden"
         style={{
-          borderRadius: 14,
+          borderRadius: 16,
           borderWidth: 1,
-          borderColor: "#EAEAEA",
+          borderColor: "#E0E0E0",
           elevation: 2,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
           shadowRadius: 5,
         }}
@@ -240,51 +240,51 @@ export function ProductCard({
         activeOpacity={0.87}
       >
         <View
-          className="bg-[#F7F7F7] w-full items-center justify-center"
+          className="bg-neutral-100 w-full items-center justify-center"
           style={{ height: 138 }}
         >
           {product.image_url ? (
             <Image
               source={{ uri: product.image_url }}
-              style={{ width: "100%", height: "100%", backgroundColor: "#F0F0F0" }}
+              style={{ width: "100%", height: "100%", backgroundColor: "#F5F5F5" }}
               contentFit="cover"
               transition={350}
               cachePolicy="disk"
             />
           ) : (
-            <View className="flex-1 w-full items-center justify-center bg-[#F5F5F5]">
+            <View className="flex-1 w-full items-center justify-center bg-neutral-100">
               <MaterialCommunityIcons
                 name="image-off-outline"
                 size={30}
-                color="#CCC"
+                color="#C2C2C2"
               />
             </View>
           )}
         </View>
 
-        <View className="p-[12px]">
+        <View className="p-3">
           <Text
-            className="text-[13px] font-[600] text-[#222222] leading-[18px] mb-[5px]"
+            className="text-[13px] font-[600] text-text-primary leading-[18px] mb-1"
             numberOfLines={2}
             style={{ minHeight: 36 }}
           >
             {formatName(product.name)}
           </Text>
 
-          <Text className="text-[16px] font-[800] text-[#E30613] mb-[10px]">
+          <Text className="text-[16px] font-[800] text-brand mb-2">
             {formattedPrice}
-            <Text className="text-[11px] font-[400] text-[#888888]">
+            <Text className="text-[11px] font-[400] text-neutral-300">
               {" "}
               {unitLabel}
             </Text>
           </Text>
 
           <TouchableOpacity
-            className="items-center justify-center bg-[#E30613]"
+            className="items-center justify-center bg-brand"
             style={{ borderRadius: 8, paddingVertical: 10 }}
             onPress={onAdd}
           >
-            <Text className="text-[13px] font-[800] text-white uppercase tracking-wider">
+            <Text className="text-[13px] font-[800] text-brand-on uppercase tracking-wider">
               Adicionar
             </Text>
           </TouchableOpacity>

@@ -155,54 +155,53 @@ export default function AddressFormScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#E30613" />
+      <View className="flex-1 justify-center items-center bg-surface">
+        <ActivityIndicator size="large" color="#8C0000" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Header */}
-        <View className="flex-row items-center px-4 py-3 border-b border-[#F3F4F6] bg-white">
+        <View className="flex-row items-center px-4 py-3 border-b border-neutral-200 bg-surface">
           <TouchableOpacity onPress={() => router.back()} className="p-1">
-            <Ionicons name="close" size={24} color="#111827" />
+            <Ionicons name="close" size={24} color="#121212" />
           </TouchableOpacity>
-          <Text className="flex-1 text-[18px] font-bold text-[#1A1A1A] text-center mr-8">
+          <Text className="flex-1 text-[18px] font-bold text-text-primary text-center mr-8">
             {isEditing ? "Editar Endereço" : "Novo Endereço"}
           </Text>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
-          <Text className="text-[13px] font-bold text-[#9CA3AF] tracking-[1px] mb-3 mt-2">
+          <Text className="text-[13px] font-bold text-neutral-300 tracking-[1px] mb-3 mt-2">
             IDENTIFICAÇÃO DO LOCAL
           </Text>
-          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+          <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
             <TextInput
               placeholder="Ex: Minha Casa, Trabalho..."
-              className="h-[50px] text-[15px] text-[#111827]"
+              className="h-[50px] text-[15px] text-text-primary"
               value={label}
               onChangeText={setLabel}
             />
           </View>
 
-          {/* ... (Demais campos de input permanecem iguais) */}
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+              <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
                 CEP *
               </Text>
-              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+              <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
                 <TextInput
                   placeholder="00000-000"
                   keyboardType="numeric"
                   maxLength={9}
-                  className="h-[50px] text-[15px] text-[#111827]"
+                  className="h-[50px] text-[15px] text-text-primary"
                   value={zipCode}
                   onChangeText={setZipCode}
                   onBlur={handleCepSearch}
@@ -212,19 +211,19 @@ export default function AddressFormScreen() {
             {loadingCep && (
               <ActivityIndicator
                 size="small"
-                color="#E30613"
+                color="#8C0000"
                 style={{ marginTop: 25 }}
               />
             )}
           </View>
 
-          <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+          <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
             Rua/Avenida *
           </Text>
-          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+          <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
             <TextInput
               placeholder="Av. Paulista..."
-              className="h-[50px] text-[15px] text-[#111827]"
+              className="h-[50px] text-[15px] text-text-primary"
               value={street}
               onChangeText={setStreet}
             />
@@ -232,26 +231,26 @@ export default function AddressFormScreen() {
 
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+              <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
                 Número *
               </Text>
-              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+              <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
                 <TextInput
                   placeholder="100"
-                  className="h-[50px] text-[15px] text-[#111827]"
+                  className="h-[50px] text-[15px] text-text-primary"
                   value={number}
                   onChangeText={setNumber}
                 />
               </View>
             </View>
             <View className="flex-[2]">
-              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+              <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
                 Complemento
               </Text>
-              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+              <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
                 <TextInput
                   placeholder="Apto, Bloco..."
-                  className="h-[50px] text-[15px] text-[#111827]"
+                  className="h-[50px] text-[15px] text-text-primary"
                   value={complement}
                   onChangeText={setComplement}
                 />
@@ -259,13 +258,13 @@ export default function AddressFormScreen() {
             </View>
           </View>
 
-          <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+          <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
             Bairro *
           </Text>
-          <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+          <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
             <TextInput
               placeholder="Ex: Centro"
-              className="h-[50px] text-[15px] text-[#111827]"
+              className="h-[50px] text-[15px] text-text-primary"
               value={neighborhood}
               onChangeText={setNeighborhood}
             />
@@ -273,28 +272,28 @@ export default function AddressFormScreen() {
 
           <View className="flex-row gap-3">
             <View className="flex-[2]">
-              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+              <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
                 Cidade *
               </Text>
-              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+              <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
                 <TextInput
                   placeholder="Ex: São Paulo"
-                  className="h-[50px] text-[15px] text-[#111827]"
+                  className="h-[50px] text-[15px] text-text-primary"
                   value={city}
                   onChangeText={setCity}
                 />
               </View>
             </View>
             <View className="flex-1">
-              <Text className="text-[14px] font-semibold text-[#374151] mb-2 mt-4">
+              <Text className="text-[14px] font-semibold text-text-primary mb-2 mt-4">
                 UF *
               </Text>
-              <View className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] px-3">
+              <View className="bg-neutral-100 rounded-btn border border-neutral-200 px-3">
                 <TextInput
                   placeholder="SP"
                   maxLength={2}
                   autoCapitalize="characters"
-                  className="h-[50px] text-[15px] text-[#111827]"
+                  className="h-[50px] text-[15px] text-text-primary"
                   value={state}
                   onChangeText={setState}
                 />
@@ -302,20 +301,20 @@ export default function AddressFormScreen() {
             </View>
           </View>
 
-          <View className="flex-row items-center justify-between py-5 mt-6 border-t border-[#F3F4F6]">
+          <View className="flex-row items-center justify-between py-5 mt-6 border-t border-neutral-200">
             <View className="flex-1">
-              <Text className="text-[16px] font-semibold text-[#111827]">
+              <Text className="text-[16px] font-semibold text-text-primary">
                 Tornar como padrão
               </Text>
-              <Text className="text-[13px] text-[#6B7280] mt-0.5">
+              <Text className="text-[13px] text-text-secondary mt-0.5">
                 Este endereço será o principal em suas compras.
               </Text>
             </View>
             <Switch
               value={isDefault}
               onValueChange={setIsDefault}
-              trackColor={{ false: "#D1D5DB", true: "#FECDD3" }}
-              thumbColor={isDefault ? "#E30613" : "#F9FAFB"}
+              trackColor={{ false: "#E0E0E0", true: "rgba(140, 0, 0, 0.3)" }}
+              thumbColor={isDefault ? "#8C0000" : "#F5F5F5"}
             />
           </View>
         </ScrollView>
@@ -323,11 +322,10 @@ export default function AddressFormScreen() {
 
       {/* RODAPÉ COM AJUSTE DINÂMICO */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F3F4F6]"
+        className="absolute bottom-0 left-0 right-0 bg-surface border-t border-neutral-200"
         style={{
           paddingTop: 16,
           paddingHorizontal: 16,
-          // 3. Ajuste fino do padding inferior baseado nos insets do sistema
           paddingBottom:
             Platform.OS === "android"
               ? insets.bottom > 0
@@ -337,17 +335,17 @@ export default function AddressFormScreen() {
         }}
       >
         <TouchableOpacity
-          className={`h-[56px] rounded-xl items-center justify-center shadow-sm ${
-            saving ? "bg-[#FCA5A5]" : "bg-[#E30613]"
+          className={`h-[56px] rounded-btn items-center justify-center ${
+            saving ? "bg-brand/50" : "bg-brand"
           }`}
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.8}
         >
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text className="text-white text-[16px] font-bold">
+            <Text className="text-brand-on text-[16px] font-bold">
               {isEditing ? "Salvar Alterações" : "Adicionar Endereço"}
             </Text>
           )}

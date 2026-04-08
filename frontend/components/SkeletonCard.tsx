@@ -36,13 +36,13 @@ const Shimmer = ({ width, height, borderRadius = 0 }: ShimmerProps) => {
         width,
         height,
         borderRadius,
-        backgroundColor: "#EAEAEA",
+        backgroundColor: "#E0E0E0",
         overflow: "hidden",
       }}
     >
       <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
         <LinearGradient
-          colors={["#EAEAEA", "#F5F5F5", "#EAEAEA"]}
+          colors={["#E0E0E0", "#F5F5F5", "#E0E0E0"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
@@ -54,7 +54,7 @@ const Shimmer = ({ width, height, borderRadius = 0 }: ShimmerProps) => {
 
 export default function SkeletonCard() {
   return (
-    <View className="bg-[#FFFFFF] flex-1 overflow-hidden rounded-[12px] border border-[#EAEAEA] shadow-[0_4px_8px_rgba(0,0,0,0.06)]" style={{ elevation: 2 }}>
+    <View className="bg-surface flex-1 overflow-hidden rounded-card border border-neutral-200 shadow-[0_4px_8px_rgba(0,0,0,0.06)]" style={{ elevation: 2 }}>
       {/* Imagem do Produto */}
       <Shimmer width="100%" height={150} borderRadius={0} />
 

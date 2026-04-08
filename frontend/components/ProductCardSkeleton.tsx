@@ -31,7 +31,7 @@ export function ProductCardSkeleton({
 
   const animatedStyle = {
     opacity: shimmerAnim,
-    backgroundColor: "#EBEBEB",
+    backgroundColor: "#E0E0E0",
   };
 
   // ── FEATURED skeleton ───────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export function ProductCardSkeleton({
           backgroundColor: "#FFF",
           borderRadius: 16,
           borderWidth: 1,
-          borderColor: "#EAEAEA",
+          borderColor: "#E0E0E0",
           flexDirection: "row",
           overflow: "hidden",
           height: 136,
@@ -101,7 +101,7 @@ export function ProductCardSkeleton({
           width: 158,
           borderRadius: 14,
           borderWidth: 1,
-          borderColor: "#EAEAEA",
+          borderColor: "#E0E0E0",
           overflow: "hidden",
           elevation: 2,
         }}
@@ -144,7 +144,7 @@ export function ProductCardSkeleton({
         flex: 1,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: "#EAEAEA",
+        borderColor: "#E0E0E0",
         overflow: "hidden",
         elevation: 2,
       }}

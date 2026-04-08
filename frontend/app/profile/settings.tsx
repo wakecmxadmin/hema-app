@@ -48,14 +48,14 @@ function ToggleRow({
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: "#F5F5F5",
+        borderBottomColor: "#E0E0E0",
       }}
     >
       <View
         style={{
           width: 40,
           height: 40,
-          borderRadius: 12,
+          borderRadius: 8,
           backgroundColor: iconBg,
           alignItems: "center",
           justifyContent: "center",
@@ -67,10 +67,10 @@ function ToggleRow({
       </View>
 
       <View style={{ flex: 1, marginRight: 12 }}>
-        <Text style={{ fontSize: 14, fontWeight: "600", color: "#1A1A1A", marginBottom: 2 }}>
+        <Text style={{ fontSize: 14, fontWeight: "600", color: "#121212", marginBottom: 2 }}>
           {title}
         </Text>
-        <Text style={{ fontSize: 12, color: "#AAAAAA", lineHeight: 17 }}>
+        <Text style={{ fontSize: 12, color: "#C2C2C2", lineHeight: 17 }}>
           {subtitle}
         </Text>
       </View>
@@ -78,8 +78,8 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ true: "#E30613", false: "#E0E0E0" }}
-        thumbColor={Platform.OS === "android" ? (value ? "#FFF" : "#FFF") : undefined}
+        trackColor={{ true: "#8C0000", false: "#E0E0E0" }}
+        thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined}
         ios_backgroundColor="#E0E0E0"
       />
     </View>
@@ -152,15 +152,15 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F7F7F8", justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#E30613" />
+      <View style={{ flex: 1, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#8C0000" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F7F8" }} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F5" }} edges={["top", "bottom"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
       {/* Header */}
       <View
@@ -170,7 +170,7 @@ export default function SettingsScreen() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingVertical: 14,
-          backgroundColor: "#F7F7F8",
+          backgroundColor: "#F5F5F5",
         }}
       >
         <TouchableOpacity
@@ -178,17 +178,17 @@ export default function SettingsScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
-            backgroundColor: "#EBEBEB",
+            borderRadius: 8,
+            backgroundColor: "#E0E0E0",
             alignItems: "center",
             justifyContent: "center",
           }}
           activeOpacity={0.7}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#1A1A1A" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#121212" />
         </TouchableOpacity>
 
-        <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1A1A" }}>
+        <Text style={{ fontSize: 17, fontWeight: "800", color: "#121212" }}>
           Configurações
         </Text>
 
@@ -205,7 +205,7 @@ export default function SettingsScreen() {
           style={{
             fontSize: 11,
             fontWeight: "700",
-            color: "#AAAAAA",
+            color: "#C2C2C2",
             textTransform: "uppercase",
             letterSpacing: 0.8,
             marginBottom: 8,
@@ -217,8 +217,8 @@ export default function SettingsScreen() {
 
         <View
           style={{
-            backgroundColor: "#FFF",
-            borderRadius: 20,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
             overflow: "hidden",
             marginBottom: 20,
             shadowColor: "#000",
@@ -254,7 +254,7 @@ export default function SettingsScreen() {
           style={{
             fontSize: 11,
             fontWeight: "700",
-            color: "#AAAAAA",
+            color: "#C2C2C2",
             textTransform: "uppercase",
             letterSpacing: 0.8,
             marginBottom: 8,
@@ -266,8 +266,8 @@ export default function SettingsScreen() {
 
         <View
           style={{
-            backgroundColor: "#FFF",
-            borderRadius: 20,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
             overflow: "hidden",
             marginBottom: 24,
             shadowColor: "#000",
@@ -291,7 +291,7 @@ export default function SettingsScreen() {
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 12,
+                borderRadius: 8,
                 backgroundColor: "#FEF2F2",
                 alignItems: "center",
                 justifyContent: "center",
@@ -306,12 +306,12 @@ export default function SettingsScreen() {
               <Text style={{ fontSize: 14, fontWeight: "600", color: "#EF4444", marginBottom: 2 }}>
                 Excluir minha conta
               </Text>
-              <Text style={{ fontSize: 12, color: "#AAAAAA", lineHeight: 17 }}>
+              <Text style={{ fontSize: 12, color: "#C2C2C2", lineHeight: 17 }}>
                 Remove todos os dados permanentemente
               </Text>
             </View>
 
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#CCCCCC" />
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#C2C2C2" />
           </TouchableOpacity>
         </View>
 
@@ -320,7 +320,7 @@ export default function SettingsScreen() {
           style={{
             textAlign: "center",
             fontSize: 12,
-            color: "#CCCCCC",
+            color: "#C2C2C2",
             marginTop: 4,
           }}
         >
@@ -333,14 +333,14 @@ export default function SettingsScreen() {
         style={{
           paddingHorizontal: 16,
           paddingVertical: 16,
-          backgroundColor: "#F7F7F8",
+          backgroundColor: "#F5F5F5",
         }}
       >
         <TouchableOpacity
           style={{
-            backgroundColor: saving ? "#F0A0A6" : "#E30613",
+            backgroundColor: saving ? "#B50000" : "#8C0000",
             height: 56,
-            borderRadius: 28,
+            borderRadius: 16,
             alignItems: "center",
             justifyContent: "center",
             flexDirection: "row",
@@ -351,11 +351,11 @@ export default function SettingsScreen() {
           activeOpacity={0.85}
         >
           {saving ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <MaterialCommunityIcons name="check" size={20} color="#FFF" />
-              <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+              <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
                 Salvar Preferências
               </Text>
             </>

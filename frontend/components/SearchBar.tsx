@@ -34,17 +34,18 @@ export function SearchBar({
   };
 
   return (
-    <View className="px-4 py-3 bg-white border-b border-[#F0F0F0]">
+    <View className="px-4 py-3 bg-surface border-b border-neutral-200">
       <View
-        className="flex-row items-center bg-[#F5F5F5] h-[44px] px-4 gap-2"
+        className="flex-row items-center bg-neutral-100 h-[44px] px-4 gap-2"
         style={{ borderRadius: 22 }}
       >
-        <MaterialCommunityIcons name="magnify" size={20} color="#AAAAAA" />
+        <MaterialCommunityIcons name="magnify" size={20} color="#C2C2C2" />
 
         <TextInput
-          className="flex-1 text-[14px] text-[#333333] h-full"
+          className="flex-1 text-[14px] text-text-primary"
+          style={{ paddingVertical: 0, includeFontPadding: false }}
           placeholder={placeholder}
-          placeholderTextColor="#BBBBBB"
+          placeholderTextColor="#C2C2C2"
           value={value}
           onChangeText={handleChange}
           returnKeyType="search"
@@ -61,7 +62,7 @@ export function SearchBar({
             <MaterialCommunityIcons
               name="close-circle"
               size={18}
-              color="#CCCCCC"
+              color="#C2C2C2"
             />
           </TouchableOpacity>
         )}

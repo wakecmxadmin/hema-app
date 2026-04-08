@@ -70,7 +70,7 @@ const MENU_SECTIONS: MenuSection[] = [
         subtitle: "Notificações e privacidade",
         icon: "cog-outline",
         iconBg: "#F5F5F5",
-        iconColor: "#6B7280",
+        iconColor: "#666666",
         route: "/profile/settings",
       },
     ],
@@ -172,18 +172,18 @@ export default function ProfileScreen() {
 
   const cardShadow = {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
   };
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F7F7F8" }}
+      style={{ flex: 1, backgroundColor: "#F5F5F5" }}
       edges={["top"]}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F8" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
         <View
           style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 }}
         >
-          <Text style={{ fontSize: 26, fontWeight: "800", color: "#1A1A1A" }}>
+          <Text style={{ fontSize: 26, fontWeight: "800", color: "#121212" }}>
             Perfil
           </Text>
         </View>
@@ -229,7 +229,7 @@ export default function ProfileScreen() {
               }}
             >
               {uploading ? (
-                <ActivityIndicator color="#E30613" size="large" />
+                <ActivityIndicator color="#8C0000" size="large" />
               ) : user.avatarUrl ? (
                 <Image
                   source={{ uri: user.avatarUrl }}
@@ -237,7 +237,7 @@ export default function ProfileScreen() {
                 />
               ) : (
                 <Text
-                  style={{ fontSize: 36, color: "#CCCCCC", fontWeight: "700" }}
+                  style={{ fontSize: 36, color: "#C2C2C2", fontWeight: "700" }}
                 >
                   {getInitials(user.name)}
                 </Text>
@@ -253,18 +253,18 @@ export default function ProfileScreen() {
                 width: 30,
                 height: 30,
                 borderRadius: 15,
-                backgroundColor: "#E30613",
+                backgroundColor: "#8C0000",
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2.5,
-                borderColor: "#F7F7F8",
+                borderColor: "#F5F5F5",
                 zIndex: 1,
               }}
             >
               <MaterialCommunityIcons
                 name="camera-plus"
                 size={14}
-                color="#FFF"
+                color="#FFFFFF"
               />
             </View>
           </TouchableOpacity>
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
             style={{
               fontSize: 20,
               fontWeight: "800",
-              color: "#1A1A1A",
+              color: "#121212",
               marginTop: 16,
               textAlign: "center",
             }}
@@ -284,7 +284,7 @@ export default function ProfileScreen() {
           <Text
             style={{
               fontSize: 14,
-              color: "#AAAAAA",
+              color: "#C2C2C2",
               marginTop: 4,
               textAlign: "center",
             }}
@@ -301,7 +301,7 @@ export default function ProfileScreen() {
               style={{
                 fontSize: 11,
                 fontWeight: "700",
-                color: "#AAAAAA",
+                color: "#C2C2C2",
                 textTransform: "uppercase",
                 letterSpacing: 0.8,
                 marginBottom: 8,
@@ -314,8 +314,8 @@ export default function ProfileScreen() {
             <View
               style={{
                 marginHorizontal: 16,
-                backgroundColor: "#FFF",
-                borderRadius: 20,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
                 overflow: "hidden",
                 ...cardShadow,
               }}
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
                     style={{
                       width: 40,
                       height: 40,
-                      borderRadius: 12,
+                      borderRadius: 8,
                       backgroundColor: item.iconBg,
                       alignItems: "center",
                       justifyContent: "center",
@@ -358,13 +358,13 @@ export default function ProfileScreen() {
                       style={{
                         fontSize: 14,
                         fontWeight: "600",
-                        color: "#1A1A1A",
+                        color: "#121212",
                         marginBottom: 2,
                       }}
                     >
                       {item.title}
                     </Text>
-                    <Text style={{ fontSize: 12, color: "#AAAAAA" }}>
+                    <Text style={{ fontSize: 12, color: "#C2C2C2" }}>
                       {item.subtitle}
                     </Text>
                   </View>
@@ -372,7 +372,7 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons
                     name="chevron-right"
                     size={20}
-                    color="#CCCCCC"
+                    color="#C2C2C2"
                   />
                 </TouchableOpacity>
               ))}
@@ -385,8 +385,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={{
               height: 56,
-              borderRadius: 28,
-              backgroundColor: "#E30613",
+              borderRadius: 16,
+              backgroundColor: "#8C0000",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
@@ -395,8 +395,8 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             activeOpacity={0.85}
           >
-            <MaterialCommunityIcons name="logout" size={20} color="#FFF" />
-            <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "700" }}>
+            <MaterialCommunityIcons name="logout" size={20} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
               Sair da Conta
             </Text>
           </TouchableOpacity>

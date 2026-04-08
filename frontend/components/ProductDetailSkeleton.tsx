@@ -5,7 +5,7 @@ const { width } = Dimensions.get("window");
 
 export function ProductDetailsSkeleton() {
   return (
-    <View className="flex-1 bg-[#FFF]">
+    <View className="flex-1 bg-surface">
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         scrollEnabled={false}
@@ -47,7 +47,7 @@ export function ProductDetailsSkeleton() {
             }}
           />
 
-          <View className="bg-[#EAEAEA] h-[1px] my-[20px]" />
+          <View className="bg-neutral-200 h-[1px] my-[20px]" />
 
           {/* Título Descrição */}
           <PulseView
@@ -120,8 +120,8 @@ export function ProductDetailsSkeleton() {
       </ScrollView>
 
       {/* Botão de Rodapé Skeleton */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-[#EAEAEA] bg-[#FFF] flex-row gap-[15px] p-[16px] pb-[16px]">
-        <PulseView className="flex-1 bg-[#E0E0E0] h-[50px] rounded-[8px] items-center justify-center" />
+      <View className="absolute bottom-0 left-0 right-0 border-t border-neutral-200 bg-surface flex-row gap-[15px] p-[16px] pb-[16px]">
+        <PulseView className="flex-1 h-[50px] rounded-btn items-center justify-center" />
       </View>
     </View>
   );

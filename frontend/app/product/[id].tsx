@@ -29,7 +29,6 @@ export default function ProductDetailsScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // --- NOVA FUNÇÃO: Capitalizar primeira letra de cada palavra ---
   const formatName = (name: string) => {
     if (!name) return "";
     return name
@@ -101,13 +100,13 @@ export default function ProductDetailsScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-surface">
         <TouchableOpacity
-          className="absolute left-4 z-10 bg-white rounded-[20px] p-2"
+          className="absolute left-4 z-10 bg-surface rounded-card p-2"
           style={{ top: Platform.OS === "ios" ? 50 : 30 }}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#121212" />
         </TouchableOpacity>
         <ProductDetailsSkeleton />
       </View>
@@ -119,29 +118,29 @@ export default function ProductDetailsScreen() {
   const mainPriceInfo = formatDisplayPrice(product);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-surface">
       <StatusBar barStyle="dark-content" />
 
       <TouchableOpacity
-        className="absolute left-4 z-10 bg-white/80 rounded-[20px] p-2"
+        className="absolute left-4 z-10 bg-surface/80 rounded-card p-2"
         style={{ top: Platform.OS === "ios" ? 50 : 30 }}
         onPress={() => router.back()}
       >
-        <Ionicons name="arrow-back" size={24} color="#333" />
+        <Ionicons name="arrow-back" size={24} color="#121212" />
       </TouchableOpacity>
 
       <ScrollView
-        contentContainerClassName="pb-[120px]" // Aumentado para não cobrir o conteúdo final
+        contentContainerClassName="pb-[120px]"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E30613"]}
+            colors={["#8C0000"]}
           />
         }
       >
-        <View className="w-full aspect-square bg-white justify-center items-center pt-[70px]">
+        <View className="w-full aspect-square bg-surface justify-center items-center pt-[70px]">
           {product.image_url ? (
             <Image
               source={{ uri: product.image_url.trim() }}
@@ -149,35 +148,34 @@ export default function ProductDetailsScreen() {
               resizeMode="cover"
             />
           ) : (
-            <Ionicons name="image-outline" size={60} color="#DDD" />
+            <Ionicons name="image-outline" size={60} color="#C2C2C2" />
           )}
         </View>
 
         <View className="p-5">
-          <Text className="text-[#E30613] text-[12px] font-bold uppercase mb-2">
+          <Text className="text-brand text-[12px] font-bold uppercase mb-2">
             Produto
           </Text>
 
-          {/* NOME FORMATADO */}
-          <Text className="text-[22px] font-bold text-[#1A1A1A] mb-3">
+          <Text className="text-[22px] font-bold text-text-primary mb-3">
             {formatName(product.name)}
           </Text>
 
           <View className="flex-row items-baseline mb-6">
-            <Text className="text-[28px] font-bold text-[#E30613]">
+            <Text className="text-[28px] font-bold text-brand">
               {mainPriceInfo.price}
             </Text>
-            <Text className="text-[16px] font-bold text-[#888] ml-1">
+            <Text className="text-[16px] font-bold text-neutral-300 ml-1">
               {mainPriceInfo.label}
             </Text>
           </View>
 
-          <View className="h-[1px] bg-[#EAEAEA] my-5" />
-          <Text className="text-[16px] font-bold text-[#333] mb-2.5">
+          <View className="h-[1px] bg-neutral-200 my-5" />
+          <Text className="text-[16px] font-bold text-text-primary mb-2.5">
             Descrição
           </Text>
           <Text
-            className="text-[14px] leading-[20px] text-[#666] mb-1"
+            className="text-[14px] leading-[20px] text-text-secondary mb-1"
             numberOfLines={showFullDescription ? undefined : 3}
           >
             {product.description || "Nenhuma descrição disponível."}
@@ -186,7 +184,7 @@ export default function ProductDetailsScreen() {
             <TouchableOpacity
               onPress={() => setShowFullDescription(!showFullDescription)}
             >
-              <Text className="text-[#E30613] font-bold text-[14px]">
+              <Text className="text-brand font-bold text-[14px]">
                 {showFullDescription ? "Ler menos" : "Ler mais..."}
               </Text>
             </TouchableOpacity>
@@ -195,7 +193,7 @@ export default function ProductDetailsScreen() {
 
         {similarProducts.length > 0 && (
           <View className="m-5">
-            <Text className="text-[16px] font-bold mb-2.5">
+            <Text className="text-[16px] font-bold text-text-primary mb-2.5">
               Produtos similares
             </Text>
             {similarProducts.map((item) => {
@@ -208,16 +206,15 @@ export default function ProductDetailsScreen() {
                 >
                   <Image
                     source={{ uri: item.image_url }}
-                    className="w-[60px] h-[60px] rounded-lg"
+                    className="w-[60px] h-[60px] rounded-btn"
                   />
                   <View className="ml-3 flex-1">
-                    {/* NOME FORMATADO NOS SIMILARES TAMBÉM */}
-                    <Text numberOfLines={1} className="text-[#333] font-medium">
+                    <Text numberOfLines={1} className="text-text-primary font-medium">
                       {formatName(item.name)}
                     </Text>
-                    <Text className="font-bold text-[#E30613]">
+                    <Text className="font-bold text-brand">
                       {similarPriceInfo.price}
-                      <Text className="text-[11px] text-[#888]">
+                      <Text className="text-[11px] text-neutral-300">
                         {" "}
                         {similarPriceInfo.label}
                       </Text>
@@ -230,20 +227,19 @@ export default function ProductDetailsScreen() {
         )}
       </ScrollView>
 
-      {/* RODAPÉ COM AJUSTE PARA ANDROID */}
+      {/* Footer */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-[#EAEAEA]"
+        className="absolute bottom-0 left-0 right-0 bg-surface p-4 border-t border-neutral-200"
         style={{
-          // Aumentamos o padding para 32 no Android para subir o botão
           paddingBottom: Platform.OS === "ios" ? 30 : 50,
         }}
       >
         <TouchableOpacity
-          className="bg-[#E30613] h-[50px] rounded-lg justify-center items-center shadow-sm"
+          className="bg-brand h-[50px] rounded-btn justify-center items-center"
           onPress={handleAddToCart}
           activeOpacity={0.8}
         >
-          <Text className="text-white text-[16px] font-bold">
+          <Text className="text-brand-on text-[16px] font-bold">
             ADICIONAR AO CARRINHO
           </Text>
         </TouchableOpacity>

@@ -4,284 +4,388 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-  LayoutAnimation,
-  UIManager,
-  ActivityIndicator,
-  ScrollView,
   Image,
   StatusBar,
+  ActivityIndicator,
+  Keyboard,
+  Dimensions,
+  Platform,
+  KeyboardAvoidingView,
+  Animated,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { login, signup } from "@/services/auth";
-import { View as MotiView, Text as MotiText, AnimatePresence } from "moti";
-import { Toast } from "@/util/toast";
-import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons, Feather, AntDesign } from "@expo/vector-icons";
+import { login } from "@/services/auth";
+import { Toast } from "@/util/toast";
 
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.62;
+const CARD_OFFSET = IMAGE_HEIGHT - 32;
 
 export default function AuthScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
 
-  const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
+  // isLoginMode controla QUAL conteúdo renderizar dentro do card
+  // — só muda APÓS as animações terminarem (ida) ou ANTES (volta)
+  const [isLoginMode, setIsLoginMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-  const toggleMode = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsLogin(!isLogin);
+  // ─── Todos os valores animados usam native driver (translateY + opacity) ───
+  const cardTranslateY = useRef(new Animated.Value(CARD_OFFSET)).current;
+  const imageOpacity   = useRef(new Animated.Value(1)).current;
+  const welcomeOpacity = useRef(new Animated.Value(1)).current;
+  const loginOpacity = useRef(new Animated.Value(1)).current;
+
+  // Welcome → Login: card sobe, imagem some, conteúdo troca no callback
+  const handleOpenLogin = () => {
+    Animated.parallel([
+      Animated.timing(cardTranslateY, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(imageOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(welcomeOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(loginOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsLoginMode(true);
+    });
   };
 
-  function scrollToBottom() {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
-  }
+  // Login → Welcome: troca conteúdo imediatamente, depois anima o card descendo
+  const handleCloseLogin = () => {
+    Keyboard.dismiss();
+    setEmail("");
+    setPassword("");
+    setIsLoginMode(false); 
+    Animated.parallel([
+      Animated.timing(cardTranslateY, {
+        toValue: CARD_OFFSET,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.timing(imageOpacity, {
+        toValue: 1,
+        duration: 300,
+        delay: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(welcomeOpacity, {
+        toValue: 1,
+        duration: 260,
+        delay: 180, // aparece quando o card já desceu o suficiente
+        useNativeDriver: true,
+      }),
+      Animated.timing(loginOpacity, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   async function handleLogin() {
     if (!email || !password) {
-      return Toast.show({ type: "error", text1: "Preencha todos os campos." });
+      return Toast.show({ type: "error", text1: "Preencha e-mail e senha." });
     }
     Keyboard.dismiss();
     setIsLoading(true);
     const response = await login(email, password);
     setIsLoading(false);
     if (response.success) {
-      Toast.show({ type: "success", text1: response.message });
       router.replace("/(tabs)/home");
     } else {
       Toast.show({ type: "error", text1: "Erro ao entrar", text2: response.message });
     }
   }
 
-  async function handleSignup() {
-    if (!email || !password || !name) {
-      return Toast.show({ type: "error", text1: "Preencha todos os campos." });
-    }
-    Keyboard.dismiss();
-    setIsLoading(true);
-    const response = await signup(email, password, name);
-    setIsLoading(false);
-    if (response.success) {
-      Toast.show({ type: "success", text1: response.message });
-      router.replace("/(tabs)/home");
-    } else {
-      Toast.show({ type: "error", text1: "Erro ao criar conta", text2: response.message });
-    }
-  }
-
-  const inputShadow = Platform.select({
-    ios: {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-    },
-    android: { elevation: 2 },
-  });
-
-  const androidOffset = (StatusBar.currentHeight ?? 0) + (insets.top > 0 ? insets.top : 0);
-
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#fff" }}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === "android" ? androidOffset : 0}
-    >
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar
+        barStyle={isLoginMode ? "dark-content" : "light-content"}
+        translucent
+        backgroundColor="transparent"
+      />
 
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          paddingHorizontal: 28,
-          paddingTop: Math.max(insets.top, 20) + 8,
-          paddingBottom: Math.max(insets.bottom, 16) + 16,
+      {/* ── Imagem — sempre montada, desaparece com fade ── */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0,
+          height: IMAGE_HEIGHT,
+          opacity: imageOpacity,
+          overflow: "hidden",
         }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        bounces={false}
       >
-        {/* Logo */}
-        <View style={{ alignItems: "center", marginBottom: 28 }}>
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={{ width: 180, height: 180, resizeMode: "contain" }}
-          />
-        </View>
+        <Image
+          source={require("@/assets/images/auth.jpg")}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.0)"]}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120 }}
+          pointerEvents="none"
+        />
+      </Animated.View>
 
-        {/* Header */}
-        <View style={{ marginBottom: 28 }}>
-          <MotiText
-            from={{ opacity: 0, translateY: 6 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 300 }}
-            className="text-[38px] font-black text-[#A60200] tracking-[-1.5px]"
-          >
-            {isLogin ? "Bem-vindo!" : "Criar conta"}
-          </MotiText>
-          <Text className="text-[15px] text-[#666666] mt-1 leading-6 font-medium">
-            {isLogin
-              ? "Entre para continuar comprando."
-              : "Preencha os dados para se cadastrar."}
-          </Text>
-        </View>
-
-        {/* Form */}
-        <View>
-          <AnimatePresence exitBeforeEnter>
-            {!isLogin && (
-              <MotiView
-                key="name-input"
-                from={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 76, marginBottom: 4 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                transition={{ type: "timing", duration: 250 }}
-                style={{ overflow: "hidden" }}
-              >
-                <View
-                  className={`rounded-2xl justify-center h-[60px] ${
-                    focusedInput === "name"
-                      ? "bg-white border-2 border-[#A60200]"
-                      : "bg-[#F9F9F9] border border-[#E8E8E8]"
-                  }`}
-                  style={inputShadow}
-                >
-                  <TextInput
-                    className="flex-1 px-5 text-[16px] text-[#1A1A1A]"
-                    placeholder="Nome completo"
-                    placeholderTextColor="#999"
-                    value={name}
-                    onChangeText={setName}
-                    onFocus={() => { setFocusedInput("name"); scrollToBottom(); }}
-                    onBlur={() => setFocusedInput(null)}
-                    editable={!isLoading}
-                    autoCapitalize="words"
-                    returnKeyType="next"
-                  />
-                </View>
-              </MotiView>
-            )}
-          </AnimatePresence>
-
-          <View
-            className={`rounded-2xl h-[60px] mb-4 justify-center ${
-              focusedInput === "email"
-                ? "bg-white border-2 border-[#A60200]"
-                : "bg-[#F9F9F9] border border-[#E8E8E8]"
-            }`}
-            style={inputShadow}
-          >
-            <TextInput
-              className="flex-1 px-5 text-[16px] text-[#1A1A1A]"
-              placeholder="E-mail"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              onFocus={() => { setFocusedInput("email"); scrollToBottom(); }}
-              onBlur={() => setFocusedInput(null)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-              returnKeyType="next"
-            />
-          </View>
-
-          <View
-            className={`flex-row items-center rounded-2xl h-[60px] mb-4 ${
-              focusedInput === "password"
-                ? "bg-white border-2 border-[#A60200]"
-                : "bg-[#F9F9F9] border border-[#E8E8E8]"
-            }`}
-            style={inputShadow}
-          >
-            <TextInput
-              className="flex-1 px-5 text-[16px] text-[#1A1A1A]"
-              placeholder="Senha"
-              placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
-              onFocus={() => { setFocusedInput("password"); scrollToBottom(); }}
-              onBlur={() => setFocusedInput(null)}
-              secureTextEntry={!showPassword}
-              editable={!isLoading}
-              returnKeyType="done"
-              onSubmitEditing={isLogin ? handleLogin : handleSignup}
-            />
-            <TouchableOpacity
-              className="px-5 h-full justify-center"
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Feather name={showPassword ? "eye" : "eye-off"} size={22} color="#999" />
-            </TouchableOpacity>
-          </View>
-
-          {isLogin && (
-            <TouchableOpacity
-              className="self-end py-2 mb-2"
-              onPress={() => router.push("/auth/forgot-password")}
-            >
-              <Text className="text-[#666] font-semibold text-[14px]">
-                Esqueceu sua senha?
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            className="bg-[#A60200] h-[60px] rounded-2xl justify-center items-center mt-4"
-            activeOpacity={0.8}
-            onPress={isLogin ? handleLogin : handleSignup}
-            disabled={isLoading}
+      {/* ── Card — sempre montado, desliza com translateY ── */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0, bottom: 0, left: 0, right: 0,
+          transform: [{ translateY: cardTranslateY }],
+          backgroundColor: "#FFFFFF",
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          paddingHorizontal: 24,
+        }}
+      >
+        {/* ── Conteúdo de Boas-vindas ── */}
+        {!isLoginMode && (
+          <Animated.View
             style={{
-              shadowColor: "#A60200",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.3,
-              shadowRadius: 10,
-              elevation: 6,
+              height: SCREEN_HEIGHT - CARD_OFFSET,
+              opacity: welcomeOpacity,
+              justifyContent: "flex-end",
+              paddingBottom: Math.max(insets.bottom, 20) + 8,
             }}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <MotiText
-                className="text-[16px] font-bold uppercase tracking-[0.5px] text-white"
-                from={{ opacity: 0, translateY: 5 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                exit={{ opacity: 0, translateY: -5 }}
-              >
-                {isLogin ? "Entrar" : "Criar conta"}
-              </MotiText>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="mt-8 py-3 items-center self-center"
-            onPress={toggleMode}
-            disabled={isLoading}
-          >
-            <Text className="text-[15px] text-[#666666]">
-              {isLogin ? "Ainda não tem conta? " : "Já tenho conta. "}
-              <Text className="font-extrabold text-[#A60200]">
-                {isLogin ? "Criar conta" : "Entrar"}
+            {/* Botão primário — Criar conta */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push("/auth/register-email")}
+              style={{
+                backgroundColor: "#8C0000",
+                height: 56,
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+                Criar nova conta
               </Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            </TouchableOpacity>
+
+            {/* Botão secundário — Login (dispara a animação) */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleOpenLogin}
+              style={{
+                height: 56,
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1.5,
+                borderColor: "#8C0000",
+                marginBottom: 32,
+              }}
+            >
+              <Text style={{ color: "#8C0000", fontSize: 16, fontWeight: "700" }}>
+                Já tenho uma conta
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divisória */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: "#E0E0E0" }} />
+              <Text style={{ color: "#C2C2C2", marginHorizontal: 12, fontSize: 13 }}>OU</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: "#E0E0E0" }} />
+            </View>
+
+            {/* Google */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={{
+                flexDirection: "row",
+                height: 56,
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#E0E0E0",
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <AntDesign name="google" size={22} color="#DB4437" style={{ marginRight: 12 }} />
+              <Text style={{ color: "#121212", fontSize: 15, fontWeight: "600" }}>
+                Entrar com o Google
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {isLoginMode && (
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View
+              style={{
+                flex: 1,
+                paddingTop: insets.top + 12,
+                paddingBottom: Math.max(insets.bottom, 20) + 8,
+              }}
+            >
+              {/* Voltar */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleCloseLogin}
+                style={{ alignSelf: "flex-start", marginBottom: 24, padding: 4 }}
+              >
+                <MaterialCommunityIcons name="arrow-left" size={24} color="#121212" />
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 22, fontWeight: "800", color: "#121212", marginBottom: 6 }}>
+                Entrar na conta
+              </Text>
+              <Text style={{ fontSize: 14, color: "#666666", marginBottom: 32 }}>
+                Acesse com seu e-mail e senha.
+              </Text>
+
+              {/* E-mail */}
+              <Text style={s.label}>E-mail ou CPF</Text>
+              <View style={[s.inputBox, focusedInput === "email" && s.inputBoxFocused]}>
+                <TextInput
+                  style={s.input}
+                  placeholder="seuemail@exemplo.com"
+                  placeholderTextColor="#C2C2C2"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setFocusedInput("email")}
+                  onBlur={() => setFocusedInput(null)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* Senha */}
+              <Text style={[s.label, { marginTop: 16 }]}>Senha</Text>
+              <View
+                style={[
+                  s.inputBox,
+                  { flexDirection: "row", alignItems: "center" },
+                  focusedInput === "password" && s.inputBoxFocused,
+                ]}
+              >
+                <TextInput
+                  style={[s.input, { flex: 1 }]}
+                  placeholder="••••••••"
+                  placeholderTextColor="#C2C2C2"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setFocusedInput("password")}
+                  onBlur={() => setFocusedInput(null)}
+                  secureTextEntry={!showPassword}
+                  editable={!isLoading}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                  <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#C2C2C2" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Esqueci a senha */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push("/auth/forgot-password")}
+                style={{ alignSelf: "flex-end", paddingVertical: 10, marginBottom: 24 }}
+              >
+                <Text style={{ fontSize: 14, color: "#666666", fontWeight: "500" }}>
+                  Esqueci minha senha
+                </Text>
+              </TouchableOpacity>
+
+              {/* CTA */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleLogin}
+                disabled={isLoading}
+                style={{
+                  backgroundColor: "#8C0000",
+                  height: 56,
+                  borderRadius: 8,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  shadowColor: "#8C0000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+                    Continuar
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        )}
+      </Animated.View>
+    </View>
   );
 }
+
+const s = {
+  label: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#C2C2C2",
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  inputBox: {
+    height: 54,
+    borderRadius: 8,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    paddingHorizontal: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  inputBoxFocused: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#8C0000",
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#121212",
+    paddingVertical: 0,
+    includeFontPadding: false,
+  },
+};

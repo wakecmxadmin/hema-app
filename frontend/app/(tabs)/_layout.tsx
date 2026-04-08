@@ -1,30 +1,23 @@
 import React from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
 import { View, Text, Platform } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useCart } from "@/context/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const BRAND_COLORS = {
-  primary: "#E30613",
-  inactive: "#8E8E8E",
-  background: "#FFFFFF",
-  border: "#F0F0F0",
+const BRAND = {
+  active: "#D91A21",
+  inactive: "#C2C2C2",
+  bg: "#FFFFFF",
+  border: "#E0E0E0",
 };
 
-function CartIconWithBadge({ color }: { color: string }) {
+function CartIcon({ color }: { color: string }) {
   const { cartCount } = useCart();
 
   return (
-    <View
-      style={{
-        width: 24,
-        height: 24,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <FontAwesome name="shopping-cart" size={22} color={color} />
+    <View style={{ width: 24, height: 24, justifyContent: "center", alignItems: "center" }}>
+      <Feather name="shopping-cart" size={22} color={color} />
 
       {cartCount > 0 && (
         <View
@@ -33,7 +26,7 @@ function CartIconWithBadge({ color }: { color: string }) {
             position: "absolute",
             right: -10,
             top: -6,
-            backgroundColor: BRAND_COLORS.primary,
+            backgroundColor: BRAND.active,
             borderRadius: 10,
             minWidth: 18,
             height: 18,
@@ -41,17 +34,10 @@ function CartIconWithBadge({ color }: { color: string }) {
             justifyContent: "center",
             alignItems: "center",
             borderWidth: 1.5,
-            borderColor: BRAND_COLORS.background,
+            borderColor: BRAND.bg,
           }}
         >
-          <Text
-            style={{
-              color: "white",
-              fontSize: 9,
-              fontWeight: "bold",
-              textAlign: "center",
-            }}
-          >
+          <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "bold", textAlign: "center" }}>
             {cartCount > 99 ? "99+" : cartCount}
           </Text>
         </View>
@@ -60,53 +46,34 @@ function CartIconWithBadge({ color }: { color: string }) {
   );
 }
 
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
-  color: string;
-}) {
-  return <FontAwesome size={22} style={{ marginBottom: -3 }} {...props} />;
-}
-
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: BRAND_COLORS.primary,
-        tabBarInactiveTintColor: BRAND_COLORS.inactive,
+        tabBarActiveTintColor: BRAND.active,
+        tabBarInactiveTintColor: BRAND.inactive,
         tabBarStyle: {
-          backgroundColor: BRAND_COLORS.background,
+          backgroundColor: BRAND.bg,
           borderTopWidth: 1,
-          borderTopColor: BRAND_COLORS.border,
-
-          // --- AJUSTE DINÂMICO PARA ANDROID E IOS ---
-          // A altura deve ser uma base fixa + o tamanho da barra do sistema (insets.bottom)
-          height:
-            Platform.OS === "android"
-              ? 60 + insets.bottom // No Android, se houver botões, insets.bottom será ~48
-              : 85, // No iOS o Safe Area já costuma ser bem tratado
-
+          borderTopColor: BRAND.border,
+          height: Platform.OS === "android" ? 60 + insets.bottom : 85,
           paddingTop: 10,
-
-          // O preenchimento inferior agora é exatamente o espaço da barra do sistema + um respiro
           paddingBottom:
             Platform.OS === "android"
-              ? insets.bottom > 0
-                ? insets.bottom
-                : 10
+              ? insets.bottom > 0 ? insets.bottom : 10
               : insets.bottom,
-
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.08,
           shadowRadius: 4,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "500",
-          // Ajuste fino para o texto não sumir
           marginBottom: Platform.OS === "android" ? 8 : 0,
         },
       }}
@@ -115,7 +82,7 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
         }}
       />
 
@@ -123,7 +90,7 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: "Carrinho",
-          tabBarIcon: ({ color }) => <CartIconWithBadge color={color} />,
+          tabBarIcon: ({ color }) => <CartIcon color={color} />,
         }}
       />
 
@@ -131,7 +98,7 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: "Pedidos",
-          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="file-text" size={22} color={color} />,
         }}
       />
 
@@ -139,7 +106,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Perfil",
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
     </Tabs>
