@@ -78,7 +78,7 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ true: "#8C0000", false: "#E0E0E0" }}
+        trackColor={{ true: "#D91A21", false: "#E0E0E0" }}
         thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined}
         ios_backgroundColor="#E0E0E0"
       />
@@ -153,7 +153,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
       >
         <TouchableOpacity
           style={{
-            backgroundColor: saving ? "#B50000" : "#8C0000",
+            backgroundColor: saving ? "#B50000" : "#D91A21",
             height: 56,
             borderRadius: 16,
             alignItems: "center",

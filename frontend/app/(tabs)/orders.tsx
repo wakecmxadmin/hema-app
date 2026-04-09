@@ -13,6 +13,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 
 import { OrdersService } from "@/services/orders";
+import { useCart } from "@/context/CartContext";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 type FilterKey = "all" | "active" | "done";
 
@@ -40,7 +42,7 @@ function getStatusConfig(status: string) {
     case "completed":
       return { label: "Entregue", color: "#10B981", bg: "#ECFDF5", icon: "check-circle-outline" as const };
     case "cancelled":
-      return { label: "Cancelado", color: "#8C0000", bg: "#FEF2F2", icon: "close-circle-outline" as const };
+      return { label: "Cancelado", color: "#D91A21", bg: "#FEF2F2", icon: "close-circle-outline" as const };
     default:
       return { label: status, color: "#666666", bg: "#F5F5F5", icon: "information-outline" as const };
   }
@@ -134,7 +136,7 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
 
         <TouchableOpacity
           onPress={onPress}
-          className="flex-row items-center gap-1 bg-brand px-4 py-2.5 rounded-full"
+          className="flex-row items-center gap-1 bg-brand p-2 rounded-full"
           activeOpacity={0.8}
         >
           <Text className="text-[12px] font-[700] text-brand-on">Ver detalhes</Text>
@@ -147,10 +149,12 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
 
 export default function OrdersTabScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useCart();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const fetchOrders = async (isInitial = false) => {
     if (isInitial) setLoading(true);
@@ -164,8 +168,13 @@ export default function OrdersTabScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchOrders(true);
-    }, []),
+      if (isAuthenticated) {
+        fetchOrders(true);
+      } else {
+        setLoading(false);
+        setShowAuthModal(true);
+      }
+    }, [isAuthenticated]),
   );
 
   const onRefresh = () => {
@@ -216,7 +225,7 @@ export default function OrdersTabScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#8C0000" />
+          <ActivityIndicator size="large" color="#D91A21" />
         </View>
       ) : (
         <FlatList
@@ -238,8 +247,8 @@ export default function OrdersTabScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#8C0000"]}
-              tintColor="#8C0000"
+              colors={["#D91A21"]}
+              tintColor="#D91A21"
             />
           }
           ListEmptyComponent={
@@ -263,6 +272,15 @@ export default function OrdersTabScreen() {
           }
         />
       )}
+
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          router.navigate("/(tabs)/home" as any);
+        }}
+        message="Você precisa estar logado para ver seus pedidos."
+      />
     </SafeAreaView>
   );
 }

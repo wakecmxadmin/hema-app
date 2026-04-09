@@ -11,14 +11,22 @@ import {
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAuthRegistration } from "@/context/AuthContext";
 
 export default function RegisterEmail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { setStepData } = useAuthRegistration();
   const [email, setEmail] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
   const isEmailValid = email.includes("@") && email.includes(".");
+
+  function handleContinue() {
+    if (!isEmailValid) return;
+    setStepData({ email });
+    router.push("/auth/password");
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -92,10 +100,7 @@ export default function RegisterEmail() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               returnKeyType="done"
-              onSubmitEditing={() => {
-                if (isEmailValid)
-                  router.push({ pathname: "/auth/verify", params: { email } });
-              }}
+              onSubmitEditing={handleContinue}
             />
           </View>
         </View>
@@ -110,15 +115,13 @@ export default function RegisterEmail() {
           <TouchableOpacity
             activeOpacity={0.85}
             disabled={!isEmailValid}
-            onPress={() =>
-              router.push({ pathname: "/auth/verify", params: { email } })
-            }
+            onPress={handleContinue}
             style={{
               height: 56,
               borderRadius: 8,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: isEmailValid ? "#8C0000" : "#F5F5F5",
+              backgroundColor: isEmailValid ? "#D91A21" : "#F5F5F5",
             }}
           >
             <Text
@@ -159,7 +162,7 @@ const s = {
   inputBoxFocused: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#8C0000",
+    borderColor: "#D91A21",
   },
   input: {
     flex: 1,

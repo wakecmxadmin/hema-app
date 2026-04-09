@@ -83,7 +83,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                   margin: 8,
                   marginBottom: 18,
                   backgroundColor: "#FFFFFF",
-                  shadowColor: "#8C0000",
+                  shadowColor: "#D91A21",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.18,
                   shadowRadius: 12,
@@ -94,7 +94,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                 <View
                   style={{
                     borderRadius: 16,
-                    height: 180,
+                    height: 200,
                     overflow: "hidden",
                     flexDirection: "row",
                   }}
@@ -106,7 +106,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       padding: 20,
                       paddingLeft: 24,
                       justifyContent: "space-between",
-                      backgroundColor: "#8C0000",
+                      backgroundColor: "#D91A21",
                     }}
                   >
                     {/* Badge */}
@@ -128,7 +128,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                         style={{
                           fontSize: 10,
                           fontWeight: "900",
-                          color: "#8C0000",
+                          color: "#D91A21",
                           textTransform: "uppercase",
                           letterSpacing: 1,
                         }}
@@ -191,7 +191,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                   {/* Right image */}
                   <View
                     style={{
-                      width: 148,
+                      width: 180,
                       backgroundColor: "#FFFFFF",
                       alignItems: "center",
                       justifyContent: "center",
@@ -239,7 +239,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                 height: 6,
                 borderRadius: 3,
                 width: i === activeIndex ? 20 : 6,
-                backgroundColor: i === activeIndex ? "#8C0000" : "#E0E0E0",
+                backgroundColor: i === activeIndex ? "#D91A21" : "#E0E0E0",
               }}
             />
           ))}

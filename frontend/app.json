@@ -27,7 +27,9 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "A Hema Cereais precisa acessar sua galeria para que você possa personalizar a foto do seu perfil.",
+        "NSCameraUsageDescription": "A Hema Cereais usa a câmera para que você possa tirar uma foto de perfil diretamente pelo app."
       }
     },
     "android": {

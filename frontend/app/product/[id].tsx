@@ -17,11 +17,13 @@ import { Product } from "@/types/product";
 import { getProductById, getSimilarProducts } from "@/services/products";
 import { Toast } from "@/util/toast";
 import { ProductDetailsSkeleton } from "@/components/ProductDetailSkeleton";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 export default function ProductDetailsScreen() {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, isAuthenticated } = useCart();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +92,10 @@ export default function ProductDetailsScreen() {
 
   const handleAddToCart = async () => {
     if (!product) return;
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     const payload = {
       product_id: product.id,
       price: product.type === "unit" ? product.price : product.price_per_kg,
@@ -136,7 +142,7 @@ export default function ProductDetailsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#8C0000"]}
+            colors={["#D91A21"]}
           />
         }
       >
@@ -192,37 +198,54 @@ export default function ProductDetailsScreen() {
         </View>
 
         {similarProducts.length > 0 && (
-          <View className="m-5">
-            <Text className="text-[16px] font-bold text-text-primary mb-2.5">
+          <View className="mt-6 mb-4">
+            <Text className="text-[16px] font-bold text-text-primary mb-3 px-5">
               Produtos similares
             </Text>
-            {similarProducts.map((item) => {
-              const similarPriceInfo = formatDisplayPrice(item);
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => router.push(`/product/${item.id}`)}
-                  className="flex-row mb-4 items-center"
-                >
-                  <Image
-                    source={{ uri: item.image_url }}
-                    className="w-[60px] h-[60px] rounded-btn"
-                  />
-                  <View className="ml-3 flex-1">
-                    <Text numberOfLines={1} className="text-text-primary font-medium">
-                      {formatName(item.name)}
-                    </Text>
-                    <Text className="font-bold text-brand">
-                      {similarPriceInfo.price}
-                      <Text className="text-[11px] text-neutral-300">
-                        {" "}
-                        {similarPriceInfo.label}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+            >
+              {similarProducts.map((item) => {
+                const similarPriceInfo = formatDisplayPrice(item);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => router.push(`/product/${item.id}`)}
+                    activeOpacity={0.8}
+                    style={{
+                      width: 130,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#F0F0F0",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={{ width: 130, height: 110, backgroundColor: "#F8F8F8" }}
+                      resizeMode="cover"
+                    />
+                    <View style={{ padding: 10 }}>
+                      <Text
+                        numberOfLines={2}
+                        style={{ fontSize: 12, color: "#333", fontWeight: "500", lineHeight: 16, minHeight: 32 }}
+                      >
+                        {formatName(item.name)}
                       </Text>
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                      <Text style={{ fontSize: 14, fontWeight: "700", color: "#D91A21", marginTop: 4 }}>
+                        {similarPriceInfo.price}
+                        <Text style={{ fontSize: 10, fontWeight: "400", color: "#AAAAAA" }}>
+                          {" "}{similarPriceInfo.label}
+                        </Text>
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
       </ScrollView>
@@ -244,6 +267,12 @@ export default function ProductDetailsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="Você precisa estar logado para adicionar produtos ao carrinho."
+      />
     </View>
   );
 }

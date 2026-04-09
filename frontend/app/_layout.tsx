@@ -16,7 +16,7 @@ import {
 import { Stack, useRouter, useSegments } from "expo-router";
 import { supabase } from "@/services/supabase";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "react-native-reanimated";
 import { View, Platform, StatusBar as RNStatusBar } from "react-native";
 import { ToastContainer } from "@/components/ToastContainer";
@@ -72,6 +72,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const [session, setSession] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const isInitialRoute = useRef(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -93,29 +94,33 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!isAuthReady) return;
 
     const inAuthGroup = segments[0] === "auth";
+    const currentSegments = segments as string[];
 
-    const isResetPasswordScreen = (segments as string[]).includes(
-      "reset-password",
-    );
-
-    if (isResetPasswordScreen) {
-      return;
-    }
+    // Telas do fluxo de registro/reset que não devem sofrer redirect
+    const BYPASS_SCREENS = new Set(["password", "verify", "reset-password", "details"]);
+    if (currentSegments.some((s) => BYPASS_SCREENS.has(s))) return;
 
     if (session) {
-      if (inAuthGroup) {
+      const isEmailConfirmed = !!session.user?.email_confirmed_at;
+
+      if (isEmailConfirmed && inAuthGroup) {
+        // Já autenticado e confirmado — sai do grupo /auth
         router.replace("/(tabs)/home");
+      } else if (!isEmailConfirmed && inAuthGroup) {
+        // Cadastrado mas e-mail não confirmado — mantém no fluxo de verificação
+        router.replace("/auth/verify");
       }
     } else {
-      if (!inAuthGroup) {
-        router.replace("/auth");
+      // Guest mode: app reabriu com estado residual em /auth → manda pra home
+      if (isInitialRoute.current && inAuthGroup) {
+        router.replace("/(tabs)/home");
       }
     }
+
+    isInitialRoute.current = false;
   }, [session, isAuthReady, segments]);
 
-  if (!isAuthReady) {
-    return null;
-  }
+  if (!isAuthReady) return null;
 
   return <>{children}</>;
 }
@@ -151,9 +156,7 @@ function RootLayoutNav() {
               }}
             >
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="auth/index" />
-              <Stack.Screen name="auth/forgot-password" />
-              <Stack.Screen name="auth/reset-password" />
+              <Stack.Screen name="auth" />
             </Stack>
           </AuthGuard>
           <ToastContainer />

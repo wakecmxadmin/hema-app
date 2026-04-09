@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={{ marginBottom: 40 }}>
-          <Text style={{ fontSize: 28, fontWeight: "900", color: "#8C0000", marginBottom: 12, letterSpacing: -0.5 }}>
+          <Text style={{ fontSize: 28, fontWeight: "900", color: "#D91A21", marginBottom: 12, letterSpacing: -0.5 }}>
             Recuperar senha
           </Text>
           <Text style={{ fontSize: 15, color: "#666666", lineHeight: 22, fontWeight: "500" }}>
@@ -97,8 +97,8 @@ export default function ForgotPasswordScreen() {
             borderRadius: 8,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: "#8C0000",
-            shadowColor: "#8C0000",
+            backgroundColor: "#D91A21",
+            shadowColor: "#D91A21",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,
@@ -140,7 +140,7 @@ const s = {
   inputBoxFocused: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#8C0000",
+    borderColor: "#D91A21",
   },
   input: {
     flex: 1,

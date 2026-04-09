@@ -19,6 +19,8 @@ import { router } from "expo-router";
 import { logout } from "../../services/auth";
 import { uploadAvatar } from "../../services/profile";
 import { Toast } from "@/util/toast";
+import { useCart } from "@/context/CartContext";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 // ─── Menu config ──────────────────────────────────────────────────────────────
 
@@ -88,14 +90,17 @@ interface UserState {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
+  const { isAuthenticated } = useCart();
   const [user, setUser] = useState<UserState>({
     name: "",
     email: "",
     avatarUrl: null,
   });
   const [uploading, setUploading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     async function loadProfile() {
       const name = await AsyncStorage.getItem("@hema_user_name");
       const email = await AsyncStorage.getItem("@hema_user_email");
@@ -103,7 +108,7 @@ export default function ProfileScreen() {
       if (name && email) setUser({ name, email, avatarUrl });
     }
     loadProfile();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleLogout = async () => {
     const response = await logout();
@@ -208,8 +213,8 @@ export default function ProfileScreen() {
           }}
         >
           <TouchableOpacity
-            onPress={handlePickImage}
-            disabled={uploading}
+            onPress={isAuthenticated ? handlePickImage : undefined}
+            disabled={uploading || !isAuthenticated}
             activeOpacity={0.8}
           >
             {/* Avatar */}
@@ -229,7 +234,7 @@ export default function ProfileScreen() {
               }}
             >
               {uploading ? (
-                <ActivityIndicator color="#8C0000" size="large" />
+                <ActivityIndicator color="#D91A21" size="large" />
               ) : user.avatarUrl ? (
                 <Image
                   source={{ uri: user.avatarUrl }}
@@ -253,7 +258,7 @@ export default function ProfileScreen() {
                 width: 30,
                 height: 30,
                 borderRadius: 15,
-                backgroundColor: "#8C0000",
+                backgroundColor: "#D91A21",
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2.5,
@@ -279,7 +284,7 @@ export default function ProfileScreen() {
             }}
             numberOfLines={1}
           >
-            {user.name || "Carregando..."}
+            {isAuthenticated ? (user.name || "Carregando...") : "Visitante"}
           </Text>
           <Text
             style={{
@@ -290,7 +295,7 @@ export default function ProfileScreen() {
             }}
             numberOfLines={1}
           >
-            {user.email}
+            {isAuthenticated ? user.email : "Entre para acessar sua conta"}
           </Text>
         </View>
 
@@ -320,88 +325,107 @@ export default function ProfileScreen() {
                 ...cardShadow,
               }}
             >
-              {section.items.map((item, index) => (
-                <TouchableOpacity
-                  key={item.id}
-                  activeOpacity={0.65}
-                  onPress={() => router.push(item.route as any)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    borderTopWidth: index > 0 ? 1 : 0,
-                    borderTopColor: "#F5F5F5",
-                  }}
-                >
-                  <View
+              {section.items.map((item, index) => {
+                const isProtected = item.id === "dados" || item.id === "enderecos";
+                const disabled = isProtected && !isAuthenticated;
+
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={disabled ? 1 : 0.65}
+                    onPress={disabled ? undefined : () => router.push(item.route as any)}
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 8,
-                      backgroundColor: item.iconBg,
+                      flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 14,
-                      flexShrink: 0,
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      borderTopWidth: index > 0 ? 1 : 0,
+                      borderTopColor: "#F5F5F5",
+                      opacity: disabled ? 0.4 : 1,
                     }}
                   >
-                    <MaterialCommunityIcons
-                      name={item.icon as any}
-                      size={20}
-                      color={item.iconColor}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text
+                    <View
                       style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: "#121212",
-                        marginBottom: 2,
+                        width: 40,
+                        height: 40,
+                        borderRadius: 8,
+                        backgroundColor: item.iconBg,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 14,
+                        flexShrink: 0,
                       }}
                     >
-                      {item.title}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: "#C2C2C2" }}>
-                      {item.subtitle}
-                    </Text>
-                  </View>
+                      <MaterialCommunityIcons
+                        name={item.icon as any}
+                        size={20}
+                        color={item.iconColor}
+                      />
+                    </View>
 
-                  <MaterialCommunityIcons
-                    name="chevron-right"
-                    size={20}
-                    color="#C2C2C2"
-                  />
-                </TouchableOpacity>
-              ))}
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "600",
+                          color: "#121212",
+                          marginBottom: 2,
+                        }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: "#C2C2C2" }}>
+                        {disabled ? "Faça login para acessar" : item.subtitle}
+                      </Text>
+                    </View>
+
+                    <MaterialCommunityIcons
+                      name={disabled ? "lock-outline" : "chevron-right"}
+                      size={disabled ? 18 : 20}
+                      color="#C2C2C2"
+                    />
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         ))}
 
-        {/* Logout */}
+        {/* Logout / Login */}
         <View style={{ marginHorizontal: 16, marginTop: 4 }}>
           <TouchableOpacity
             style={{
               height: 56,
               borderRadius: 16,
-              backgroundColor: "#8C0000",
+              backgroundColor: "#D91A21",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
               gap: 8,
             }}
-            onPress={handleLogout}
+            onPress={isAuthenticated ? handleLogout : () => router.push("/auth")}
             activeOpacity={0.85}
           >
-            <MaterialCommunityIcons name="logout" size={20} color="#FFFFFF" />
+            <MaterialCommunityIcons
+              name={isAuthenticated ? "logout" : "login"}
+              size={20}
+              color="#FFFFFF"
+            />
             <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
-              Sair da Conta
+              {isAuthenticated ? "Sair da Conta" : "Entrar na Conta"}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          router.navigate("/(tabs)/home" as any);
+        }}
+        message="Você precisa estar logado para acessar seu perfil."
+      />
     </SafeAreaView>
   );
 }

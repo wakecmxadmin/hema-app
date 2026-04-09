@@ -30,7 +30,7 @@ export function SectionHeader({ title, label, onSeeAll }: SectionHeaderProps) {
           <Text className="text-[13px] font-[600] text-brand">
             Ver todos
           </Text>
-          <MaterialCommunityIcons name="chevron-right" size={16} color="#8C0000" />
+          <MaterialCommunityIcons name="chevron-right" size={16} color="#D91A21" />
         </TouchableOpacity>
       ) : null}
     </View>

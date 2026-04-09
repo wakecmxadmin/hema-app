@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import * as cartService from "@/services/cart";
+import { supabase } from "@/services/supabase";
 import { Toast } from "@/util/toast";
 
 type Cart = any;
@@ -24,6 +25,7 @@ type CartContextType = {
   items: CartItem[];
   loading: boolean;
   cartCount: number;
+  isAuthenticated: boolean;
   refreshCart: () => Promise<void>;
   addItem: (data: AddCartItemDTO) => Promise<boolean>;
   updateItem: (
@@ -39,11 +41,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any>(null);
+
+  const isAuthenticated = !!session;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => setSession(s));
+    const { data: listener } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const cartCount = items.length;
 
   // REFRESH: Apenas sincroniza a tela com o backend silenciosamente
   const refreshCart = useCallback(async () => {
+    if (!session) {
+      setCart(null);
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const response = await cartService.getCartService();
 
@@ -51,13 +69,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setCart(response.data.cart || {});
       setItems(response.data.items || []);
     }
-    // Se não tiver success (ex: usuário deslogado), apenas deixamos vazio
     setLoading(false);
-  }, []);
+  }, [session]);
 
   // ADD: Optimistic UI com tratamento de erro padronizado
   const addItem = useCallback(
     async (data: AddCartItemDTO) => {
+      if (!isAuthenticated) return false;
+
       const previousItems = [...items];
 
       // Optimistic Update: Adiciona um fake temporário
@@ -143,6 +162,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       items,
       loading,
       cartCount,
+      isAuthenticated,
       refreshCart,
       addItem,
       updateItem,
@@ -153,6 +173,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       items,
       loading,
       cartCount,
+      isAuthenticated,
       refreshCart,
       addItem,
       updateItem,

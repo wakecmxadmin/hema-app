@@ -44,7 +44,7 @@ export function CategoryCarousel() {
       <View
         style={{ height: 52, alignItems: "center", justifyContent: "center" }}
       >
-        <ActivityIndicator size="small" color="#8C0000" />
+        <ActivityIndicator size="small" color="#D91A21" />
       </View>
     );
   }

@@ -107,7 +107,7 @@ export default function CategoryScreen() {
     return (
       <View className="py-5 items-center">
         {loadingMore ? (
-          <ActivityIndicator size="small" color="#8C0000" />
+          <ActivityIndicator size="small" color="#D91A21" />
         ) : (
           hasMore &&
           products.length > 0 && (
@@ -186,8 +186,8 @@ export default function CategoryScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#8C0000"]}
-              tintColor="#8C0000"
+              colors={["#D91A21"]}
+              tintColor="#D91A21"
             />
           }
           renderItem={({ item }) => (

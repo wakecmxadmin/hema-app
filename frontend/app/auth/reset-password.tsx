@@ -66,13 +66,13 @@ export default function ResetPasswordScreen() {
         options={{
           headerShown: true,
           title: "Nova Senha",
-          headerTintColor: "#8C0000",
+          headerTintColor: "#D91A21",
           headerShadowVisible: false,
         }}
       />
 
       <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: "center" }}>
-        <Text style={{ fontSize: 28, fontWeight: "900", color: "#8C0000", marginBottom: 8, letterSpacing: -0.5 }}>
+        <Text style={{ fontSize: 28, fontWeight: "900", color: "#D91A21", marginBottom: 8, letterSpacing: -0.5 }}>
           Criar nova senha
         </Text>
         <Text style={{ fontSize: 14, color: "#666666", marginBottom: 32, lineHeight: 20 }}>
@@ -143,8 +143,8 @@ export default function ResetPasswordScreen() {
             borderRadius: 8,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: newPassword && confirmPassword ? "#8C0000" : "#F5F5F5",
-            shadowColor: "#8C0000",
+            backgroundColor: newPassword && confirmPassword ? "#D91A21" : "#F5F5F5",
+            shadowColor: "#D91A21",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: newPassword && confirmPassword ? 0.3 : 0,
             shadowRadius: 8,
@@ -192,7 +192,7 @@ const s = {
   inputBoxFocused: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#8C0000",
+    borderColor: "#D91A21",
   },
   input: {
     flex: 1,

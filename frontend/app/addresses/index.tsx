@@ -126,7 +126,7 @@ export default function AddressListScreen() {
           <MaterialCommunityIcons
             name="trash-can-outline"
             size={22}
-            color="#8C0000"
+            color="#D91A21"
           />
         </TouchableOpacity>
         <Ionicons name="chevron-forward" size={20} color="#C2C2C2" />
@@ -151,7 +151,7 @@ export default function AddressListScreen() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#8C0000" />
+          <ActivityIndicator size="large" color="#D91A21" />
         </View>
       ) : (
         <FlatList
@@ -167,7 +167,7 @@ export default function AddressListScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#8C0000"]}
+              colors={["#D91A21"]}
             />
           }
           ListEmptyComponent={

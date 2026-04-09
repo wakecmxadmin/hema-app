@@ -104,6 +104,14 @@ function Field({
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+function maskCpf(text: string) {
+  const digits = text.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})/, "$1-$2");
+}
+
 export default function PersonalDetailsScreen() {
   const router = useRouter();
 
@@ -126,7 +134,7 @@ export default function PersonalDetailsScreen() {
       if (profileResponse.success && profileResponse.data) {
         setName(profileResponse.data.name || "");
         setPhone(profileResponse.data.phone || "");
-        setCpf(profileResponse.data.cpf || "");
+        setCpf(maskCpf(profileResponse.data.cpf || ""));
       } else {
         Toast.show({
           type: "error",
@@ -171,7 +179,7 @@ export default function PersonalDetailsScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
@@ -264,7 +272,7 @@ export default function PersonalDetailsScreen() {
             label="CPF"
             icon="card-account-details-outline"
             value={cpf}
-            onChange={setCpf}
+            onChange={(t) => setCpf(maskCpf(t))}
             placeholder="000.000.000-00"
             keyboardType="numeric"
             maxLength={14}
@@ -299,7 +307,7 @@ export default function PersonalDetailsScreen() {
       >
         <TouchableOpacity
           style={{
-            backgroundColor: saving ? "#B50000" : "#8C0000",
+            backgroundColor: saving ? "#B50000" : "#D91A21",
             height: 56,
             borderRadius: 16,
             alignItems: "center",

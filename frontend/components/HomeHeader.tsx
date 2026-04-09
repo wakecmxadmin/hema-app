@@ -159,7 +159,7 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
           right: 0,
           zIndex: 50,
           elevation: 8,
-          backgroundColor: "#E30613",
+          backgroundColor: "#D91A21",
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
           shadowColor: "#000",

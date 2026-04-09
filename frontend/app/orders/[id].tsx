@@ -100,7 +100,7 @@ export default function OrderDetailsScreen() {
       case "pending":
         return { label: "Pendente", color: "#F59E0B", bg: "#FFFBEB" };
       case "cancelled":
-        return { label: "Cancelado", color: "#8C0000", bg: "#FEF2F2" };
+        return { label: "Cancelado", color: "#D91A21", bg: "#FEF2F2" };
       default:
         return { label: status, color: "#666666", bg: "#F5F5F5" };
     }
@@ -109,7 +109,7 @@ export default function OrderDetailsScreen() {
   if (loading || !order) {
     return (
       <View className="flex-1 bg-neutral-100 justify-center items-center">
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
@@ -151,8 +151,8 @@ export default function OrderDetailsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#8C0000"]}
-            tintColor="#8C0000"
+            colors={["#D91A21"]}
+            tintColor="#D91A21"
           />
         }
       >
@@ -212,7 +212,7 @@ export default function OrderDetailsScreen() {
               <MaterialCommunityIcons
                 name="storefront"
                 size={24}
-                color="#8C0000"
+                color="#D91A21"
               />
               <View className="ml-3 flex-1">
                 <Text className="text-[14px] font-bold text-text-primary mb-0.5">
@@ -228,7 +228,7 @@ export default function OrderDetailsScreen() {
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={24}
-                color="#8C0000"
+                color="#D91A21"
               />
               <View className="ml-3 flex-1">
                 <Text className="text-[14px] font-bold text-text-primary mb-0.5">
@@ -283,7 +283,7 @@ export default function OrderDetailsScreen() {
             disabled={canceling}
           >
             {canceling ? (
-              <ActivityIndicator color="#8C0000" />
+              <ActivityIndicator color="#D91A21" />
             ) : (
               <Text className="text-brand text-[16px] font-bold">
                 Cancelar Pedido

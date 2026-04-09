@@ -156,7 +156,7 @@ export default function AddressFormScreen() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-surface">
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
@@ -211,7 +211,7 @@ export default function AddressFormScreen() {
             {loadingCep && (
               <ActivityIndicator
                 size="small"
-                color="#8C0000"
+                color="#D91A21"
                 style={{ marginTop: 25 }}
               />
             )}
@@ -314,7 +314,7 @@ export default function AddressFormScreen() {
               value={isDefault}
               onValueChange={setIsDefault}
               trackColor={{ false: "#E0E0E0", true: "rgba(140, 0, 0, 0.3)" }}
-              thumbColor={isDefault ? "#8C0000" : "#F5F5F5"}
+              thumbColor={isDefault ? "#D91A21" : "#F5F5F5"}
             />
           </View>
         </ScrollView>

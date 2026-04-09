@@ -20,6 +20,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { useCart } from "@/context/CartContext";
 import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 // --- CART ITEM COMPONENT ---
 const CartItemComponent = ({
@@ -178,7 +179,7 @@ const CartItemComponent = ({
                 style={{
                   fontSize: 16,
                   fontWeight: "800",
-                  color: "#8C0000",
+                  color: "#D91A21",
                 }}
               >
                 {formattedItemTotal}
@@ -224,7 +225,7 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="remove" size={14} color="#8C0000" />
+                  <Ionicons name="remove" size={14} color="#D91A21" />
                 </TouchableOpacity>
 
                 <View
@@ -269,7 +270,7 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="add" size={14} color="#8C0000" />
+                  <Ionicons name="add" size={14} color="#D91A21" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -282,16 +283,21 @@ const CartItemComponent = ({
 
 // --- CART SCREEN ---
 export default function CartScreen() {
-  const { removeItem, updateItem, refreshCart, items, loading } = useCart();
+  const { removeItem, updateItem, refreshCart, items, loading, isAuthenticated } = useCart();
   const router = useRouter();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      refreshCart();
-    }, []),
+      if (isAuthenticated) {
+        refreshCart();
+      } else {
+        setShowAuthModal(true);
+      }
+    }, [isAuthenticated]),
   );
 
   const optimisticSubtotal = useMemo(() => {
@@ -381,7 +387,7 @@ export default function CartScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#8C0000"]}
+                colors={["#D91A21"]}
               />
             }
             ListEmptyComponent={
@@ -418,7 +424,7 @@ export default function CartScreen() {
                 {isSyncing && (
                   <ActivityIndicator
                     size="small"
-                    color="#8C0000"
+                    color="#D91A21"
                     style={{ marginLeft: 8 }}
                   />
                 )}
@@ -454,6 +460,14 @@ export default function CartScreen() {
           </View>
         )}
       </View>
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          router.navigate("/(tabs)/home" as any);
+        }}
+        message="Você precisa estar logado para acessar o carrinho."
+      />
     </SafeAreaView>
   );
 }

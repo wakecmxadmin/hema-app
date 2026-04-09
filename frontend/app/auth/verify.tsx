@@ -81,7 +81,7 @@ export default function VerifyScreen() {
           padding: 16,
           borderRadius: 12,
           borderWidth: 1.5,
-          borderColor: isSelected ? "#8C0000" : "#E0E0E0",
+          borderColor: isSelected ? "#D91A21" : "#E0E0E0",
           backgroundColor: isSelected ? "#FFF5F5" : "#FFFFFF",
           marginBottom: 12,
         }}
@@ -90,14 +90,14 @@ export default function VerifyScreen() {
           <IconFamily
             name={icon}
             size={24}
-            color={isSelected ? "#8C0000" : "#666666"}
+            color={isSelected ? "#D91A21" : "#666666"}
           />
         </View>
         <Text
           style={{
             fontSize: 16,
             fontWeight: isSelected ? "700" : "500",
-            color: isSelected ? "#8C0000" : "#333333",
+            color: isSelected ? "#D91A21" : "#333333",
             flex: 1,
           }}
         >
@@ -107,7 +107,7 @@ export default function VerifyScreen() {
           <MaterialCommunityIcons
             name="check-circle"
             size={20}
-            color="#8C0000"
+            color="#D91A21"
           />
         )}
       </TouchableOpacity>
@@ -200,7 +200,7 @@ export default function VerifyScreen() {
                 onPress={handleSendCode}
                 disabled={!selectedMethod || isLoading}
                 style={{
-                  backgroundColor: selectedMethod ? "#8C0000" : "#D0D0D0",
+                  backgroundColor: selectedMethod ? "#D91A21" : "#D0D0D0",
                   height: 56,
                   borderRadius: 8,
                   alignItems: "center",
@@ -280,7 +280,7 @@ export default function VerifyScreen() {
               style={{ alignSelf: "center", marginBottom: 32 }}
             >
               <Text
-                style={{ fontSize: 14, color: "#8C0000", fontWeight: "600" }}
+                style={{ fontSize: 14, color: "#D91A21", fontWeight: "600" }}
               >
                 Reenviar código
               </Text>
@@ -292,7 +292,7 @@ export default function VerifyScreen() {
                 onPress={handleVerifyCode}
                 disabled={code.length < 6 || isLoading}
                 style={{
-                  backgroundColor: code.length === 6 ? "#8C0000" : "#D0D0D0",
+                  backgroundColor: code.length === 6 ? "#D91A21" : "#D0D0D0",
                   height: 56,
                   borderRadius: 8,
                   alignItems: "center",
@@ -343,7 +343,7 @@ const sCode = {
   inputBoxFocused: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#8C0000",
+    borderColor: "#D91A21",
   },
   otpInput: {
     flex: 1,

@@ -5,6 +5,6 @@ export default function Index() {
   // const isUserLoggedIn = checkAuth();
   // if (isUserLoggedIn) return <Redirect href="/home" />;
 
-  // Por enquanto, manda todo mundo direto para a tela de autenticação:
-  return <Redirect href="/auth" />;
+  // Guest mode: a home é pública. O AuthGuard protege rotas que exigem conta.
+  return <Redirect href="/(tabs)/home" />;
 }

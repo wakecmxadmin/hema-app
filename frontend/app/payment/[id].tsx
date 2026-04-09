@@ -60,7 +60,7 @@ export default function PaymentPage() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-surface-secondary">
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
         <Text className="mt-[15px] text-text-secondary text-base font-medium">
           Configurando check-out...
         </Text>
@@ -125,7 +125,7 @@ export default function PaymentPage() {
 
         {/* Alerta de Preparação */}
         <View className="flex-row bg-brand/5 mx-5 p-4 rounded-card mt-5 items-center border border-brand/20">
-          <MaterialCommunityIcons name="clock-fast" size={24} color="#8C0000" />
+          <MaterialCommunityIcons name="clock-fast" size={24} color="#D91A21" />
           <Text className="flex-1 ml-3 text-[14px] text-brand leading-[20px] font-medium">
             Assim que o pagamento for aprovado nossos funcionários vão começar a
             preparar o pedido
@@ -168,7 +168,7 @@ export default function PaymentPage() {
                 <MaterialCommunityIcons
                   name="content-copy"
                   size={22}
-                  color="#8C0000"
+                  color="#D91A21"
                 />
               </TouchableOpacity>
             </View>
@@ -236,7 +236,7 @@ export default function PaymentPage() {
         <TouchableOpacity
           className="bg-brand mx-5 h-[60px] rounded-card items-center justify-center flex-row mt-8"
           style={{
-            shadowColor: "#8C0000",
+            shadowColor: "#D91A21",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,

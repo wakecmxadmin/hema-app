@@ -198,7 +198,7 @@ export default function CheckoutScreen() {
   if (loading && items.length === 0) {
     return (
       <View className="flex-1 bg-surface-secondary pt-10 justify-center items-center">
-        <ActivityIndicator size="large" color="#8C0000" />
+        <ActivityIndicator size="large" color="#D91A21" />
         <Text className="mt-2.5 text-text-secondary">
           Carregando dados do pedido...
         </Text>
@@ -220,8 +220,8 @@ export default function CheckoutScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#8C0000"]}
-            tintColor="#8C0000"
+            colors={["#D91A21"]}
+            tintColor="#D91A21"
           />
         }
       >
@@ -242,7 +242,7 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="bike"
                 size={28}
-                color={deliveryMethod === "delivery" ? "#8C0000" : "#C2C2C2"}
+                color={deliveryMethod === "delivery" ? "#D91A21" : "#C2C2C2"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
@@ -266,7 +266,7 @@ export default function CheckoutScreen() {
               <MaterialCommunityIcons
                 name="storefront-outline"
                 size={28}
-                color={deliveryMethod === "pickup" ? "#8C0000" : "#C2C2C2"}
+                color={deliveryMethod === "pickup" ? "#D91A21" : "#C2C2C2"}
               />
               <Text
                 className={`text-[13px] font-semibold mt-1.5 ${
@@ -285,7 +285,7 @@ export default function CheckoutScreen() {
                 <MaterialCommunityIcons
                   name="map-marker-radius"
                   size={24}
-                  color="#8C0000"
+                  color="#D91A21"
                 />
                 <View className="ml-2.5 flex-1">
                   <Text className="text-sm font-bold text-text-primary mb-1">
@@ -319,7 +319,7 @@ export default function CheckoutScreen() {
                     <MaterialCommunityIcons
                       name="plus-circle"
                       size={24}
-                      color="#8C0000"
+                      color="#D91A21"
                     />
                   </TouchableOpacity>
                 </View>
@@ -327,7 +327,7 @@ export default function CheckoutScreen() {
                 {loadingAddresses ? (
                   <ActivityIndicator
                     size="small"
-                    color="#8C0000"
+                    color="#D91A21"
                     style={{ marginVertical: 20 }}
                   />
                 ) : addresses.length === 0 ? (
@@ -353,7 +353,7 @@ export default function CheckoutScreen() {
                         }
                         size={20}
                         color={
-                          selectedAddressId === address.id ? "#8C0000" : "#C2C2C2"
+                          selectedAddressId === address.id ? "#D91A21" : "#C2C2C2"
                         }
                       />
                       <View className="ml-3 flex-1">
@@ -375,7 +375,7 @@ export default function CheckoutScreen() {
                               <MaterialCommunityIcons
                                 name="star"
                                 size={12}
-                                color="#8C0000"
+                                color="#D91A21"
                               />
                               <Text className="text-[10px] text-brand font-bold ml-0.5">
                                 Favorito
@@ -420,7 +420,7 @@ export default function CheckoutScreen() {
                   <MaterialCommunityIcons
                     name={icons[method]}
                     size={24}
-                    color={isActive ? "#8C0000" : "#C2C2C2"}
+                    color={isActive ? "#D91A21" : "#C2C2C2"}
                   />
                   <Text
                     className={`text-[13px] font-semibold mt-1.5 ${

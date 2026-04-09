@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -21,7 +22,7 @@ export const HEADER_HEIGHT = 160;
 const MAX_TRANSLATE_Y = 330;
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useHomeData } from "@/hooks/useHomeData";
@@ -35,13 +36,26 @@ import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
 import { searchProducts } from "@/services/search";
 import { Toast } from "@/util/toast";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 const SEARCH_LIMIT = 20;
 
 export default function HomeScreen() {
   const router = useRouter();
   const { catalog, refreshing, onRefresh } = useHomeData();
-  const { addItem } = useCart();
+  const { addItem, isAuthenticated } = useCart();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Reforça o StatusBar toda vez que a tela ganha foco (navegação entre tabs/telas)
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle("light-content", true);
+      if (Platform.OS === "android") {
+        StatusBar.setBackgroundColor("#D91A21", true);
+        StatusBar.setTranslucent(false);
+      }
+    }, []),
+  );
 
   // ── Collapsible header via Reanimated ──
   const headerOffset = useSharedValue(0);
@@ -69,6 +83,11 @@ export default function HomeScreen() {
   const [hasMoreSearch, setHasMoreSearch] = useState(true);
 
   const handleAddToCart = async (product: Product) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const isKg =
       product.price_per_kg !== null && product.price_per_kg !== undefined;
     const isUnit = product.type === "unit" || !isKg;
@@ -138,7 +157,11 @@ export default function HomeScreen() {
       style={{ flex: 1, backgroundColor: "#D91A21" }}
       edges={["top"]}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#D91A21"
+        translucent={false}
+      />
 
       <View style={{ flex: 1 }}>
         <Animated.ScrollView
@@ -152,8 +175,8 @@ export default function HomeScreen() {
               refreshing={refreshing}
               onRefresh={onRefresh}
               progressViewOffset={HEADER_HEIGHT}
-              colors={refreshing && catalog ? ["transparent"] : ["#8C0000"]}
-              tintColor={refreshing && catalog ? "transparent" : "#8C0000"}
+              colors={refreshing && catalog ? ["transparent"] : ["#D91A21"]}
+              tintColor={refreshing && catalog ? "transparent" : "#D91A21"}
             />
           }
         >
@@ -185,6 +208,12 @@ export default function HomeScreen() {
 
         <HomeHeader onSearch={handleSearch} headerOffset={headerOffset} />
       </View>
+
+      <AuthRequiredModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="Você precisa estar logado para adicionar produtos ao carrinho."
+      />
     </SafeAreaView>
   );
 }
@@ -270,7 +299,7 @@ function SearchResults({
           {hasMore && (
             <View className="py-6 items-center">
               {isLoadingMore ? (
-                <ActivityIndicator size="small" color="#8C0000" />
+                <ActivityIndicator size="small" color="#D91A21" />
               ) : (
                 <TouchableOpacity
                   onPress={onLoadMore}

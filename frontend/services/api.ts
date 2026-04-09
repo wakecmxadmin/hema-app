@@ -41,9 +41,12 @@ export async function apiFetch<T>(
     });
 
     if (response.status === 401) {
-      await AsyncStorage.clear();
-      await supabase.auth.signOut();
-      router.replace("/auth");
+      // Se havia token (sessão real expirou), limpa o estado local.
+      // Não redireciona — cada tela decide como reagir à falta de auth.
+      if (token) {
+        await AsyncStorage.clear();
+        await supabase.auth.signOut();
+      }
       return {
         success: false,
         message: "Sua sessão expirou. Faça login novamente.",
