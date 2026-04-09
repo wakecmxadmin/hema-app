@@ -14,6 +14,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
 
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
@@ -172,19 +173,13 @@ export default function CheckoutScreen() {
     setIsCreatingOrder(false);
 
     if (response.success && response.data) {
-      await refreshCart();
-
       if (paymentMethod === "cash") {
+        await refreshCart();
         setShowSuccessModal(true);
-      } else {
-        router.push({
-          pathname: "/payment/[id]",
-          params: {
-            id: response.data.order_id,
-            method: paymentMethod,
-            total: response.data.total_price,
-          },
-        });
+      } else if (response.data.init_point) {
+        await WebBrowser.openBrowserAsync(response.data.init_point);
+        await refreshCart();
+        router.replace("/(tabs)/orders");
       }
     } else {
       Toast.show({
@@ -208,7 +203,7 @@ export default function CheckoutScreen() {
 
   return (
     <View className="flex-1 bg-surface-secondary pt-10">
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
       <ScrollView
         className="flex-1 p-4"

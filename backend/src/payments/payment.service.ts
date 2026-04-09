@@ -4,6 +4,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { OrdersService } from '../orders/orders.service';
 
 export interface ProcessPaymentInput {
@@ -11,24 +12,40 @@ export interface ProcessPaymentInput {
   total_price: number;
   delivery_fee: number;
   order_id: string;
+  items: {
+    product_id: string;
+    product_name: string;
+    quantity: number | null;
+    weight: number | null;
+    subtotal: number;
+  }[];
 }
 
 export interface ProcessPaymentResult {
   orderStatus: string;
   paymentStatus: string;
+  init_point?: string;
+  sandbox_init_point?: string;
 }
 
 @Injectable()
 export class PaymentsService {
+  private mpClient: MercadoPagoConfig;
+
   constructor(
     @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
-  ) {}
+  ) {
+    this.mpClient = new MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN!,
+    });
+  }
 
   async processPayment(
     input: ProcessPaymentInput,
   ): Promise<ProcessPaymentResult> {
-    const { payment_method, total_price, order_id } = input;
+    const { payment_method, total_price, delivery_fee, order_id, items } =
+      input;
 
     switch (payment_method) {
       case 'cash':
@@ -39,28 +56,84 @@ export class PaymentsService {
         };
 
       case 'pix':
-        console.log(
-          `[PAYMENT] Order ${order_id} → PIX no valor de R$ ${total_price} → gerar QR Code no MP`,
-        );
-        return {
-          orderStatus: 'waiting_payment',
-          paymentStatus: 'pending',
-        };
+      case 'credit_card': {
+        const preference = await this.createMercadoPagoPreference({
+          order_id,
+          items,
+          delivery_fee,
+          total_price,
+          payment_method,
+        });
 
-      case 'credit_card':
+        console.log(preference)
+
         console.log(
-          `[PAYMENT] Order ${order_id} → Cartão → processar Token via MP`,
+          `[PAYMENT] Order ${order_id} → ${payment_method} → Preference ${preference.id} criada`,
         );
+
         return {
           orderStatus: 'waiting_payment',
           paymentStatus: 'pending',
+          init_point: preference.init_point!,
+          sandbox_init_point: (preference as any).sandbox_init_point,
         };
+      }
 
       default:
         throw new BadRequestException(
           `Método de pagamento inválido: ${payment_method}`,
         );
     }
+  }
+
+  private async createMercadoPagoPreference(params: {
+    order_id: string;
+    items: ProcessPaymentInput['items'];
+    delivery_fee: number;
+    total_price: number;
+    payment_method: string;
+  }) {
+    const preferenceClient = new Preference(this.mpClient);
+
+    const mpItems: any[] = params.items.map((item) => ({
+      id: item.product_id,
+      title: item.product_name,
+      quantity: item.quantity || 1,
+      unit_price: Number((item.subtotal / (item.quantity || 1)).toFixed(2)),
+      currency_id: 'BRL',
+    }));
+
+    if (params.delivery_fee > 0) {
+      mpItems.push({
+        id: 'delivery_fee',
+        title: 'Taxa de Entrega',
+        quantity: 1,
+        unit_price: params.delivery_fee,
+        currency_id: 'BRL',
+      });
+    }
+
+    const response = await preferenceClient.create({
+      body: {
+        items: mpItems,
+        external_reference: params.order_id,
+        notification_url:
+          'https://api.apphema.codificaai.pro/webhook/mercadopago',
+        back_urls: {
+          success: 'hemaapp://payment/success',
+          failure: 'hemaapp://payment/failure',
+          pending: 'hemaapp://payment/pending',
+        },
+        auto_return: 'approved',
+        payment_methods: {
+          excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
+          excluded_payment_methods: [{ id: 'debvisa' }, { id: 'debmaster' }],
+        },
+        statement_descriptor: 'HEMA CEREAIS',
+      },
+    });
+
+    return response;
   }
 
   async handleMercadoPagoWebhook(payload: any): Promise<void> {
@@ -100,39 +173,54 @@ export class PaymentsService {
     );
 
     await this.ordersService.updateStatus(orderId, mpStatus);
+
+    // Notificar n8n após aprovação do pagamento
+    if (mpStatus === 'approved') {
+      await this.notifyN8n(orderId, mpPayment);
+    }
   }
 
   private async fetchMercadoPagoPayment(paymentId: string): Promise<any> {
-    const accessToken = process.env.MP_ACCESS_TOKEN;
-    if (!accessToken) {
-      console.error('[WEBHOOK] MP_ACCESS_TOKEN não configurado');
-      return null;
-    }
-
     try {
-      const response = await fetch(
-        `https://api.mercadopago.com/v1/payments/${paymentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        console.error(
-          `[WEBHOOK] Erro ao buscar pagamento ${paymentId}: HTTP ${response.status}`,
-        );
-        return null;
-      }
-
-      return response.json();
+      const paymentClient = new Payment(this.mpClient);
+      const payment = await paymentClient.get({ id: paymentId });
+      return payment;
     } catch (err) {
       console.error(
-        `[WEBHOOK] Falha na requisição para o Mercado Pago:`,
+        `[WEBHOOK] Falha ao buscar pagamento ${paymentId} via SDK:`,
         err,
       );
       return null;
+    }
+  }
+
+  private async notifyN8n(orderId: string, mpPayment: any): Promise<void> {
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (!n8nWebhookUrl) {
+      console.warn(
+        '[N8N] N8N_WEBHOOK_URL não configurado. Notificação ignorada.',
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'payment_approved',
+          order_id: orderId,
+          payment_id: mpPayment.id,
+          payment_method: mpPayment.payment_method_id,
+          total_paid: mpPayment.transaction_amount,
+          payer_email: mpPayment.payer?.email,
+          approved_at: mpPayment.date_approved,
+        }),
+      });
+
+      console.log(`[N8N] Notificação enviada → status ${response.status}`);
+    } catch (err) {
+      console.error('[N8N] Falha ao notificar n8n:', err);
     }
   }
 }

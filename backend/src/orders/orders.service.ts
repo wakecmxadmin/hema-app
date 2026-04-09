@@ -123,6 +123,7 @@ export class OrdersService {
         total_price: finalTotalPrice,
         delivery_fee: deliveryFee,
         order_id: newOrder.id,
+        items: orderItemsToInsert,
       });
 
       // Limpa o carrinho APENAS se for dinheiro (os outros limpam via webhook depois)
@@ -141,6 +142,12 @@ export class OrdersService {
           order_id: newOrder.id,
           status: paymentResult.orderStatus,
           total_price: finalTotalPrice,
+          ...(paymentResult.init_point && {
+            init_point: paymentResult.init_point,
+          }),
+          ...(paymentResult.sandbox_init_point && {
+            sandbox_init_point: paymentResult.sandbox_init_point,
+          }),
         },
       };
     } catch (error: any) {

@@ -24,7 +24,9 @@ export default function PasswordScreen() {
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [focusedField, setFocusedField] = useState<"password" | "confirm" | null>(null);
+  const [focusedField, setFocusedField] = useState<
+    "password" | "confirm" | null
+  >(null);
 
   const confirmRef = useRef<TextInput>(null);
   const btnScale = useRef(new Animated.Value(1)).current;
@@ -44,11 +46,21 @@ export default function PasswordScreen() {
 
   function handlePressIn() {
     if (!canSubmit) return;
-    Animated.spring(btnScale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+    Animated.spring(btnScale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
   }
 
   function handlePressOut() {
-    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(btnScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
   }
 
   async function handleSubmit() {
@@ -68,7 +80,11 @@ export default function PasswordScreen() {
 
   const confirmBoxStyle = [
     s.inputBox,
-    confirmMismatch ? s.inputBoxError : passwordsMatch ? s.inputBoxSuccess : focusedField === "confirm" && s.inputBoxFocused,
+    confirmMismatch
+      ? s.inputBoxError
+      : passwordsMatch
+        ? s.inputBoxSuccess
+        : focusedField === "confirm" && s.inputBoxFocused,
   ];
 
   const eyeColorPassword =
@@ -106,16 +122,35 @@ export default function PasswordScreen() {
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.back()}
-          style={{ alignSelf: "flex-start", marginBottom: 32, padding: 4, marginLeft: -4 }}
+          style={{
+            alignSelf: "flex-start",
+            marginBottom: 32,
+            padding: 4,
+            marginLeft: -4,
+          }}
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#121212" />
         </TouchableOpacity>
 
         {/* Título */}
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#121212", marginBottom: 8 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "800",
+            color: "#121212",
+            marginBottom: 8,
+          }}
+        >
           Crie sua senha
         </Text>
-        <Text style={{ fontSize: 14, color: "#666666", marginBottom: 32, lineHeight: 20 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            color: "#666666",
+            marginBottom: 32,
+            lineHeight: 20,
+          }}
+        >
           Mínimo 6 caracteres. Use letras e números para uma senha mais segura.
         </Text>
 
@@ -173,9 +208,17 @@ export default function PasswordScreen() {
           />
           {/* Ícone direito contextual */}
           {passwordsMatch ? (
-            <MaterialCommunityIcons name="check-circle" size={20} color="#28A745" />
+            <MaterialCommunityIcons
+              name="check-circle"
+              size={20}
+              color="#28A745"
+            />
           ) : confirmMismatch ? (
-            <MaterialCommunityIcons name="close-circle" size={20} color="#DC3545" />
+            <MaterialCommunityIcons
+              name="close-circle"
+              size={20}
+              color="#DC3545"
+            />
           ) : (
             <TouchableOpacity
               activeOpacity={0.6}
@@ -216,12 +259,21 @@ export default function PasswordScreen() {
             onPress={handleSubmit}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            style={[s.btn, { backgroundColor: canSubmit ? "#D91A21" : "#F0F0F0" }]}
+            style={[
+              s.btn,
+              { backgroundColor: canSubmit ? "#D91A21" : "#F0F0F0" },
+            ]}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={{ fontSize: 16, fontWeight: "700", color: canSubmit ? "#FFFFFF" : "#C2C2C2" }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: canSubmit ? "#FFFFFF" : "#C2C2C2",
+                }}
+              >
                 Continuar
               </Text>
             )}
