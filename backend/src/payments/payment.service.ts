@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { OrdersService } from '../orders/orders.service';
+import { supabase } from '../lib/supabase';
 
 export interface ProcessPaymentInput {
   payment_method: string;
@@ -113,6 +114,26 @@ export class PaymentsService {
       });
     }
 
+    const paymentMethods =
+      params.payment_method === 'pix'
+        ? {
+            excluded_payment_types: [
+              { id: 'credit_card' },
+              { id: 'debit_card' },
+              { id: 'prepaid_card' },
+              { id: 'ticket' },
+              { id: 'atm' },
+            ],
+          }
+        : {
+            excluded_payment_types: [
+              { id: 'prepaid_card' },
+              { id: 'bank_transfer' },
+              { id: 'ticket' },
+              { id: 'atm' },
+            ],
+          };
+
     const response = await preferenceClient.create({
       body: {
         items: mpItems,
@@ -125,10 +146,7 @@ export class PaymentsService {
           pending: 'hemaapp://payment/pending',
         },
         auto_return: 'approved',
-        payment_methods: {
-          excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
-          excluded_payment_methods: [{ id: 'debvisa' }, { id: 'debmaster' }],
-        },
+        payment_methods: paymentMethods,
         statement_descriptor: 'HEMA CEREAIS',
       },
     });
@@ -156,7 +174,7 @@ export class PaymentsService {
       `[WEBHOOK] Buscando pagamento ${paymentId} na API do Mercado Pago`,
     );
 
-    const mpPayment = await this.fetchMercadoPagoPayment(paymentId);
+    const mpPayment = await this.fetchMercadoPagoPayment(paymentId, data);
     if (!mpPayment) return;
 
     const { status: mpStatus, external_reference: orderId } = mpPayment;
@@ -180,7 +198,21 @@ export class PaymentsService {
     }
   }
 
-  private async fetchMercadoPagoPayment(paymentId: string): Promise<any> {
+  private async fetchMercadoPagoPayment(paymentId: string, rawData?: any): Promise<any> {
+    // MOCK PARA TESTES — remover em produção
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[WEBHOOK] MOCK MODE: retornando pagamento fictício para ${paymentId}`);
+      return {
+        id: paymentId,
+        status: rawData?.status ?? 'approved',
+        external_reference: rawData?.external_reference ?? null,
+        payment_method_id: rawData?.payment_method_id ?? 'pix',
+        transaction_amount: rawData?.transaction_amount ?? 0,
+        payer: rawData?.payer ?? { email: 'test@test.com' },
+        date_approved: rawData?.date_approved ?? new Date().toISOString(),
+      };
+    }
+
     try {
       const paymentClient = new Payment(this.mpClient);
       const payment = await paymentClient.get({ id: paymentId });
@@ -204,17 +236,85 @@ export class PaymentsService {
     }
 
     try {
+      // Busca pedido completo com itens e endereço
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(
+          `
+          *,
+          order_items ( id, product_name, product_price, quantity, weight, subtotal ),
+          addresses ( label, street, number, complement, neighborhood, city, state, zip_code )
+        `,
+        )
+        .eq('id', orderId)
+        .single();
+
+      if (orderError || !order) {
+        console.error(`[N8N] Pedido ${orderId} não encontrado para notificação`);
+        return;
+      }
+
+      // Busca dados do usuário (nome e telefone)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('name, phone')
+        .eq('id', order.user_id)
+        .single();
+
+      console.log(`[N8N] Profile query for user ${order.user_id}:`, JSON.stringify(profile), profileError?.message ?? 'OK');
+
+      const paymentLabels: Record<string, string> = {
+        pix: 'PIX',
+        credit_card: 'Cartão de Crédito',
+        debit_card: 'Cartão de Débito',
+        cash: 'Dinheiro',
+      };
+
+      const address = order.addresses;
+      const items = order.order_items ?? [];
+
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'payment_approved',
           order_id: orderId,
+          order_short_id: orderId.substring(0, 8).toUpperCase(),
           payment_id: mpPayment.id,
-          payment_method: mpPayment.payment_method_id,
-          total_paid: mpPayment.transaction_amount,
-          payer_email: mpPayment.payer?.email,
+          payment_method: paymentLabels[order.payment_method] ?? order.payment_method,
           approved_at: mpPayment.date_approved,
+
+          customer: {
+            name: profile?.name ?? 'Cliente',
+            phone: profile?.phone ?? null,
+          },
+
+          delivery: address
+            ? {
+                label: address.label,
+                street: address.street,
+                number: address.number,
+                complement: address.complement,
+                neighborhood: address.neighborhood,
+                city: address.city,
+                state: address.state,
+                zip_code: address.zip_code,
+              }
+            : null,
+          delivery_method: address ? 'delivery' : 'pickup',
+          delivery_fee: order.delivery_fee,
+
+          items: items.map((item: any) => ({
+            name: item.product_name,
+            price: item.product_price,
+            quantity: item.quantity,
+            weight: item.weight,
+            subtotal: item.subtotal,
+          })),
+          items_count: items.length,
+
+          subtotal: items.reduce((sum: number, i: any) => sum + Number(i.subtotal), 0),
+          total: order.total_price,
         }),
       });
 

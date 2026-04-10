@@ -1,6 +1,8 @@
 {
   "build": {
     "production": {
+      "autoIncrement": true,
+      "distribution": "store",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.apphema.codificaai.pro",
         "EXPO_PUBLIC_SUPABASE_URL": "https://popkqrorbtubrmyomzix.supabase.co",
@@ -8,5 +10,8 @@
       },
       "channel": "production"
     }
+  },
+  "cli": {
+    "appVersionSource": "remote"
   }
 }

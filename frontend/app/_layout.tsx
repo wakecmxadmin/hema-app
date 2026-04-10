@@ -28,6 +28,7 @@ import {
 
 import { useColorScheme } from "@/components/useColorScheme";
 import { CartProvider } from "@/context/CartContext";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -125,6 +126,23 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function NotificationListener() {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useOrderNotifications(userId);
+  return null;
+}
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
@@ -135,6 +153,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <CartProvider>
+        <NotificationListener />
         <View
           style={{
             flex: 1,

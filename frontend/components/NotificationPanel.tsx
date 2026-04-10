@@ -196,7 +196,7 @@ export function NotificationPanel({ visible, onClose }: NotificationPanelProps) 
               </View>
 
               {!notif.read && (
-                <View className="w-2 h-2 rounded-full bg-[#E30613] mt-1.5 ml-2 flex-shrink-0" />
+                <View className="w-2 h-2 rounded-full bg-[#E30613] mt-1 ml-2 flex-shrink-0" />
               )}
             </View>
           ))}

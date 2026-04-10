@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -96,28 +97,35 @@ export default function SettingsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadSettings = useCallback(async () => {
+    const response = await getCurrentUser();
+    if (response.success && response.data) {
+      const userSettings = response.data.user_metadata?.settings;
+      if (userSettings) {
+        setNotifications(userSettings.notifications ?? true);
+        setPromotions(userSettings.promotions ?? false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    async function loadSettings() {
-      const response = await getCurrentUser();
-      if (response.success && response.data) {
-        const userSettings = response.data.user_metadata?.settings;
-        if (userSettings) {
-          setNotifications(userSettings.notifications ?? true);
-          setPromotions(userSettings.promotions ?? false);
-        }
-      }
-      setLoading(false);
-    }
-    loadSettings();
-  }, []);
+    loadSettings().finally(() => setLoading(false));
+  }, [loadSettings]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadSettings();
+    setRefreshing(false);
+  };
 
   const handleSaveSettings = async () => {
     setSaving(true);
+    Toast.show({ type: "success", text1: "Configurações salvas!" });
+
     const response = await updateProfile({ settings: { notifications, promotions } });
-    if (response.success) {
-      Toast.show({ type: "success", text1: "Configurações salvas!" });
-    } else {
+    if (!response.success) {
       Toast.show({ type: "error", text1: "Erro ao salvar", text2: response.message });
     }
     setSaving(false);
@@ -199,6 +207,14 @@ export default function SettingsScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#D91A21"]}
+            tintColor="#D91A21"
+          />
+        }
       >
         {/* Notificações */}
         <Text

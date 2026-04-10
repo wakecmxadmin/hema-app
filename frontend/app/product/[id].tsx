@@ -177,7 +177,7 @@ export default function ProductDetailsScreen() {
           </View>
 
           <View className="h-[1px] bg-neutral-200 my-5" />
-          <Text className="text-[16px] font-bold text-text-primary mb-2.5">
+          <Text className="text-[16px] font-bold text-text-primary mb-3">
             Descrição
           </Text>
           <Text

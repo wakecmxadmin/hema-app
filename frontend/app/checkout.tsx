@@ -194,7 +194,7 @@ export default function CheckoutScreen() {
     return (
       <View className="flex-1 bg-surface-secondary pt-10 justify-center items-center">
         <ActivityIndicator size="large" color="#D91A21" />
-        <Text className="mt-2.5 text-text-secondary">
+        <Text className="mt-3 text-text-secondary">
           Carregando dados do pedido...
         </Text>
       </View>
@@ -225,7 +225,7 @@ export default function CheckoutScreen() {
           <Text className="text-base font-bold text-text-primary mb-3">
             Como deseja receber?
           </Text>
-          <View className="flex-row justify-between gap-2.5">
+          <View className="flex-row justify-between gap-3">
             <TouchableOpacity
               className={`flex-1 border-[1.5px] rounded-btn py-3 px-2 items-center ${
                 deliveryMethod === "delivery"
@@ -240,7 +240,7 @@ export default function CheckoutScreen() {
                 color={deliveryMethod === "delivery" ? "#D91A21" : "#C2C2C2"}
               />
               <Text
-                className={`text-[13px] font-semibold mt-1.5 ${
+                className={`text-[13px] font-semibold mt-2 ${
                   deliveryMethod === "delivery"
                     ? "text-brand"
                     : "text-text-secondary"
@@ -264,7 +264,7 @@ export default function CheckoutScreen() {
                 color={deliveryMethod === "pickup" ? "#D91A21" : "#C2C2C2"}
               />
               <Text
-                className={`text-[13px] font-semibold mt-1.5 ${
+                className={`text-[13px] font-semibold mt-2 ${
                   deliveryMethod === "pickup" ? "text-brand" : "text-text-secondary"
                 }`}
               >
@@ -282,7 +282,7 @@ export default function CheckoutScreen() {
                   size={24}
                   color="#D91A21"
                 />
-                <View className="ml-2.5 flex-1">
+                <View className="ml-3 flex-1">
                   <Text className="text-sm font-bold text-text-primary mb-1">
                     Endereço de Retirada
                   </Text>
@@ -292,7 +292,7 @@ export default function CheckoutScreen() {
                   <Text className="text-[13px] text-text-secondary mb-0.5">
                     Curitiba - PR, 81910-010
                   </Text>
-                  <Text className="text-xs text-text-secondary mt-1.5 font-medium">
+                  <Text className="text-xs text-text-secondary mt-1 font-medium">
                     <MaterialCommunityIcons
                       name="clock-outline"
                       size={14}
@@ -326,14 +326,14 @@ export default function CheckoutScreen() {
                     style={{ marginVertical: 20 }}
                   />
                 ) : addresses.length === 0 ? (
-                  <Text className="text-sm text-neutral-300 italic text-center mt-2.5">
+                  <Text className="text-sm text-neutral-300 italic text-center mt-3">
                     Nenhum endereço cadastrado.
                   </Text>
                 ) : (
                   addresses.map((address) => (
                     <TouchableOpacity
                       key={address.id}
-                      className={`flex-row items-center py-3 px-2.5 border rounded-btn mb-2 ${
+                      className={`flex-row items-center py-3 px-3 border rounded-btn mb-2 ${
                         selectedAddressId === address.id
                           ? "border-brand bg-brand/5"
                           : "border-neutral-200"
@@ -366,7 +366,7 @@ export default function CheckoutScreen() {
                             {address.street}, {address.number}
                           </Text>
                           {address.is_default && (
-                            <View className="flex-row items-center bg-brand/5 border border-brand/30 px-1.5 py-0.5 rounded-sm ml-2">
+                            <View className="flex-row items-center bg-brand/5 border border-brand/30 px-1 py-0.5 rounded-sm ml-2">
                               <MaterialCommunityIcons
                                 name="star"
                                 size={12}
@@ -397,33 +397,59 @@ export default function CheckoutScreen() {
           <Text className="text-base font-bold text-text-primary mb-3">
             Forma de Pagamento
           </Text>
-          <View className="flex-row justify-between gap-2.5">
+          <View className="gap-3">
             {(["pix", "credit_card", "cash"] as PaymentMethod[]).map((method) => {
               const isActive = paymentMethod === method;
-              const icons = { pix: "qrcode", credit_card: "credit-card-outline", cash: "cash" } as const;
-              const labels = { pix: "PIX", credit_card: "Cartão", cash: "Dinheiro" };
+              const icons = {
+                pix: "qrcode",
+                credit_card: "credit-card-outline",
+                cash: "cash",
+              } as const;
+              const labels = { pix: "PIX", credit_card: "Cartão de Crédito", cash: "Dinheiro na Entrega" };
+              const descriptions = {
+                pix: "Aprovação imediata",
+                credit_card: "Débito à vista",
+                cash: "Pague ao receber",
+              };
               return (
                 <TouchableOpacity
                   key={method}
-                  className={`flex-1 border-[1.5px] rounded-btn py-3 px-2 items-center ${
+                  className={`flex-row items-center px-4 py-4 mt-4 border-[1.5px] rounded-btn ${
                     isActive
                       ? "border-brand bg-brand/5"
                       : "border-neutral-200 bg-neutral-100"
                   }`}
                   onPress={() => setPaymentMethod(method)}
+                  activeOpacity={0.7}
                 >
-                  <MaterialCommunityIcons
-                    name={icons[method]}
-                    size={24}
-                    color={isActive ? "#D91A21" : "#C2C2C2"}
-                  />
-                  <Text
-                    className={`text-[13px] font-semibold mt-1.5 ${
-                      isActive ? "text-brand" : "text-text-secondary"
+                  <View
+                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                      isActive ? "bg-brand/10" : "bg-neutral-200"
                     }`}
                   >
-                    {labels[method]}
-                  </Text>
+                    <MaterialCommunityIcons
+                      name={icons[method]}
+                      size={22}
+                      color={isActive ? "#D91A21" : "#888888"}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className={`text-sm font-bold ${
+                        isActive ? "text-brand" : "text-text-primary"
+                      }`}
+                    >
+                      {labels[method]}
+                    </Text>
+                    <Text className="text-xs text-text-secondary mt-0.5">
+                      {descriptions[method]}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons
+                    name={isActive ? "radiobox-marked" : "radiobox-blank"}
+                    size={22}
+                    color={isActive ? "#D91A21" : "#C2C2C2"}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -458,7 +484,7 @@ export default function CheckoutScreen() {
             </Text>
           </View>
 
-          <View className="flex-row justify-between mt-2.5 pt-2.5 border-t border-neutral-200">
+          <View className="flex-row justify-between mt-3 pt-3 border-t border-neutral-200">
             <Text className="text-base font-bold text-text-primary">Total</Text>
             <Text className="text-lg font-bold text-brand">
               {formatPrice(total)}
@@ -480,7 +506,7 @@ export default function CheckoutScreen() {
         }}
       >
         <TouchableOpacity
-          className={`bg-brand h-[50px] rounded-btn justify-center items-center mb-2.5 ${
+          className={`bg-brand h-[50px] rounded-btn justify-center items-center mb-3 ${
             (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
           }`}
           activeOpacity={0.8}
@@ -530,7 +556,7 @@ export default function CheckoutScreen() {
               Recebemos seu pedido e já vamos começar a preparar.
             </Text>
             <TouchableOpacity
-              className="bg-brand py-3.5 px-6 rounded-btn w-full items-center"
+              className="bg-brand py-4 px-6 rounded-btn w-full items-center"
               onPress={() => {
                 setShowSuccessModal(false);
                 refreshCart();

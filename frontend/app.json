@@ -3,7 +3,7 @@
     "name": "Hema Cereais",
     "slug": "hemaapp",
     "owner": "codificaai",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hemaapp",
@@ -33,7 +33,7 @@
       }
     },
     "android": {
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#E30613"
@@ -49,7 +49,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#D91A21"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

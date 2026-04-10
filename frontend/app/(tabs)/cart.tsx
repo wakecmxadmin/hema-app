@@ -320,10 +320,14 @@ export default function CartScreen() {
     setRefreshing(false);
   };
 
-  const handleRemoveItem = (id: string) => {
+  const handleRemoveItem = async (id: string) => {
     Toast.show({ type: "success", text1: "Produto removido!" });
     setIsSyncing(true);
-    removeItem(id).finally(() => setIsSyncing(false));
+    const success = await removeItem(id);
+    setIsSyncing(false);
+    if (!success) {
+      Toast.show({ type: "error", text1: "Erro ao remover produto" });
+    }
   };
 
   const handleUpdateItem = (id: string, data: any) => {

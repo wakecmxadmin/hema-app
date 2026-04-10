@@ -83,7 +83,7 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
       {/* Top row: status + date */}
       <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-200">
         <View
-          className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full"
+          className="flex-row items-center gap-1 px-3 py-1 rounded-full"
           style={{ backgroundColor: statusConfig.bg }}
         >
           <MaterialCommunityIcons
@@ -110,7 +110,7 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
 
         {displayItems.map((item: any) => (
           <View key={item.id} className="flex-row items-center mb-1">
-            <View className="w-1.5 h-1.5 rounded-full bg-neutral-300 mr-2" />
+            <View className="w-1 h-1 rounded-full bg-neutral-300 mr-2" />
             <Text className="text-[13px] text-text-secondary" numberOfLines={1}>
               {item.product_name}
               {item.quantity ? ` × ${item.quantity}` : item.weight ? ` — ${item.weight}g` : ""}
@@ -119,7 +119,7 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
         ))}
 
         {extraCount > 0 && (
-          <Text className="text-[12px] text-neutral-300 mt-0.5 ml-3.5">
+          <Text className="text-[12px] text-neutral-300 mt-0.5 ml-4">
             + {extraCount} {extraCount === 1 ? "item" : "itens"}
           </Text>
         )}

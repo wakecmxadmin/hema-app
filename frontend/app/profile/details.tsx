@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Keyboard,
   ScrollView,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -122,31 +123,37 @@ export default function PersonalDetailsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    const userResponse = await getCurrentUser();
+    if (userResponse.success && userResponse.data) {
+      setEmail(userResponse.data.email || "");
+    }
+
+    const profileResponse = await getProfileData();
+    if (profileResponse.success && profileResponse.data) {
+      setName(profileResponse.data.name || "");
+      setPhone(profileResponse.data.phone || "");
+      setCpf(maskCpf(profileResponse.data.cpf || ""));
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao carregar dados",
+        text2: profileResponse.message,
+      });
+    }
+  }, []);
 
   useEffect(() => {
-    async function loadData() {
-      const userResponse = await getCurrentUser();
-      if (userResponse.success && userResponse.data) {
-        setEmail(userResponse.data.email || "");
-      }
+    loadData().finally(() => setLoading(false));
+  }, [loadData]);
 
-      const profileResponse = await getProfileData();
-      if (profileResponse.success && profileResponse.data) {
-        setName(profileResponse.data.name || "");
-        setPhone(profileResponse.data.phone || "");
-        setCpf(maskCpf(profileResponse.data.cpf || ""));
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Erro ao carregar dados",
-          text2: profileResponse.message,
-        });
-      }
-
-      setLoading(false);
-    }
-    loadData();
-  }, []);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const handleSave = async () => {
     Keyboard.dismiss();
@@ -159,6 +166,7 @@ export default function PersonalDetailsScreen() {
     }
 
     setSaving(true);
+    Toast.show({ type: "success", text1: "Dados salvos!" });
 
     const response = await updateProfile({ name, phone, cpf });
 
@@ -168,8 +176,7 @@ export default function PersonalDetailsScreen() {
       } catch (e) {
         console.error("Erro ao salvar no AsyncStorage", e);
       }
-      Toast.show({ type: "success", text1: "Sucesso!", text2: response.message });
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.back(), 1000);
     } else {
       Toast.show({ type: "error", text1: "Erro ao salvar", text2: response.message });
       setSaving(false);
@@ -227,6 +234,14 @@ export default function PersonalDetailsScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#D91A21"]}
+            tintColor="#D91A21"
+          />
+        }
       >
         {/* Form card */}
         <View

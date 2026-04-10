@@ -196,7 +196,7 @@ export default function OrdersListScreen() {
 
                 <View className="flex-row justify-between items-center border-t border-[#F0F0F0] pt-3">
                   <View
-                    className="flex-row items-center px-2.5 py-1.5 rounded-2xl gap-1"
+                    className="flex-row items-center px-3 py-1 rounded-2xl gap-1"
                     style={{ backgroundColor: badge.bg }}
                   >
                     <MaterialCommunityIcons

@@ -65,9 +65,9 @@ export default function AddressListScreen() {
           text: "Excluir",
           style: "destructive",
           onPress: async () => {
+            Toast.show({ type: "success", text1: "Endereço removido!" });
             const response = await deleteAddress(id);
             if (response.success) {
-              Toast.show({ type: "success", text1: "Endereço removido!" });
               fetchAddresses();
             } else {
               Toast.show({

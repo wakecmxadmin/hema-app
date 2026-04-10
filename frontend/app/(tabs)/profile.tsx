@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -98,17 +99,25 @@ export default function ProfileScreen() {
   });
   const [uploading, setUploading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const name = await AsyncStorage.getItem("@hema_user_name");
+    const email = await AsyncStorage.getItem("@hema_user_email");
+    const avatarUrl = await AsyncStorage.getItem("@hema_user_avatar");
+    if (name && email) setUser({ name, email, avatarUrl });
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    async function loadProfile() {
-      const name = await AsyncStorage.getItem("@hema_user_name");
-      const email = await AsyncStorage.getItem("@hema_user_email");
-      const avatarUrl = await AsyncStorage.getItem("@hema_user_avatar");
-      if (name && email) setUser({ name, email, avatarUrl });
-    }
     loadProfile();
-  }, [isAuthenticated]);
+  }, [loadProfile]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadProfile();
+    setRefreshing(false);
+  };
 
   const handleLogout = async () => {
     const response = await logout();
@@ -143,8 +152,14 @@ export default function ProfileScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setUploading(true);
       const asset = result.assets[0];
+
+      // Optimistic: mostra a imagem local imediatamente
+      const previousAvatar = user.avatarUrl;
+      setUser((prev) => ({ ...prev, avatarUrl: asset.uri }));
+      Toast.show({ type: "success", text1: "Foto atualizada!" });
+
+      setUploading(true);
       const fileData = {
         uri: asset.uri,
         type: asset.mimeType || "image/jpeg",
@@ -158,8 +173,9 @@ export default function ProfileScreen() {
           "@hema_user_avatar",
           response.data as string,
         );
-        Toast.show({ type: "success", text1: response.message });
       } else {
+        // Rollback
+        setUser((prev) => ({ ...prev, avatarUrl: previousAvatar }));
         Toast.show({ type: "error", text1: "Ops!", text2: response.message });
       }
       setUploading(false);
@@ -194,6 +210,14 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#D91A21"]}
+            tintColor="#D91A21"
+          />
+        }
       >
         {/* Page title */}
         <View

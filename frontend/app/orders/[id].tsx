@@ -64,16 +64,12 @@ export default function OrderDetailsScreen() {
           text: "Sim, cancelar",
           style: "destructive",
           onPress: async () => {
+            Toast.show({ type: "success", text1: "Pedido cancelado!" });
             setCanceling(true);
             const response = await OrdersService.cancelOrder(id);
             setCanceling(false);
 
             if (response.success) {
-              Toast.show({
-                type: "success",
-                text1: "Pedido Cancelado",
-                text2: response.message,
-              });
               fetchOrderDetails(false);
             } else {
               Toast.show({
@@ -162,7 +158,7 @@ export default function OrderDetailsScreen() {
             Pedido #{order.id.substring(0, 8).toUpperCase()}
           </Text>
           <View
-            className="flex-row items-center px-2.5 py-1.5 rounded-full gap-1 self-start mt-2"
+            className="flex-row items-center px-3 py-1 rounded-full gap-1 self-start mt-2"
             style={{ backgroundColor: badge.bg }}
           >
             <Text
@@ -278,7 +274,7 @@ export default function OrderDetailsScreen() {
       {order.status === "pending" && (
         <View className="p-4 bg-surface border-t border-neutral-200">
           <TouchableOpacity
-            className="py-3.5 rounded-btn border border-brand items-center"
+            className="py-4 rounded-btn border border-brand items-center"
             onPress={handleCancelOrder}
             disabled={canceling}
           >

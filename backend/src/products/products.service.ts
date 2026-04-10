@@ -5,42 +5,56 @@ import { supabase } from '../lib/supabase';
 export class ProductsService {
   async getHomeCatalog() {
     try {
-      const targetCategories = [
-        'Whey',
-        'Creatina',
-        'Snacks e Barras',
-        'Vitaminas',
-        'Pré-Treinos',
-        'Veganos',
-        'Chás e Ervas',
-        'Colágenos',
-        'Cereais e Grãos',
-        'Sementes',
-      ];
+      // Busca category_ids distintos de produtos ativos com imagem
+      const { data: activeCategoryIds, error: idsError } = await supabase
+        .from('products')
+        .select('category_id')
+        .eq('is_active', true)
+        .not('image_url', 'is', null)
+        .not('category_id', 'is', null)
+        .limit(100);
 
-      const { data, error } = await supabase
+      if (idsError) throw idsError;
+
+      const uniqueCategoryIds = [
+        ...new Set(activeCategoryIds.map((p) => p.category_id)),
+      ].slice(0, 5);
+
+      if (uniqueCategoryIds.length === 0) {
+        return { success: true, message: 'Catálogo carregado com sucesso', data: [] };
+      }
+
+      const { data: categories, error: catError } = await supabase
         .from('categories')
-        .select(
-          `
-          id,
-          name,
-          products (
-            id, name, price, price_per_kg, image_url, type
-          )
-        `,
-        )
-        .in('name', targetCategories)
-        .eq('products.is_active', true)
-        .not('products.image_url', 'is', null)
-        .limit(10, { foreignTable: 'products' })
-        .order('name', { ascending: false });
+        .select('id, name')
+        .in('id', uniqueCategoryIds);
 
-      if (error) throw error;
+      if (catError) throw catError;
+
+      const catalog = await Promise.all(
+        categories.map(async (category) => {
+          const { data: products, error: prodError } = await supabase
+            .from('products')
+            .select('id, name, price, price_per_kg, image_url, type')
+            .eq('category_id', category.id)
+            .eq('is_active', true)
+            .not('image_url', 'is', null)
+            .limit(10);
+
+          if (prodError) throw prodError;
+
+          return {
+            id: category.id,
+            name: category.name,
+            products: products || [],
+          };
+        }),
+      );
 
       return {
         success: true,
         message: 'Catálogo carregado com sucesso',
-        data,
+        data: catalog,
       };
     } catch (error: any) {
       throw new HttpException(

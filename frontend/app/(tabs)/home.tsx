@@ -92,13 +92,17 @@ export default function HomeScreen() {
       product.price_per_kg !== null && product.price_per_kg !== undefined;
     const isUnit = product.type === "unit" || !isKg;
 
-    await addItem({
+    Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+
+    const success = await addItem({
       product_id: product.id,
       price: isUnit ? product.price : product.price_per_kg,
       ...(isUnit ? { quantity: 1 } : { weight: 50 }),
     });
 
-    Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+    if (!success) {
+      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
+    }
   };
 
   const handleSearch = async (query: string) => {
