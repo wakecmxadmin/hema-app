@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 
 import { logout } from "../../services/auth";
@@ -350,7 +351,7 @@ export default function ProfileScreen() {
               }}
             >
               {section.items.map((item, index) => {
-                const isProtected = item.id === "dados" || item.id === "enderecos";
+                const isProtected = item.id === "dados" || item.id === "enderecos" || item.id === "config";
                 const disabled = isProtected && !isAuthenticated;
 
                 return (
@@ -440,6 +441,18 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* App version */}
+        <Text
+          style={{
+            textAlign: "center",
+            fontSize: 12,
+            color: "#C2C2C2",
+            marginTop: 20,
+          }}
+        >
+          Versão {Constants.expoConfig?.version ?? "1.0.0"}
+        </Text>
       </ScrollView>
 
       <AuthRequiredModal

@@ -155,7 +155,7 @@ export default function CategoryScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#121212" />
         </TouchableOpacity>
-        <Text className="text-[22px] font-extrabold ml-3 capitalize text-text-primary tracking-[0.3px]">
+        <Text className="text-xl font-bold ml-3 capitalize text-text-primary tracking-[0.3px]">
           {name}
         </Text>
       </View>

@@ -28,6 +28,7 @@ import {
 
 import { useColorScheme } from "@/components/useColorScheme";
 import { CartProvider } from "@/context/CartContext";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 export { ErrorBoundary } from "expo-router";
@@ -153,6 +154,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <CartProvider>
+        <NotificationsProvider>
         <NotificationListener />
         <View
           style={{
@@ -180,6 +182,7 @@ function RootLayoutNav() {
           </AuthGuard>
           <ToastContainer />
         </View>
+        </NotificationsProvider>
       </CartProvider>
     </ThemeProvider>
   );

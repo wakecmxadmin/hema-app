@@ -13,63 +13,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
+import { useNotifications } from "@/context/NotificationsContext";
+import { formatNotificationTime } from "@/services/notifications";
 
 interface HomeHeaderProps {
   onSearch: (query: string) => void;
   headerOffset: SharedValue<number>;
 }
 
-// ─── Notification data ────────────────────────────────────────────────────────
-
-interface Notification {
-  id: string;
-  icon: string;
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    icon: "check-circle-outline",
-    title: "Pedido confirmado",
-    body: "Seu pedido #2481 foi confirmado e está sendo preparado.",
-    time: "Agora",
-    read: false,
-  },
-  {
-    id: "2",
-    icon: "truck-delivery-outline",
-    title: "Saiu para entrega",
-    body: "Seu pedido #2475 saiu para entrega. Fique de olho!",
-    time: "30 min",
-    read: false,
-  },
-  {
-    id: "3",
-    icon: "star-outline",
-    title: "Avalie seu pedido",
-    body: "Como foi sua experiência com o pedido #2470? Deixe sua avaliação.",
-    time: "Ontem",
-    read: true,
-  },
-  {
-    id: "4",
-    icon: "package-variant-closed",
-    title: "Pedido entregue",
-    body: "Seu pedido #2465 foi entregue com sucesso. Bom proveito!",
-    time: "2 dias",
-    read: true,
-  },
-];
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
+  const { notifications, unreadCount, dismiss, markAllRead } = useNotifications();
   const [userName, setUserName] = useState<string | null>(null);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -111,7 +69,12 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
     }).start();
   }, [showNotifDropdown]);
 
-  const toggleNotifDropdown = () => setShowNotifDropdown((v) => !v);
+  const toggleNotifDropdown = () => {
+    setShowNotifDropdown((v) => {
+      if (!v) markAllRead();
+      return !v;
+    });
+  };
   const closeAll = () => setShowNotifDropdown(false);
 
   const handleSearchChange = (text: string) => {
@@ -130,8 +93,6 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     onSearch(searchValue);
   };
-
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
 
   const dropdownStyle = (anim: RNAnimated.Value) => ({
     opacity: anim,
@@ -404,93 +365,112 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
             style={{ flex: 1 }}
             contentContainerStyle={{ paddingBottom: 8 }}
           >
-            {MOCK_NOTIFICATIONS.map((notif) => (
+            {notifications.length === 0 ? (
               <View
-                key={notif.id}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
+                  alignItems: "center",
+                  paddingVertical: 28,
                   paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  marginHorizontal: 8,
-                  marginTop: 4,
-                  borderRadius: 12,
-                  backgroundColor: !notif.read ? "#FFF5F5" : "#FFF",
                 }}
               >
+                <MaterialCommunityIcons
+                  name="bell-off-outline"
+                  size={32}
+                  color="#D0D0D0"
+                />
+                <Text
+                  style={{ fontSize: 13, color: "#AAAAAA", marginTop: 8 }}
+                >
+                  Nenhuma notificação
+                </Text>
+              </View>
+            ) : (
+              notifications.map((notif) => (
                 <View
+                  key={notif.id}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: !notif.read ? "#FFE8EA" : "#F5F5F5",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 12,
-                    flexShrink: 0,
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    marginHorizontal: 8,
+                    marginTop: 4,
+                    borderRadius: 12,
+                    backgroundColor: !notif.read ? "#FFF5F5" : "#FFF",
                   }}
                 >
-                  <MaterialCommunityIcons
-                    name={notif.icon as any}
-                    size={17}
-                    color={!notif.read ? "#E30613" : "#888888"}
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
                   <View
                     style={{
-                      flexDirection: "row",
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: !notif.read ? "#FFE8EA" : "#F5F5F5",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 3,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#1A1A1A",
-                        flex: 1,
-                        marginRight: 8,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {notif.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: "#AAAAAA",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {notif.time}
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 12, color: "#666666", lineHeight: 17 }}
-                    numberOfLines={2}
-                  >
-                    {notif.body}
-                  </Text>
-                </View>
-
-                {!notif.read && (
-                  <View
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: 3.5,
-                      backgroundColor: "#E30613",
-                      marginTop: 6,
-                      marginLeft: 8,
+                      justifyContent: "center",
+                      marginRight: 12,
                       flexShrink: 0,
                     }}
-                  />
-                )}
-              </View>
-            ))}
+                  >
+                    <MaterialCommunityIcons
+                      name={notif.icon as any}
+                      size={17}
+                      color={!notif.read ? "#E30613" : "#888888"}
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 3,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: "#1A1A1A",
+                          flex: 1,
+                          marginRight: 8,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {notif.title}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: "#AAAAAA",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {formatNotificationTime(notif.createdAt)}
+                      </Text>
+                    </View>
+                    <Text
+                      style={{ fontSize: 12, color: "#666666", lineHeight: 17 }}
+                      numberOfLines={2}
+                    >
+                      {notif.body}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => dismiss(notif.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ marginLeft: 8, marginTop: 2, flexShrink: 0 }}
+                  >
+                    <MaterialCommunityIcons
+                      name="close"
+                      size={14}
+                      color="#CCCCCC"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </ScrollView>
         </View>
       </RNAnimated.View>

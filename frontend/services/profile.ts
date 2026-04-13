@@ -45,7 +45,7 @@ export async function deleteAccount(): Promise<ApiResponse<void>> {
 
   if (response.success) {
     await AsyncStorage.clear();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut().catch(() => {});
   }
 
   return response;

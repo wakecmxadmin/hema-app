@@ -64,11 +64,22 @@ function ToggleRow({
           flexShrink: 0,
         }}
       >
-        <MaterialCommunityIcons name={icon as any} size={20} color={iconColor} />
+        <MaterialCommunityIcons
+          name={icon as any}
+          size={20}
+          color={iconColor}
+        />
       </View>
 
       <View style={{ flex: 1, marginRight: 12 }}>
-        <Text style={{ fontSize: 14, fontWeight: "600", color: "#121212", marginBottom: 2 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "600",
+            color: "#121212",
+            marginBottom: 2,
+          }}
+        >
           {title}
         </Text>
         <Text style={{ fontSize: 12, color: "#C2C2C2", lineHeight: 17 }}>
@@ -124,9 +135,15 @@ export default function SettingsScreen() {
     setSaving(true);
     Toast.show({ type: "success", text1: "Configurações salvas!" });
 
-    const response = await updateProfile({ settings: { notifications, promotions } });
+    const response = await updateProfile({
+      settings: { notifications, promotions },
+    });
     if (!response.success) {
-      Toast.show({ type: "error", text1: "Erro ao salvar", text2: response.message });
+      Toast.show({
+        type: "error",
+        text1: "Erro ao salvar",
+        text2: response.message,
+      });
     }
     setSaving(false);
   };
@@ -143,7 +160,6 @@ export default function SettingsScreen() {
           onPress: async () => {
             const response = await deleteAccount();
             if (response.success) {
-              Toast.show({ type: "success", text1: "Conta removida." });
               router.replace("/auth");
             } else {
               Toast.show({
@@ -160,14 +176,24 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F5F5F5", justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#F5F5F5",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F5" }} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F5F5F5" }}
+      edges={["top", "bottom"]}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
       {/* Header */}
@@ -315,11 +341,22 @@ export default function SettingsScreen() {
                 flexShrink: 0,
               }}
             >
-              <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
+              <MaterialCommunityIcons
+                name="delete-outline"
+                size={20}
+                color="#EF4444"
+              />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#EF4444", marginBottom: 2 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: "#EF4444",
+                  marginBottom: 2,
+                }}
+              >
                 Excluir minha conta
               </Text>
               <Text style={{ fontSize: 12, color: "#C2C2C2", lineHeight: 17 }}>
@@ -327,21 +364,13 @@ export default function SettingsScreen() {
               </Text>
             </View>
 
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#C2C2C2" />
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color="#C2C2C2"
+            />
           </TouchableOpacity>
         </View>
-
-        {/* App version */}
-        <Text
-          style={{
-            textAlign: "center",
-            fontSize: 12,
-            color: "#C2C2C2",
-            marginTop: 4,
-          }}
-        >
-          Versão 1.0.2 (Beta)
-        </Text>
       </ScrollView>
 
       {/* Footer */}
@@ -371,7 +400,9 @@ export default function SettingsScreen() {
           ) : (
             <>
               <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
-              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
+              <Text
+                style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}
+              >
                 Salvar Preferências
               </Text>
             </>

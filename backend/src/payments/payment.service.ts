@@ -50,7 +50,12 @@ export class PaymentsService {
 
     switch (payment_method) {
       case 'cash':
-        console.log(`[PAYMENT] Order ${order_id} → Dinheiro → fluxo offline`);
+        await this.notifyN8n(order_id, {
+          id: null,
+          payment_method_id: 'cash',
+          transaction_amount: total_price,
+          date_approved: null,
+        });
         return {
           orderStatus: 'pending',
           paymentStatus: 'waiting_cash',
@@ -67,10 +72,6 @@ export class PaymentsService {
         });
 
         console.log(preference)
-
-        console.log(
-          `[PAYMENT] Order ${order_id} → ${payment_method} → Preference ${preference.id} criada`,
-        );
 
         return {
           orderStatus: 'waiting_payment',
@@ -174,7 +175,7 @@ export class PaymentsService {
       `[WEBHOOK] Buscando pagamento ${paymentId} na API do Mercado Pago`,
     );
 
-    const mpPayment = await this.fetchMercadoPagoPayment(paymentId, data);
+    const mpPayment = await this.fetchMercadoPagoPayment(paymentId);
     if (!mpPayment) return;
 
     const { status: mpStatus, external_reference: orderId } = mpPayment;
@@ -198,21 +199,7 @@ export class PaymentsService {
     }
   }
 
-  private async fetchMercadoPagoPayment(paymentId: string, rawData?: any): Promise<any> {
-    // MOCK PARA TESTES — remover em produção
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[WEBHOOK] MOCK MODE: retornando pagamento fictício para ${paymentId}`);
-      return {
-        id: paymentId,
-        status: rawData?.status ?? 'approved',
-        external_reference: rawData?.external_reference ?? null,
-        payment_method_id: rawData?.payment_method_id ?? 'pix',
-        transaction_amount: rawData?.transaction_amount ?? 0,
-        payer: rawData?.payer ?? { email: 'test@test.com' },
-        date_approved: rawData?.date_approved ?? new Date().toISOString(),
-      };
-    }
-
+  private async fetchMercadoPagoPayment(paymentId: string): Promise<any> {
     try {
       const paymentClient = new Payment(this.mpClient);
       const payment = await paymentClient.get({ id: paymentId });
@@ -273,11 +260,13 @@ export class PaymentsService {
       const address = order.addresses;
       const items = order.order_items ?? [];
 
+      const isCash = order.payment_method === 'cash';
+
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event: 'payment_approved',
+          event: isCash ? 'order_cash' : 'payment_approved',
           order_id: orderId,
           order_short_id: orderId.substring(0, 8).toUpperCase(),
           payment_id: mpPayment.id,

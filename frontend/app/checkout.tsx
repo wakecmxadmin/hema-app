@@ -414,7 +414,7 @@ export default function CheckoutScreen() {
               return (
                 <TouchableOpacity
                   key={method}
-                  className={`flex-row items-center px-4 py-4 mt-4 border-[1.5px] rounded-btn ${
+                  className={`flex-row items-center px-4 py-4 mt-1 border-[1.5px] rounded-btn ${
                     isActive
                       ? "border-brand bg-brand/5"
                       : "border-neutral-200 bg-neutral-100"

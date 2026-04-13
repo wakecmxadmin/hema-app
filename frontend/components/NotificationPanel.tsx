@@ -9,50 +9,8 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-interface Notification {
-  id: string;
-  icon: string;
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    icon: "check-circle-outline",
-    title: "Pedido confirmado",
-    body: "Seu pedido #2481 foi confirmado e está sendo preparado.",
-    time: "Agora",
-    read: false,
-  },
-  {
-    id: "2",
-    icon: "truck-delivery-outline",
-    title: "Saiu para entrega",
-    body: "Seu pedido #2475 saiu para entrega. Fique de olho!",
-    time: "30 min",
-    read: false,
-  },
-  {
-    id: "3",
-    icon: "star-outline",
-    title: "Avalie seu pedido",
-    body: "Como foi sua experiência com o pedido #2470? Deixe sua avaliação.",
-    time: "Ontem",
-    read: true,
-  },
-  {
-    id: "4",
-    icon: "package-variant-closed",
-    title: "Pedido entregue",
-    body: "Seu pedido #2465 foi entregue com sucesso. Bom proveito!",
-    time: "2 dias",
-    read: true,
-  },
-];
+import { useNotifications } from "@/context/NotificationsContext";
+import { formatNotificationTime } from "@/services/notifications";
 
 interface NotificationPanelProps {
   visible: boolean;
@@ -60,11 +18,13 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ visible, onClose }: NotificationPanelProps) {
+  const { notifications, unreadCount, dismiss, markAllRead } = useNotifications();
   const slideAnim = useRef(new Animated.Value(400)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      markAllRead();
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -93,8 +53,6 @@ export function NotificationPanel({ visible, onClose }: NotificationPanelProps) 
       ]).start();
     }
   }, [visible]);
-
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
 
   return (
     <Modal
@@ -156,50 +114,71 @@ export function NotificationPanel({ visible, onClose }: NotificationPanelProps) 
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} className="pb-8">
-          {MOCK_NOTIFICATIONS.map((notif) => (
-            <View
-              key={notif.id}
-              className={`flex-row items-start px-5 py-4 border-b border-[#F8F8F8] ${
-                !notif.read ? "bg-[#FFF5F5]" : "bg-white"
-              }`}
-            >
+          {notifications.length === 0 ? (
+            <View className="items-center py-12 px-6">
+              <MaterialCommunityIcons
+                name="bell-off-outline"
+                size={40}
+                color="#D0D0D0"
+              />
+              <Text className="text-[14px] text-[#AAAAAA] mt-3 text-center">
+                Nenhuma notificação
+              </Text>
+            </View>
+          ) : (
+            notifications.map((notif) => (
               <View
-                className={`w-10 h-10 rounded-full items-center justify-center mr-3 flex-shrink-0 ${
-                  !notif.read ? "bg-[#FFE8EA]" : "bg-[#F5F5F5]"
+                key={notif.id}
+                className={`flex-row items-start px-5 py-4 border-b border-[#F8F8F8] ${
+                  !notif.read ? "bg-[#FFF5F5]" : "bg-white"
                 }`}
               >
-                <MaterialCommunityIcons
-                  name={notif.icon as any}
-                  size={19}
-                  color={!notif.read ? "#E30613" : "#888888"}
-                />
-              </View>
+                <View
+                  className={`w-10 h-10 rounded-full items-center justify-center mr-3 flex-shrink-0 ${
+                    !notif.read ? "bg-[#FFE8EA]" : "bg-[#F5F5F5]"
+                  }`}
+                >
+                  <MaterialCommunityIcons
+                    name={notif.icon as any}
+                    size={19}
+                    color={!notif.read ? "#E30613" : "#888888"}
+                  />
+                </View>
 
-              <View className="flex-1">
-                <View className="flex-row items-center justify-between mb-[3px]">
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between mb-[3px]">
+                    <Text
+                      className="text-[13px] font-[700] text-[#1A1A1A] flex-1 mr-2"
+                      numberOfLines={1}
+                    >
+                      {notif.title}
+                    </Text>
+                    <Text className="text-[11px] text-[#AAAAAA] flex-shrink-0">
+                      {formatNotificationTime(notif.createdAt)}
+                    </Text>
+                  </View>
                   <Text
-                    className="text-[13px] font-[700] text-[#1A1A1A] flex-1 mr-2"
-                    numberOfLines={1}
+                    className="text-[12px] text-[#666666] leading-[17px]"
+                    numberOfLines={2}
                   >
-                    {notif.title}
-                  </Text>
-                  <Text className="text-[11px] text-[#AAAAAA] flex-shrink-0">
-                    {notif.time}
+                    {notif.body}
                   </Text>
                 </View>
-                <Text
-                  className="text-[12px] text-[#666666] leading-[17px]"
-                  numberOfLines={2}
-                >
-                  {notif.body}
-                </Text>
-              </View>
 
-              {!notif.read && (
-                <View className="w-2 h-2 rounded-full bg-[#E30613] mt-1 ml-2 flex-shrink-0" />
-              )}
-            </View>
-          ))}
+                <TouchableOpacity
+                  onPress={() => dismiss(notif.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  className="ml-2 mt-1 flex-shrink-0"
+                >
+                  <MaterialCommunityIcons
+                    name="close"
+                    size={15}
+                    color="#CCCCCC"
+                  />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
 
           <View className="h-8" />
         </ScrollView>

@@ -143,7 +143,8 @@ export class ProfileService {
   }
 
   async deleteProfile(userId: string) {
-    await this.supabaseFetch(`/rest/v1/profiles?id=eq.${userId}`, 'DELETE');
+    // Remove o usuário do auth.users via Admin API (também cascateia para public.profiles se houver FK)
+    await this.supabaseFetch(`/auth/v1/admin/users/${userId}`, 'DELETE');
     return { success: true, message: 'Sua conta foi excluída com sucesso.' };
   }
 
