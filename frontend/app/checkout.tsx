@@ -180,6 +180,14 @@ export default function CheckoutScreen() {
         await WebBrowser.openBrowserAsync(response.data.init_point);
         await refreshCart();
         router.replace("/(tabs)/orders");
+      } else {
+        // Se não houver init_point, mostrar erro
+        console.error("Resposta do servidor sem init_point:", response.data);
+        Toast.show({
+          type: "error",
+          text1: "Erro ao processar pagamento",
+          text2: "Não foi possível gerar o link de pagamento. Tente novamente.",
+        });
       }
     } else {
       Toast.show({

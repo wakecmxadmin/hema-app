@@ -71,7 +71,17 @@ export class PaymentsService {
           payment_method,
         });
 
-        console.log(preference)
+        console.log(
+          '[PAYMENT] Preference response:',
+          JSON.stringify(preference, null, 2),
+        );
+
+        if (!preference?.id) {
+          console.error('[PAYMENT] Preference sem ID válido:', preference);
+          throw new BadRequestException(
+            'Falha ao criar preferência de pagamento',
+          );
+        }
 
         return {
           orderStatus: 'waiting_payment',
@@ -95,64 +105,77 @@ export class PaymentsService {
     total_price: number;
     payment_method: string;
   }) {
-    const preferenceClient = new Preference(this.mpClient);
+    try {
+      const preferenceClient = new Preference(this.mpClient);
 
-    const mpItems: any[] = params.items.map((item) => ({
-      id: item.product_id,
-      title: item.product_name,
-      quantity: item.quantity || 1,
-      unit_price: Number((item.subtotal / (item.quantity || 1)).toFixed(2)),
-      currency_id: 'BRL',
-    }));
-
-    if (params.delivery_fee > 0) {
-      mpItems.push({
-        id: 'delivery_fee',
-        title: 'Taxa de Entrega',
-        quantity: 1,
-        unit_price: params.delivery_fee,
+      const mpItems: any[] = params.items.map((item) => ({
+        id: item.product_id,
+        title: item.product_name,
+        quantity: item.quantity || 1,
+        unit_price: Number((item.subtotal / (item.quantity || 1)).toFixed(2)),
         currency_id: 'BRL',
-      });
-    }
+      }));
 
-    const paymentMethods =
-      params.payment_method === 'pix'
-        ? {
-            excluded_payment_types: [
-              { id: 'credit_card' },
-              { id: 'debit_card' },
-              { id: 'prepaid_card' },
-              { id: 'ticket' },
-              { id: 'atm' },
-            ],
-          }
-        : {
-            excluded_payment_types: [
-              { id: 'prepaid_card' },
-              { id: 'bank_transfer' },
-              { id: 'ticket' },
-              { id: 'atm' },
-            ],
-          };
+      if (params.delivery_fee > 0) {
+        mpItems.push({
+          id: 'delivery_fee',
+          title: 'Taxa de Entrega',
+          quantity: 1,
+          unit_price: params.delivery_fee,
+          currency_id: 'BRL',
+        });
+      }
 
-    const response = await preferenceClient.create({
-      body: {
-        items: mpItems,
-        external_reference: params.order_id,
-        notification_url:
-          'https://api.apphema.codificaai.pro/webhook/mercadopago',
-        back_urls: {
-          success: 'hemaapp://payment/success',
-          failure: 'hemaapp://payment/failure',
-          pending: 'hemaapp://payment/pending',
+      const paymentMethods =
+        params.payment_method === 'pix'
+          ? {
+              excluded_payment_types: [
+                { id: 'credit_card' },
+                { id: 'debit_card' },
+                { id: 'prepaid_card' },
+                { id: 'ticket' },
+                { id: 'atm' },
+              ],
+            }
+          : {
+              excluded_payment_types: [
+                { id: 'prepaid_card' },
+                { id: 'bank_transfer' },
+                { id: 'ticket' },
+                { id: 'atm' },
+              ],
+            };
+
+      const response = await preferenceClient.create({
+        body: {
+          items: mpItems,
+          external_reference: params.order_id,
+          notification_url:
+            'https://api.apphema.codificaai.pro/webhook/mercadopago',
+          back_urls: {
+            success: 'hemaapp://payment/success',
+            failure: 'hemaapp://payment/failure',
+            pending: 'hemaapp://payment/pending',
+          },
+          auto_return: 'approved',
+          payment_methods: paymentMethods,
+          statement_descriptor: 'HEMA CEREAIS',
         },
-        auto_return: 'approved',
-        payment_methods: paymentMethods,
-        statement_descriptor: 'HEMA CEREAIS',
-      },
-    });
+      });
 
-    return response;
+      console.log('[MP_PREFERENCE] Criada com sucesso:', {
+        id: response?.id,
+        init_point: response?.init_point,
+        initPoint: (response as any)?.initPoint,
+      });
+
+      return response;
+    } catch (error) {
+      console.error('[MP_PREFERENCE] Erro ao criar preferência:', error);
+      throw new BadRequestException(
+        `Erro ao criar preferência no Mercado Pago: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   async handleMercadoPagoWebhook(payload: any): Promise<void> {
@@ -237,7 +260,9 @@ export class PaymentsService {
         .single();
 
       if (orderError || !order) {
-        console.error(`[N8N] Pedido ${orderId} não encontrado para notificação`);
+        console.error(
+          `[N8N] Pedido ${orderId} não encontrado para notificação`,
+        );
         return;
       }
 
@@ -248,7 +273,11 @@ export class PaymentsService {
         .eq('id', order.user_id)
         .single();
 
-      console.log(`[N8N] Profile query for user ${order.user_id}:`, JSON.stringify(profile), profileError?.message ?? 'OK');
+      console.log(
+        `[N8N] Profile query for user ${order.user_id}:`,
+        JSON.stringify(profile),
+        profileError?.message ?? 'OK',
+      );
 
       const paymentLabels: Record<string, string> = {
         pix: 'PIX',
@@ -270,7 +299,8 @@ export class PaymentsService {
           order_id: orderId,
           order_short_id: orderId.substring(0, 8).toUpperCase(),
           payment_id: mpPayment.id,
-          payment_method: paymentLabels[order.payment_method] ?? order.payment_method,
+          payment_method:
+            paymentLabels[order.payment_method] ?? order.payment_method,
           approved_at: mpPayment.date_approved,
 
           customer: {
@@ -302,7 +332,10 @@ export class PaymentsService {
           })),
           items_count: items.length,
 
-          subtotal: items.reduce((sum: number, i: any) => sum + Number(i.subtotal), 0),
+          subtotal: items.reduce(
+            (sum: number, i: any) => sum + Number(i.subtotal),
+            0,
+          ),
           total: order.total_price,
         }),
       });
