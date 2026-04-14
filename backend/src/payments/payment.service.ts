@@ -63,6 +63,8 @@ export class PaymentsService {
 
       case 'pix':
       case 'credit_card': {
+        console.log(`[PAYMENT] Criando preferência para ${payment_method}...`);
+
         const preference = await this.createMercadoPagoPreference({
           order_id,
           items,
@@ -79,15 +81,34 @@ export class PaymentsService {
         if (!preference?.id) {
           console.error('[PAYMENT] Preference sem ID válido:', preference);
           throw new BadRequestException(
-            'Falha ao criar preferência de pagamento',
+            'Falha ao criar preferência de pagamento no Mercado Pago',
           );
         }
+
+        const initPoint = preference.init_point;
+        const sandboxInitPoint = (preference as any).sandbox_init_point;
+
+        if (!initPoint && !sandboxInitPoint) {
+          console.error(
+            '[PAYMENT] Nenhum init_point retornado pela API do MP:',
+            preference,
+          );
+          throw new BadRequestException(
+            'Mercado Pago não retornou URL de pagamento',
+          );
+        }
+
+        console.log('[PAYMENT] Preferência criada com sucesso:', {
+          id: preference.id,
+          init_point: initPoint,
+          sandbox_init_point: sandboxInitPoint,
+        });
 
         return {
           orderStatus: 'waiting_payment',
           paymentStatus: 'pending',
-          init_point: preference.init_point!,
-          sandbox_init_point: (preference as any).sandbox_init_point,
+          init_point: initPoint,
+          sandbox_init_point: sandboxInitPoint,
         };
       }
 
@@ -146,6 +167,13 @@ export class PaymentsService {
               ],
             };
 
+      console.log('[MP_PREFERENCE] Enviando requisição para criar preference:', {
+        order_id: params.order_id,
+        payment_method: params.payment_method,
+        total_price: params.total_price,
+        items_count: mpItems.length,
+      });
+
       const response = await preferenceClient.create({
         body: {
           items: mpItems,
@@ -163,10 +191,13 @@ export class PaymentsService {
         },
       });
 
-      console.log('[MP_PREFERENCE] Criada com sucesso:', {
+      console.log('[MP_PREFERENCE] Resposta completa da API:', {
         id: response?.id,
         init_point: response?.init_point,
         initPoint: (response as any)?.initPoint,
+        sandbox_init_point: (response as any)?.sandbox_init_point,
+        sandboxInitPoint: (response as any)?.sandboxInitPoint,
+        allKeys: Object.keys(response || {}),
       });
 
       return response;

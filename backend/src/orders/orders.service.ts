@@ -118,12 +118,22 @@ export class OrdersService {
       }
 
       // Processa Pagamento
+      console.log('[ORDER] Iniciando processamento de pagamento:', {
+        payment_method: dto.payment_method,
+        total_price: finalTotalPrice,
+        order_id: newOrder.id,
+      });
+
       const paymentResult = await this.paymentsService.processPayment({
         payment_method: dto.payment_method,
         total_price: finalTotalPrice,
         delivery_fee: deliveryFee,
         order_id: newOrder.id,
         items: orderItemsToInsert,
+      });
+
+      console.log('[ORDER] Resultado do processamento de pagamento:', {
+        paymentResult,
       });
 
       // Limpa o carrinho APENAS se for dinheiro (os outros limpam via webhook depois)
