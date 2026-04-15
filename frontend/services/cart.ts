@@ -34,3 +34,19 @@ export async function removeCartItemService(
 ): Promise<ApiResponse<void>> {
   return apiFetch(`/cart/items/${id}`, { method: "DELETE" });
 }
+
+export async function validateCartStockService(): Promise<
+  ApiResponse<{
+    valid: boolean;
+    adjustments: {
+      item_id: string;
+      product_name: string;
+      type: "removed" | "reduced";
+      reason: string;
+      new_quantity?: number;
+      new_weight?: number;
+    }[];
+  }>
+> {
+  return apiFetch("/cart/validate-stock", { method: "GET" });
+}

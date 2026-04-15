@@ -40,6 +40,56 @@ export class CartService {
         );
       }
 
+      // Validação de estoque
+      if (product.type === 'unit') {
+        if (!Number.isInteger(quantity)) {
+          throw new HttpException(
+            {
+              success: false,
+              message: 'A quantidade deve ser um número inteiro para este produto',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if ((quantity || 0) > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Apenas ${product.stock} unidades disponíveis`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: quantity,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
+      }
+
+      if (product.type === 'weight') {
+        const weightInKg = (weight || 0) / 1000;
+        if (weightInKg < 0.1) {
+          throw new HttpException(
+            {
+              success: false,
+              message: 'O peso mínimo é de 100g (0.1 kg)',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (weightInKg > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Disponível apenas ${product.stock} kg deste produto`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: weightInKg,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
+      }
+
       // Buscar ou criar carrinho
       let { data: cart } = await supabase
         .from('carts')
@@ -75,6 +125,32 @@ export class CartService {
           product.type === 'weight'
             ? existingItem.weight + (weight || 0)
             : null;
+
+        // Validar estoque com quantidade acumulada
+        if (product.type === 'unit' && (newQuantity || 0) > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Apenas ${product.stock} unidades disponíveis (você já tem ${existingItem.quantity} no carrinho)`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: newQuantity,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
+        if (product.type === 'weight' && ((newWeight || 0) / 1000) > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Disponível apenas ${product.stock} kg deste produto (você já tem ${existingItem.weight}g no carrinho)`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: (newWeight || 0) / 1000,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
 
         let updatedPrice = 0;
         if (product.type === 'unit') {
@@ -152,7 +228,7 @@ export class CartService {
         .select(
           `
           id, quantity, weight, price,
-          product:products (id, name, type, image_url, price, price_per_kg)
+          product:products (id, name, type, image_url, price, price_per_kg, stock)
         `,
         )
         .eq('cart_id', cart.id)
@@ -212,9 +288,41 @@ export class CartService {
       let newPrice = item.price;
       const product = item.product;
 
+      // Validar estoque na atualização
       if (dto.quantity !== undefined && product.type === 'unit') {
+        if (!Number.isInteger(dto.quantity)) {
+          throw new HttpException(
+            { success: false, message: 'A quantidade deve ser um número inteiro' },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (dto.quantity > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Apenas ${product.stock} unidades disponíveis`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: dto.quantity,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
         newPrice = product.price;
       } else if (dto.weight !== undefined && product.type === 'weight') {
+        const weightInKg = (dto.weight || 0) / 1000;
+        if (weightInKg > product.stock) {
+          throw new HttpException(
+            {
+              success: false,
+              message: `Disponível apenas ${product.stock} kg deste produto`,
+              error: 'INSUFFICIENT_STOCK',
+              available_stock: product.stock,
+              requested: weightInKg,
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
         newPrice = (product.price_per_kg / 1000) * (dto.weight || 0);
       }
 
@@ -281,6 +389,97 @@ export class CartService {
         {
           success: false,
           message: 'Erro ao remover item',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async validateStock(userId: string) {
+    try {
+      const cartResponse = await this.getCart(userId);
+      if (!cartResponse.data.cart || cartResponse.data.items.length === 0) {
+        return { success: true, message: 'Carrinho vazio', data: { valid: true, adjustments: [] } };
+      }
+
+      const adjustments: any[] = [];
+
+      for (const item of cartResponse.data.items) {
+        const product = item.product as any;
+        if (!product) continue;
+
+        if (product.type === 'unit') {
+          if (product.stock <= 0) {
+            adjustments.push({
+              item_id: item.id,
+              product_name: product.name,
+              type: 'removed',
+              reason: 'Produto sem estoque',
+            });
+            await supabase.from('cart_items').delete().eq('id', item.id);
+          } else if ((item.quantity || 0) > product.stock) {
+            adjustments.push({
+              item_id: item.id,
+              product_name: product.name,
+              type: 'reduced',
+              reason: `Quantidade reduzida de ${item.quantity} para ${product.stock}`,
+              new_quantity: product.stock,
+            });
+            await supabase
+              .from('cart_items')
+              .update({ quantity: product.stock, price: product.price })
+              .eq('id', item.id);
+          }
+        } else if (product.type === 'weight') {
+          const weightInKg = (item.weight || 0) / 1000;
+          if (product.stock <= 0) {
+            adjustments.push({
+              item_id: item.id,
+              product_name: product.name,
+              type: 'removed',
+              reason: 'Produto sem estoque',
+            });
+            await supabase.from('cart_items').delete().eq('id', item.id);
+          } else if (weightInKg > product.stock) {
+            const newWeightGrams = Math.floor(product.stock * 1000);
+            const newPrice = (product.price_per_kg / 1000) * newWeightGrams;
+            adjustments.push({
+              item_id: item.id,
+              product_name: product.name,
+              type: 'reduced',
+              reason: `Peso reduzido de ${item.weight}g para ${newWeightGrams}g`,
+              new_weight: newWeightGrams,
+            });
+            await supabase
+              .from('cart_items')
+              .update({ weight: newWeightGrams, price: newPrice })
+              .eq('id', item.id);
+          }
+        }
+      }
+
+      if (adjustments.length > 0) {
+        const cart = cartResponse.data.cart;
+        await this.recalculateCart(cart.id);
+      }
+
+      return {
+        success: true,
+        message: adjustments.length > 0
+          ? 'Alguns itens foram ajustados por falta de estoque'
+          : 'Todos os itens estão disponíveis',
+        data: {
+          valid: adjustments.length === 0,
+          adjustments,
+        },
+      };
+    } catch (error: any) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Erro ao validar estoque do carrinho',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

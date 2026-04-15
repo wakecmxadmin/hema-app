@@ -73,11 +73,6 @@ export class PaymentsService {
           payment_method,
         });
 
-        console.log(
-          '[PAYMENT] Preference response:',
-          JSON.stringify(preference, null, 2),
-        );
-
         if (!preference?.id) {
           console.error('[PAYMENT] Preference sem ID válido:', preference);
           throw new BadRequestException(

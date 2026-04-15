@@ -117,6 +117,40 @@ export class OrdersService {
         throw new Error('Falha ao inserir itens do pedido.');
       }
 
+      // Dedução atômica de estoque via RPC
+      const stockItems = cartItems.map((item: any) => {
+        const product = item.product;
+        const isUnit = product.type === 'unit';
+        // Para unit: quantidade inteira. Para weight: peso em KG
+        const qty = isUnit
+          ? item.quantity
+          : (item.weight || 0) / 1000;
+        return { product_id: product.id, quantity: qty };
+      });
+
+      const { data: stockResult, error: stockError } = await supabase.rpc(
+        'deduct_stock',
+        { items: stockItems },
+      );
+
+      if (stockError || (stockResult && !stockResult.success)) {
+        // Rollback: remove order items e order
+        await supabase.from('order_items').delete().eq('order_id', newOrder.id);
+        await supabase.from('orders').delete().eq('id', newOrder.id);
+
+        const failedProduct =
+          stockResult?.failed_product || 'um produto';
+        throw new HttpException(
+          {
+            success: false,
+            message: `Estoque insuficiente para "${failedProduct}". Revise seu carrinho.`,
+            error: 'INSUFFICIENT_STOCK',
+            failed_product: failedProduct,
+          },
+          HttpStatus.CONFLICT,
+        );
+      }
+
       // Processa Pagamento
       console.log('[ORDER] Iniciando processamento de pagamento:', {
         payment_method: dto.payment_method,
@@ -274,6 +308,12 @@ export class OrdersService {
         );
       }
 
+      // Buscar itens do pedido para devolver estoque
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('product_id, quantity, weight')
+        .eq('order_id', orderId);
+
       const { error: updateError } = await supabase
         .from('orders')
         .update({ status: 'cancelled' })
@@ -281,6 +321,25 @@ export class OrdersService {
         .eq('user_id', userId);
 
       if (updateError) throw updateError;
+
+      // Devolver estoque dos itens do pedido cancelado
+      if (orderItems && orderItems.length > 0) {
+        const restoreItems = orderItems.map((item: any) => ({
+          product_id: item.product_id,
+          quantity: item.quantity ? item.quantity : (item.weight || 0) / 1000,
+        }));
+
+        const { error: restoreError } = await supabase.rpc('restore_stock', {
+          items: restoreItems,
+        });
+
+        if (restoreError) {
+          console.error(
+            `[ORDER] Erro ao devolver estoque do pedido ${orderId}:`,
+            restoreError,
+          );
+        }
+      }
 
       return {
         success: true,

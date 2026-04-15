@@ -10,6 +10,7 @@ export class ProductsService {
         .from('products')
         .select('category_id')
         .eq('is_active', true)
+        .gt('stock', 0)
         .not('image_url', 'is', null)
         .not('category_id', 'is', null)
         .limit(100);
@@ -35,9 +36,10 @@ export class ProductsService {
         categories.map(async (category) => {
           const { data: products, error: prodError } = await supabase
             .from('products')
-            .select('id, name, price, price_per_kg, image_url, type')
+            .select('id, name, price, price_per_kg, image_url, type, stock')
             .eq('category_id', category.id)
             .eq('is_active', true)
+            .gt('stock', 0)
             .not('image_url', 'is', null)
             .limit(10);
 
@@ -95,6 +97,7 @@ export class ProductsService {
           price: data.price,
           price_per_kg: data.price_per_kg,
           image_url: data.image_url,
+          stock: data.stock,
         },
       };
     } catch (error: any) {
@@ -130,9 +133,10 @@ export class ProductsService {
       // 2. Busca produtos da mesma categoria, excluindo o próprio produto
       const { data, error: error2 } = await supabase
         .from('products')
-        .select('id, name, price, price_per_kg, image_url, type')
+        .select('id, name, price, price_per_kg, image_url, type, stock')
         .eq('category_id', product.category_id)
         .eq('is_active', true)
+        .gt('stock', 0)
         .neq('id', productId)
         .limit(10);
 
@@ -166,9 +170,10 @@ export class ProductsService {
 
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, price_per_kg, image_url, type')
+        .select('id, name, price, price_per_kg, image_url, type, stock')
         .eq('category_id', categoryId)
         .eq('is_active', true)
+        .gt('stock', 0)
         .range(offset, to);
 
       if (error) throw error;

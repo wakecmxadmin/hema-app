@@ -249,11 +249,27 @@ const CartItemComponent = ({
                 <TouchableOpacity
                   onPress={() => {
                     if (item.product.type === "unit") {
-                      updateItem(item.id, {
-                        quantity: (item.quantity || 0) + 1,
-                      });
+                      const maxStock = item.product.stock ?? Infinity;
+                      const next = (item.quantity || 0) + 1;
+                      if (next > maxStock) {
+                        Toast.show({
+                          type: "error",
+                          text1: `Apenas ${maxStock} unidades disponíveis`,
+                        });
+                        return;
+                      }
+                      updateItem(item.id, { quantity: next });
                     } else {
-                      updateItem(item.id, { weight: (item.weight || 0) + 100 });
+                      const maxStockGrams = (item.product.stock ?? Infinity) * 1000;
+                      const next = (item.weight || 0) + 100;
+                      if (next > maxStockGrams) {
+                        Toast.show({
+                          type: "error",
+                          text1: `Disponível apenas ${item.product.stock} kg deste produto`,
+                        });
+                        return;
+                      }
+                      updateItem(item.id, { weight: next });
                     }
                   }}
                   style={{
@@ -270,7 +286,13 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="add" size={14} color="#D91A21" />
+                  <Ionicons name="add" size={14} color={
+                    (item.product.type === "unit"
+                      ? (item.quantity || 0) >= (item.product.stock ?? Infinity)
+                      : (item.weight || 0) >= ((item.product.stock ?? Infinity) * 1000))
+                      ? "#E0E0E0"
+                      : "#D91A21"
+                  } />
                 </TouchableOpacity>
               </View>
             </View>
@@ -323,11 +345,8 @@ export default function CartScreen() {
   const handleRemoveItem = async (id: string) => {
     Toast.show({ type: "success", text1: "Produto removido!" });
     setIsSyncing(true);
-    const success = await removeItem(id);
+    await removeItem(id);
     setIsSyncing(false);
-    if (!success) {
-      Toast.show({ type: "error", text1: "Erro ao remover produto" });
-    }
   };
 
   const handleUpdateItem = (id: string, data: any) => {

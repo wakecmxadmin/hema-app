@@ -19,6 +19,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
 import { OrdersService } from "@/services/orders";
+import { validateCartStockService } from "@/services/cart";
 import { Toast } from "@/util/toast";
 
 type DeliveryMethod = "pickup" | "delivery";
@@ -68,6 +69,21 @@ export default function CheckoutScreen() {
 
   const loadData = async () => {
     await refreshCart();
+
+    // Validar estoque ao abrir o checkout
+    const stockValidation = await validateCartStockService();
+    if (stockValidation.success && stockValidation.data) {
+      if (!stockValidation.data.valid) {
+        await refreshCart();
+        const adjustments = stockValidation.data.adjustments;
+        const names = adjustments.map((a) => a.product_name).join(", ");
+        Toast.show({
+          type: "error",
+          text1: "Carrinho ajustado",
+          text2: `Estoque insuficiente para: ${names}`,
+        });
+      }
+    }
 
     const response = await getAddresses();
 
@@ -162,6 +178,20 @@ export default function CheckoutScreen() {
 
     setIsCreatingOrder(true);
 
+    // Re-validar estoque antes de confirmar
+    const stockCheck = await validateCartStockService();
+    if (stockCheck.success && stockCheck.data && !stockCheck.data.valid) {
+      setIsCreatingOrder(false);
+      await refreshCart();
+      const names = stockCheck.data.adjustments.map((a) => a.product_name).join(", ");
+      Toast.show({
+        type: "error",
+        text1: "Estoque indisponível",
+        text2: `Itens ajustados: ${names}. Revise o carrinho.`,
+      });
+      return;
+    }
+
     const addressToLog =
       deliveryMethod === "delivery" ? selectedAddressId : null;
 
@@ -190,11 +220,20 @@ export default function CheckoutScreen() {
         });
       }
     } else {
-      Toast.show({
-        type: "error",
-        text1: "Erro ao finalizar pedido",
-        text2: response.message,
-      });
+      if (response.error === "INSUFFICIENT_STOCK") {
+        await refreshCart();
+        Toast.show({
+          type: "error",
+          text1: "Produto ficou indisponível",
+          text2: response.message || "Revise seu carrinho e tente novamente.",
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Erro ao finalizar pedido",
+          text2: response.message,
+        });
+      }
     }
   };
 

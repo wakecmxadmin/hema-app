@@ -46,4 +46,10 @@ export class CartController {
     const userId = req.user.sub;
     return this.cartService.removeItem(userId, id);
   }
+
+  @Get('validate-stock')
+  validateStock(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.cartService.validateStock(userId);
+  }
 }
