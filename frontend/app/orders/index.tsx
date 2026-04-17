@@ -77,7 +77,7 @@ export default function OrdersListScreen() {
       case "cancelled":
         return {
           label: "Cancelado",
-          color: "#E30613",
+          color: "#D91A21",
           bg: "#FDEDED",
           icon: "cancel",
         };
@@ -94,7 +94,7 @@ export default function OrdersListScreen() {
   if (loading) {
     return (
       <View className="flex-1 bg-[#F5F5F5] justify-center items-center">
-        <ActivityIndicator size="large" color="#E30613" />
+        <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
   }
@@ -138,7 +138,7 @@ export default function OrdersListScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#E30613"]}
+            colors={["#D91A21"]}
           />
         }
       >
@@ -149,7 +149,7 @@ export default function OrdersListScreen() {
               Você ainda não fez nenhum pedido.
             </Text>
             <TouchableOpacity
-              className="bg-[#E30613] px-6 py-3 rounded-lg"
+              className="bg-[#D91A21] px-6 py-3 rounded-lg"
               onPress={() => router.push("/(tabs)/home")}
             >
               <Text className="text-white font-bold text-[16px]">

@@ -101,7 +101,12 @@ export default function ProductDetailsScreen() {
       price: product.type === "unit" ? product.price : product.price_per_kg,
       ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
     };
-    await addItem(payload);
+    const success = await addItem(payload);
+    if (success) {
+      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+    } else {
+      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
+    }
   };
 
   if (loading) {

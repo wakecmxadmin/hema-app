@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
+  Animated,
   FlatList,
   RefreshControl,
   StatusBar,
@@ -15,6 +15,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { OrdersService } from "@/services/orders";
 import { useCart } from "@/context/CartContext";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import { EmptyState } from "@/components/EmptyState";
 
 type FilterKey = "all" | "active" | "done";
 
@@ -58,6 +59,42 @@ function formatDate(dateString: string) {
 
 function formatPrice(price: number) {
   return Number(price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function OrderCardSkeleton() {
+  const shimmer = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, [shimmer]);
+  const s = { opacity: shimmer, backgroundColor: "#E0E0E0" };
+  return (
+    <View className="bg-surface rounded-card mb-3 overflow-hidden" style={{ elevation: 2 }}>
+      <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-200">
+        <Animated.View style={[s, { width: 100, height: 24, borderRadius: 12 }]} />
+        <View className="items-end gap-1">
+          <Animated.View style={[s, { width: 72, height: 12, borderRadius: 4 }]} />
+          <Animated.View style={[s, { width: 48, height: 10, borderRadius: 4 }]} />
+        </View>
+      </View>
+      <View className="px-4 py-3">
+        <Animated.View style={[s, { width: 140, height: 14, borderRadius: 4, marginBottom: 10 }]} />
+        <Animated.View style={[s, { width: "80%", height: 12, borderRadius: 4, marginBottom: 6 }]} />
+        <Animated.View style={[s, { width: "60%", height: 12, borderRadius: 4 }]} />
+      </View>
+      <View className="flex-row items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-100">
+        <View className="gap-1">
+          <Animated.View style={[s, { width: 36, height: 10, borderRadius: 4 }]} />
+          <Animated.View style={[s, { width: 72, height: 18, borderRadius: 4 }]} />
+        </View>
+        <Animated.View style={[s, { width: 100, height: 32, borderRadius: 20 }]} />
+      </View>
+    </View>
+  );
 }
 
 function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
@@ -224,8 +261,8 @@ export default function OrdersTabScreen() {
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#D91A21" />
+        <View className="px-4 pt-2">
+          {[1, 2, 3].map((i) => <OrderCardSkeleton key={i} />)}
         </View>
       ) : (
         <FlatList
@@ -252,23 +289,13 @@ export default function OrdersTabScreen() {
             />
           }
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center pt-16">
-              <MaterialCommunityIcons name="receipt-text-outline" size={64} color="#C2C2C2" />
-              <Text className="text-[16px] font-[600] text-neutral-300 mt-4 text-center">
-                {activeFilter === "all"
-                  ? "Você ainda não fez nenhum pedido."
-                  : "Nenhum pedido nesta categoria."}
-              </Text>
-              {activeFilter === "all" && (
-                <TouchableOpacity
-                  className="mt-5 bg-brand px-6 py-3 rounded-full"
-                  onPress={() => router.push("/(tabs)/home")}
-                  activeOpacity={0.8}
-                >
-                  <Text className="text-brand-on font-[700] text-[14px]">Ir para a loja</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <EmptyState
+              icon="receipt-text-outline"
+              title={activeFilter === "all" ? "Nenhum pedido ainda" : "Nenhum pedido nesta categoria"}
+              subtitle={activeFilter === "all" ? "Faça seu primeiro pedido e acompanhe tudo aqui." : undefined}
+              ctaLabel={activeFilter === "all" ? "Ir para a loja" : undefined}
+              onCta={activeFilter === "all" ? () => router.push("/(tabs)/home") : undefined}
+            />
           }
         />
       )}

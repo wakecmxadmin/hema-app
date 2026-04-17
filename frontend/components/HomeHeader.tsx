@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Animated as RNAnimated,
   ScrollView,
@@ -15,6 +14,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import { useNotifications } from "@/context/NotificationsContext";
 import { formatNotificationTime } from "@/services/notifications";
+import { SearchBar } from "@/components/SearchBar";
 
 interface HomeHeaderProps {
   onSearch: (query: string) => void;
@@ -30,11 +30,9 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
   const { notifications, unreadCount, dismiss, markAllRead } = useNotifications();
   const [userName, setUserName] = useState<string | null>(null);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
 
   const fadeAnim = useRef(new RNAnimated.Value(0)).current;
   const notifDropAnim = useRef(new RNAnimated.Value(0)).current;
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -76,23 +74,6 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
     });
   };
   const closeAll = () => setShowNotifDropdown(false);
-
-  const handleSearchChange = (text: string) => {
-    setSearchValue(text);
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => onSearch(text), 500);
-  };
-
-  const handleSearchClear = () => {
-    setSearchValue("");
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    onSearch("");
-  };
-
-  const handleSearchSubmit = () => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    onSearch(searchValue);
-  };
 
   const dropdownStyle = (anim: RNAnimated.Value) => ({
     opacity: anim,
@@ -172,9 +153,9 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
 
           <TouchableOpacity
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 21,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
               backgroundColor: showNotifDropdown
                 ? "rgba(255,255,255,0.32)"
                 : "rgba(255,255,255,0.18)",
@@ -200,61 +181,24 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
                   borderRadius: 4,
                   backgroundColor: "#FFF",
                   borderWidth: 1.5,
-                  borderColor: "#E30613",
+                  borderColor: "#D91A21",
                 }}
               />
             )}
           </TouchableOpacity>
         </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#FFF",
-            height: 50,
-            paddingHorizontal: 16,
-            gap: 8,
-            borderRadius: 25,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.18,
-            shadowRadius: 10,
-            elevation: 6,
-          }}
-        >
-          <MaterialCommunityIcons name="magnify" size={22} color="#BBBBBB" />
-
-          <TextInput
-            style={{
-              flex: 1,
-              fontSize: 15,
-              color: "#333333",
-              height: "100%",
-            }}
-            placeholder="Buscar produtos..."
-            placeholderTextColor="#BBBBBB"
-            value={searchValue}
-            onChangeText={handleSearchChange}
-            returnKeyType="search"
-            onSubmitEditing={handleSearchSubmit}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-
-          {searchValue.length > 0 && (
-            <TouchableOpacity
-              onPress={handleSearchClear}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialCommunityIcons
-                name="close-circle"
-                size={18}
-                color="#CCCCCC"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          onSearch={onSearch}
+          height={50}
+          borderRadius={25}
+          elevation={6}
+          backgroundColor="#FFF"
+          iconColor="#BBBBBB"
+          fontSize={15}
+          textColor="#333333"
+          showWrapper={false}
+        />
       </View>
 
       {/* ── Backdrop CORRIGIDO PARA O IOS ───────────────────────────────── */}
@@ -326,7 +270,7 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
               {unreadCount > 0 && (
                 <View
                   style={{
-                    backgroundColor: "#E30613",
+                    backgroundColor: "#D91A21",
                     borderRadius: 10,
                     paddingHorizontal: 7,
                     paddingVertical: 2,
@@ -414,7 +358,7 @@ export function HomeHeader({ onSearch, headerOffset }: HomeHeaderProps) {
                     <MaterialCommunityIcons
                       name={notif.icon as any}
                       size={17}
-                      color={!notif.read ? "#E30613" : "#888888"}
+                      color={!notif.read ? "#D91A21" : "#888888"}
                     />
                   </View>
 

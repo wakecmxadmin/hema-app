@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={{ marginBottom: 40 }}>
-          <Text style={{ fontSize: 28, fontWeight: "900", color: "#D91A21", marginBottom: 12, letterSpacing: -0.5 }}>
+          <Text style={{ fontSize: 28, fontWeight: "800", color: "#D91A21", marginBottom: 12, letterSpacing: -0.5 }}>
             Recuperar senha
           </Text>
           <Text style={{ fontSize: 15, color: "#666666", lineHeight: 22, fontWeight: "500" }}>

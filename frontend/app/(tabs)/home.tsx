@@ -97,7 +97,7 @@ export default function HomeScreen() {
     const success = await addItem({
       product_id: product.id,
       price: isUnit ? product.price : product.price_per_kg,
-      ...(isUnit ? { quantity: 1 } : { weight: 50 }),
+      ...(isUnit ? { quantity: 1 } : { weight: 100 }),
     });
 
     if (!success) {

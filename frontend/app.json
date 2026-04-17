@@ -3,7 +3,7 @@
     "name": "Hema Cereais",
     "slug": "hemaapp",
     "owner": "codificaai",
-    "version": "1.0.6",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hemaapp",
@@ -18,7 +18,7 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E30613"
+      "backgroundColor": "#D91A21"
     },
     "ios": {
       "supportsTablet": false,
@@ -33,10 +33,10 @@
       }
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#E30613"
+        "backgroundColor": "#D91A21"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,

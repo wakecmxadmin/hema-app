@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -154,6 +155,7 @@ export default function CheckoutScreen() {
   }, [currentDeliveryFee, deliveryMethod, selectedAddressId]);
 
   const handleConfirmOrder = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (items.length === 0) {
       return Toast.show({ type: "error", text1: "Seu carrinho está vazio." });
     }

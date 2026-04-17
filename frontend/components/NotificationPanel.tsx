@@ -96,7 +96,7 @@ export function NotificationPanel({ visible, onClose }: NotificationPanelProps) 
               Notificações
             </Text>
             {unreadCount > 0 && (
-              <View className="bg-[#E30613] rounded-full px-2 py-[2px]">
+              <View className="bg-[#D91A21] rounded-full px-2 py-[2px]">
                 <Text className="text-[11px] font-[700] text-white">
                   {unreadCount}
                 </Text>
@@ -141,7 +141,7 @@ export function NotificationPanel({ visible, onClose }: NotificationPanelProps) 
                   <MaterialCommunityIcons
                     name={notif.icon as any}
                     size={19}
-                    color={!notif.read ? "#E30613" : "#888888"}
+                    color={!notif.read ? "#D91A21" : "#888888"}
                   />
                 </View>
 

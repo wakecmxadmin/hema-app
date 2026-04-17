@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getProductsByCategory } from "@/services/products";
 import { Product } from "@/types/product";
+import { Toast } from "@/util/toast";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { useCart } from "@/context/CartContext";
@@ -95,10 +96,15 @@ export default function CategoryScreen() {
     const payload = {
       product_id: product.id,
       price: product.type === "unit" ? product.price : product.price_per_kg,
-      ...(product.type === "unit" ? { quantity: 1 } : { weight: 50 }),
+      ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
     };
 
-    await addItem(payload);
+    const success = await addItem(payload);
+    if (success) {
+      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+    } else {
+      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
+    }
   };
 
   const renderFooter = () => {

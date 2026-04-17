@@ -72,7 +72,7 @@ export default function ResetPasswordScreen() {
       />
 
       <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: "center" }}>
-        <Text style={{ fontSize: 28, fontWeight: "900", color: "#D91A21", marginBottom: 8, letterSpacing: -0.5 }}>
+        <Text style={{ fontSize: 28, fontWeight: "800", color: "#D91A21", marginBottom: 8, letterSpacing: -0.5 }}>
           Criar nova senha
         </Text>
         <Text style={{ fontSize: 14, color: "#666666", marginBottom: 32, lineHeight: 20 }}>

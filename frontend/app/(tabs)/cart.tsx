@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState, useMemo } from "react";
+import * as Haptics from "expo-haptics";
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useCart } from "@/context/CartContext";
 import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import { EmptyState } from "@/components/EmptyState";
 
 // --- CART ITEM COMPONENT ---
 const CartItemComponent = ({
@@ -200,6 +202,7 @@ const CartItemComponent = ({
               >
                 <TouchableOpacity
                   onPress={() => {
+                    Haptics.selectionAsync();
                     if (item.product.type === "unit") {
                       updateItem(item.id, {
                         quantity: Math.max(1, (item.quantity || 0) - 1),
@@ -211,6 +214,7 @@ const CartItemComponent = ({
                       updateItem(item.id, { weight: newWeight });
                     }
                   }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{
                     width: 28,
                     height: 28,
@@ -248,6 +252,7 @@ const CartItemComponent = ({
 
                 <TouchableOpacity
                   onPress={() => {
+                    Haptics.selectionAsync();
                     if (item.product.type === "unit") {
                       const maxStock = item.product.stock ?? Infinity;
                       const next = (item.quantity || 0) + 1;
@@ -272,6 +277,7 @@ const CartItemComponent = ({
                       updateItem(item.id, { weight: next });
                     }
                   }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{
                     width: 28,
                     height: 28,
@@ -343,6 +349,7 @@ export default function CartScreen() {
   };
 
   const handleRemoveItem = async (id: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Toast.show({ type: "success", text1: "Produto removido!" });
     setIsSyncing(true);
     await removeItem(id);
@@ -415,12 +422,11 @@ export default function CartScreen() {
             }
             ListEmptyComponent={
               !showListSkeleton ? (
-                <View className="items-center mt-20 flex-1 justify-center">
-                  <Ionicons name="cart-outline" size={64} color="#C2C2C2" />
-                  <Text className="text-base text-neutral-300 mt-2">
-                    Seu carrinho está vazio.
-                  </Text>
-                </View>
+                <EmptyState
+                  icon="cart-outline"
+                  title="Carrinho vazio"
+                  subtitle="Adicione produtos para continuar comprando."
+                />
               ) : null
             }
           />

@@ -1,7 +1,15 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Animated, Dimensions } from "react-native";
+import React, { useCallback, useEffect } from "react";
+import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 
 import { Product } from "@/types/product";
 
@@ -29,27 +37,19 @@ const formatPrice = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function useEntryAnimation(delay: number) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(12)).current;
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(12);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 340,
-        delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 340,
-        delay,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const config = { duration: 340, easing: Easing.out(Easing.quad) };
+    opacity.value = withDelay(delay, withTiming(1, config));
+    translateY.value = withDelay(delay, withTiming(0, config));
   }, []);
 
-  return { opacity: fadeAnim, transform: [{ translateY: slideAnim }] };
+  return useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 }
 
 export function ProductCard({
@@ -62,11 +62,17 @@ export function ProductCard({
 }: ProductCardProps) {
   const animStyle = useEntryAnimation(animationDelay);
 
+  const handleAdd = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onAdd();
+  }, [onAdd]);
+
   const isKg =
     product.price_per_kg !== null && product.price_per_kg !== undefined;
   const displayPrice = isKg ? (product.price_per_kg || 0) / 10 : product.price;
   const unitLabel = isKg ? "/100g" : "/un";
   const formattedPrice = displayPrice ? formatPrice(displayPrice) : "R$ 0,00";
+  const imageUri = product.image_url?.trim() || null;
 
   // ── FEATURED card (landscape, for horizontal scroll) ──────────────────────
   if (isFeatured) {
@@ -96,9 +102,9 @@ export function ProductCard({
             className="bg-neutral-100 flex-shrink-0"
             style={{ width: 130 }}
           >
-            {product.image_url ? (
+            {imageUri ? (
               <Image
-                source={{ uri: product.image_url }}
+                source={{ uri: imageUri }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
                 transition={350}
@@ -136,7 +142,7 @@ export function ProductCard({
               <TouchableOpacity
                 className="mt-2 items-center justify-center bg-brand"
                 style={{ borderRadius: 8, paddingVertical: 9 }}
-                onPress={onAdd}
+                onPress={handleAdd}
               >
                 <Text className="text-[12px] font-[800] text-brand-on uppercase tracking-wider">
                   Adicionar
@@ -170,9 +176,9 @@ export function ProductCard({
           activeOpacity={0.87}
         >
           <View className="bg-neutral-100" style={{ height: 126, width: "100%" }}>
-            {product.image_url ? (
+            {imageUri ? (
               <Image
-                source={{ uri: product.image_url }}
+                source={{ uri: imageUri }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
                 transition={350}
@@ -209,7 +215,7 @@ export function ProductCard({
             <TouchableOpacity
               className="items-center justify-center bg-brand"
               style={{ borderRadius: 8, paddingVertical: 8 }}
-              onPress={onAdd}
+              onPress={handleAdd}
             >
               <Text className="text-[11px] font-[800] text-brand-on uppercase tracking-wider">
                 Adicionar
@@ -243,9 +249,9 @@ export function ProductCard({
           className="bg-neutral-100 w-full items-center justify-center"
           style={{ height: 138 }}
         >
-          {product.image_url ? (
+          {imageUri ? (
             <Image
-              source={{ uri: product.image_url }}
+              source={{ uri: imageUri }}
               style={{ width: "100%", height: "100%", backgroundColor: "#F5F5F5" }}
               contentFit="cover"
               transition={350}

@@ -127,7 +127,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       <Text
                         style={{
                           fontSize: 10,
-                          fontWeight: "900",
+                          fontWeight: "800",
                           color: "#D91A21",
                           textTransform: "uppercase",
                           letterSpacing: 1,
@@ -169,7 +169,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                         <Text
                           style={{
                             fontSize: 26,
-                            fontWeight: "900",
+                            fontWeight: "800",
                             color: "#FFFFFF",
                           }}
                         >
