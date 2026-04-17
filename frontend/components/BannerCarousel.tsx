@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,11 @@ import {
   TouchableOpacity,
   ViewToken,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  withTiming,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import { Image } from "expo-image";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -23,6 +28,27 @@ const CARD_GAP = 12;
 
 const formatPrice = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function BannerDot({ isActive }: { isActive: boolean }) {
+  const width = useSharedValue(isActive ? 20 : 6);
+  const opacity = useSharedValue(isActive ? 1 : 0.45);
+
+  useEffect(() => {
+    width.value = withTiming(isActive ? 20 : 6, { duration: 250 });
+    opacity.value = withTiming(isActive ? 1 : 0.45, { duration: 250 });
+  }, [isActive]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    width: width.value,
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[{ height: 6, borderRadius: 3, backgroundColor: "#D91A21" }, animStyle]}
+    />
+  );
+}
 
 export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -80,12 +106,10 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
               <View
                 style={{
                   borderRadius: 16,
-                  margin: 8,
-                  marginBottom: 18,
                   backgroundColor: "#FFFFFF",
                   shadowColor: "#D91A21",
                   shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.18,
+                  shadowOpacity: 0.15,
                   shadowRadius: 12,
                   elevation: 6,
                 }}
@@ -99,6 +123,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                     flexDirection: "row",
                   }}
                 >
+
                   {/* Decorative accent stripe */}
                   <View
                     style={{
@@ -142,9 +167,9 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                       <Text
                         style={{
                           color: "#FFFFFF",
-                          fontSize: 17,
-                          fontWeight: "800",
-                          lineHeight: 22,
+                          fontSize: 15,
+                          fontWeight: "700",
+                          lineHeight: 21,
                           marginBottom: 10,
                         }}
                         numberOfLines={2}
@@ -216,6 +241,7 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                   </View>
                 </View>
               </View>
+
             </TouchableOpacity>
           );
         }}
@@ -228,20 +254,12 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
-            marginTop: 14,
+            marginTop: 12,
             gap: 5,
           }}
         >
-          {products.map((product, i) => (
-            <View
-              key={`dot-${product.id}`}
-              style={{
-                height: 6,
-                borderRadius: 3,
-                width: i === activeIndex ? 20 : 6,
-                backgroundColor: i === activeIndex ? "#D91A21" : "#E0E0E0",
-              }}
-            />
+          {products.map((_, i) => (
+            <BannerDot key={i} isActive={i === activeIndex} />
           ))}
         </View>
       )}

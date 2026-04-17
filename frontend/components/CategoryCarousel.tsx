@@ -3,16 +3,18 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { CategoryBadgesService } from "@/services/category";
 
+const SKELETON_WIDTHS = [80, 60, 100, 72];
+
 export function CategoryCarousel() {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadCategories() {
@@ -41,10 +43,20 @@ export function CategoryCarousel() {
 
   if (loading) {
     return (
-      <View
-        style={{ height: 52, alignItems: "center", justifyContent: "center" }}
-      >
-        <ActivityIndicator size="small" color="#D91A21" />
+      <View style={{ paddingVertical: 12 }}>
+        <View style={{ flexDirection: "row", paddingHorizontal: 16, gap: 8 }}>
+          {SKELETON_WIDTHS.map((w, i) => (
+            <View
+              key={i}
+              style={{
+                width: w,
+                height: 40,
+                borderRadius: 22,
+                backgroundColor: "#E0E0E0",
+              }}
+            />
+          ))}
+        </View>
       </View>
     );
   }
@@ -59,35 +71,39 @@ export function CategoryCarousel() {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.72}
-            onPress={() =>
-              router.push({
-                pathname: "/category/[id]",
-                params: { id: item.id, name: item.name },
-              })
-            }
-            style={{
-              backgroundColor: "#F5F5F5",
-              borderRadius: 22,
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              borderWidth: 1,
-              borderColor: "#E0E0E0",
-            }}
-          >
-            <Text
+        renderItem={({ item }) => {
+          const isActive = selectedId === item.id.toString();
+          return (
+            <TouchableOpacity
+              activeOpacity={0.72}
+              onPress={() => {
+                setSelectedId(item.id.toString());
+                router.push({
+                  pathname: "/category/[id]",
+                  params: { id: item.id, name: item.name },
+                });
+              }}
               style={{
-                fontSize: 13,
-                fontWeight: "600",
-                color: "#121212",
+                backgroundColor: isActive ? "#D91A21" : "#F5F5F5",
+                borderRadius: 22,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderWidth: isActive ? 0 : 1,
+                borderColor: "#E0E0E0",
               }}
             >
-              {item.name}
-            </Text>
-          </TouchableOpacity>
-        )}
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: isActive ? "#FFFFFF" : "#121212",
+                }}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

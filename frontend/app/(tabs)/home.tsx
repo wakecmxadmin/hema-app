@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -13,6 +13,8 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
+  withTiming,
+  useAnimatedStyle,
 } from "react-native-reanimated";
 
 const FEATURED_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.82);
@@ -37,6 +39,7 @@ import { Product } from "@/types/product";
 import { searchProducts } from "@/services/search";
 import { Toast } from "@/util/toast";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import { QuickActions } from "@/components/QuickActions";
 
 const SEARCH_LIMIT = 20;
 
@@ -56,6 +59,10 @@ export default function HomeScreen() {
       }
     }, []),
   );
+
+  const scrollRef = useRef<any>(null);
+  const scrollToY = (y: number) =>
+    scrollRef.current?.scrollTo({ y, animated: true });
 
   // ── Collapsible header via Reanimated ──
   const headerOffset = useSharedValue(0);
@@ -169,8 +176,9 @@ export default function HomeScreen() {
 
       <View style={{ flex: 1 }}>
         <Animated.ScrollView
+          ref={scrollRef}
           style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-          contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+          contentContainerStyle={{ paddingTop: HEADER_HEIGHT + 8 }}
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
@@ -204,6 +212,8 @@ export default function HomeScreen() {
               onProductPress={navigateToProduct}
               onCategoryPress={navigateToCategory}
               onAddToCart={handleAddToCart}
+              onScrollTo={scrollToY}
+              onOrdersPress={() => router.push("/orders")}
             />
           )}
 
@@ -253,15 +263,28 @@ function SearchResults({
   onProductPress,
   onAddToCart,
 }: SearchResultsProps) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(8);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 250 });
+    translateY.value = withTiming(0, { duration: 250 });
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   const lowScore =
     results.length > 0 && (results[0].similarity_score ?? 1) < 0.3;
   return (
-    <View>
+    <Animated.View style={animStyle}>
       {results.length > 0 && (
         <View className="px-4 mt-5 mb-3">
           {lowScore ? (
             <>
-              <Text className="text-[17px] font-[800] text-text-primary">
+              <Text className="text-[18px] font-[800] text-text-primary">
                 Não encontramos "{query}"
               </Text>
               <Text className="text-[13px] text-neutral-300 mt-1">
@@ -269,7 +292,7 @@ function SearchResults({
               </Text>
             </>
           ) : (
-            <Text className="text-[17px] font-[800] text-text-primary">
+            <Text className="text-[18px] font-[800] text-text-primary">
               Resultados para "{query}"
             </Text>
           )}
@@ -320,7 +343,7 @@ function SearchResults({
           )}
         </>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -372,6 +395,8 @@ interface CatalogProps {
   onProductPress: (id: string) => void;
   onCategoryPress: (id: string, name: string) => void;
   onAddToCart: (product: Product) => void;
+  onScrollTo: (y: number) => void;
+  onOrdersPress: () => void;
 }
 
 function Catalog({
@@ -379,6 +404,8 @@ function Catalog({
   onProductPress,
   onCategoryPress,
   onAddToCart,
+  onScrollTo,
+  onOrdersPress,
 }: CatalogProps) {
   const bannerProducts = catalog
     .filter((cat) => cat.products.length > 0)
@@ -387,14 +414,37 @@ function Catalog({
 
   return (
     <>
-      <CategoryCarousel />
+      <QuickActions
+        onCategoriesPress={() => onScrollTo(HEADER_HEIGHT + 380)}
+        onOffersPress={() => onScrollTo(HEADER_HEIGHT + 100)}
+        onOrdersPress={onOrdersPress}
+        onNewPress={() => onScrollTo(HEADER_HEIGHT + 460)}
+      />
       <BannerCarousel products={bannerProducts} onPress={onProductPress} />
+      <CategoryCarousel />
       {catalog.map((category, categoryIndex) => {
         if (!category.products || category.products.length === 0) return null;
         const isFeatured = categoryIndex === 0;
+        const isOdd = categoryIndex % 2 === 1;
 
         return (
-          <View key={category.id} className="mb-2">
+          <View
+            key={category.id}
+            style={{
+              backgroundColor: isOdd ? "#FAFAFA" : "#FFFFFF",
+              paddingTop: isOdd ? 8 : 0,
+              paddingBottom: 24,
+            }}
+          >
+            {!isOdd && categoryIndex > 0 && (
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: "#F0F0F0",
+                  marginHorizontal: 16,
+                }}
+              />
+            )}
             <SectionHeader
               title={category.name}
               label={isFeatured ? "Destaques" : undefined}
