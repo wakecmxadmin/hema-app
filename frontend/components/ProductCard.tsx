@@ -83,23 +83,21 @@ export function ProductCard({
         <TouchableOpacity
           className="bg-surface overflow-hidden"
           style={{
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E0E0",
+            borderRadius: 20,
             flexDirection: "row",
             height: 140,
-            elevation: 2,
-            shadowColor: "#000",
+            shadowColor: "#1A1613",
             shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.06,
-            shadowRadius: 6,
+            shadowOpacity: 0.04,
+            shadowRadius: 3,
+            elevation: 2,
           }}
           onPress={onPress}
           activeOpacity={0.87}
         >
           {/* Image */}
           <View
-            className="bg-neutral-100 flex-shrink-0"
+            className="bg-white flex-shrink-0"
             style={{ width: 130 }}
           >
             {imageUri ? (
@@ -115,7 +113,7 @@ export function ProductCard({
                 <MaterialCommunityIcons
                   name="image-off-outline"
                   size={26}
-                  color="#C2C2C2"
+                  color="#8A8079"
                 />
               </View>
             )}
@@ -124,27 +122,29 @@ export function ProductCard({
           {/* Content */}
           <View className="flex-1 p-3 justify-between">
             <Text
-              className="text-[13px] font-[700] text-text-primary leading-[19px]"
+              style={{ fontSize: 13, fontWeight: "700", color: "#1A1613", lineHeight: 19, letterSpacing: -0.2 }}
               numberOfLines={2}
             >
               {formatName(product.name)}
             </Text>
 
             <View>
-              <Text className="text-[17px] font-[800] text-brand">
-                {formattedPrice}
-                <Text className="text-[10px] font-[500] text-neutral-300">
-                  {" "}
-                  {unitLabel}
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 3, marginBottom: 8 }}>
+                <Text style={{ fontSize: 10, fontWeight: "600", color: "#8A8079" }}>R$</Text>
+                <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1613", letterSpacing: -0.4 }}>
+                  {formattedPrice.replace("R$ ", "").replace("R$ ", "")}
                 </Text>
-              </Text>
+                <Text style={{ fontSize: 10, fontWeight: "500", color: "#8A8079" }}>{unitLabel}</Text>
+              </View>
 
               <TouchableOpacity
-                className="mt-2 items-center justify-center bg-brand"
-                style={{ borderRadius: 8, paddingVertical: 9 }}
+                style={{
+                  borderRadius: 999, paddingVertical: 9, paddingHorizontal: 12,
+                  backgroundColor: "#1A1613", alignItems: "center", justifyContent: "center",
+                }}
                 onPress={handleAdd}
               >
-                <Text className="text-[12px] font-[800] text-brand-on uppercase tracking-wider">
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
                   Adicionar
                 </Text>
               </TouchableOpacity>
@@ -163,19 +163,17 @@ export function ProductCard({
           className="bg-surface overflow-hidden"
           style={{
             width: 156,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E0E0",
-            elevation: 2,
-            shadowColor: "#000",
+            borderRadius: 20,
+            shadowColor: "#1A1613",
             shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 5,
+            shadowOpacity: 0.04,
+            shadowRadius: 3,
+            elevation: 2,
           }}
           onPress={onPress}
           activeOpacity={0.87}
         >
-          <View className="bg-neutral-100" style={{ height: 126, width: "100%" }}>
+          <View className="bg-white" style={{ height: 126, width: "100%" }}>
             {imageUri ? (
               <Image
                 source={{ uri: imageUri }}
@@ -189,7 +187,7 @@ export function ProductCard({
                 <MaterialCommunityIcons
                   name="image-off-outline"
                   size={22}
-                  color="#C2C2C2"
+                  color="#8A8079"
                 />
               </View>
             )}
@@ -197,27 +195,28 @@ export function ProductCard({
 
           <View className="p-2">
             <Text
-              className="text-[12px] font-[600] text-text-primary leading-[16px] mb-1"
+              style={{ fontSize: 12, fontWeight: "600", color: "#1A1613", lineHeight: 16, marginBottom: 4, letterSpacing: -0.1, minHeight: 32 }}
               numberOfLines={2}
-              style={{ minHeight: 32 }}
             >
               {formatName(product.name)}
             </Text>
 
-            <Text className="text-[15px] font-[800] text-brand mb-2">
-              {formattedPrice}
-              <Text className="text-[10px] font-[400] text-neutral-300">
-                {" "}
-                {unitLabel}
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 2, marginBottom: 8 }}>
+              <Text style={{ fontSize: 9, fontWeight: "600", color: "#8A8079" }}>R$</Text>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: "#1A1613", letterSpacing: -0.3 }}>
+                {formattedPrice.replace("R$ ", "").replace("R$ ", "")}
               </Text>
-            </Text>
+              <Text style={{ fontSize: 9, fontWeight: "400", color: "#8A8079" }}>{unitLabel}</Text>
+            </View>
 
             <TouchableOpacity
-              className="items-center justify-center bg-brand"
-              style={{ borderRadius: 8, paddingVertical: 8 }}
+              style={{
+                borderRadius: 999, paddingVertical: 8,
+                backgroundColor: "#1A1613", alignItems: "center", justifyContent: "center",
+              }}
               onPress={handleAdd}
             >
-              <Text className="text-[11px] font-[800] text-brand-on uppercase tracking-wider">
+              <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
                 Adicionar
               </Text>
             </TouchableOpacity>
@@ -233,36 +232,34 @@ export function ProductCard({
       <TouchableOpacity
         className="bg-surface flex-1 overflow-hidden"
         style={{
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: "#E0E0E0",
-          elevation: 2,
-          shadowColor: "#000",
+          borderRadius: 20,
+          shadowColor: "#1A1613",
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 5,
+          shadowOpacity: 0.04,
+          shadowRadius: 3,
+          elevation: 2,
         }}
         onPress={onPress}
         activeOpacity={0.87}
       >
         <View
-          className="bg-neutral-100 w-full items-center justify-center"
+          className="bg-white w-full items-center justify-center"
           style={{ height: 138 }}
         >
           {imageUri ? (
             <Image
               source={{ uri: imageUri }}
-              style={{ width: "100%", height: "100%", backgroundColor: "#F5F5F5" }}
+              style={{ width: "100%", height: "100%", backgroundColor: "#FFFFFF" }}
               contentFit="cover"
               transition={350}
               cachePolicy="disk"
             />
           ) : (
-            <View className="flex-1 w-full items-center justify-center bg-neutral-100">
+            <View className="flex-1 w-full items-center justify-center bg-white">
               <MaterialCommunityIcons
                 name="image-off-outline"
                 size={30}
-                color="#C2C2C2"
+                color="#8A8079"
               />
             </View>
           )}
@@ -270,27 +267,28 @@ export function ProductCard({
 
         <View className="p-3">
           <Text
-            className="text-[13px] font-[600] text-text-primary leading-[18px] mb-1"
+            style={{ fontSize: 13, fontWeight: "600", color: "#1A1613", lineHeight: 18, marginBottom: 4, letterSpacing: -0.2, minHeight: 36 }}
             numberOfLines={2}
-            style={{ minHeight: 36 }}
           >
             {formatName(product.name)}
           </Text>
 
-          <Text className="text-[16px] font-[800] text-brand mb-2">
-            {formattedPrice}
-            <Text className="text-[11px] font-[400] text-neutral-300">
-              {" "}
-              {unitLabel}
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 3, marginBottom: 10 }}>
+            <Text style={{ fontSize: 9, fontWeight: "600", color: "#8A8079" }}>R$</Text>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: "#1A1613", letterSpacing: -0.4 }}>
+              {formattedPrice.replace("R$ ", "").replace("R$ ", "")}
             </Text>
-          </Text>
+            <Text style={{ fontSize: 10, fontWeight: "400", color: "#8A8079" }}>{unitLabel}</Text>
+          </View>
 
           <TouchableOpacity
-            className="items-center justify-center bg-brand"
-            style={{ borderRadius: 8, paddingVertical: 10 }}
+            style={{
+              borderRadius: 999, paddingVertical: 10,
+              backgroundColor: "#1A1613", alignItems: "center", justifyContent: "center",
+            }}
             onPress={onAdd}
           >
-            <Text className="text-[13px] font-[800] text-brand-on uppercase tracking-wider">
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
               Adicionar
             </Text>
           </TouchableOpacity>

@@ -145,7 +145,7 @@ export default function CategoryScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-secondary" edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF6F0" }} edges={["top"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
@@ -155,7 +155,7 @@ export default function CategoryScreen() {
         style={headerShadow}
       >
         <TouchableOpacity
-          className="p-2 bg-neutral-100 rounded-full"
+          style={{ padding: 8, backgroundColor: "#FAF6F0", borderRadius: 999, borderWidth: 1, borderColor: "#EAE3D7" }}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >

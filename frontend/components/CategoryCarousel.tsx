@@ -52,7 +52,7 @@ export function CategoryCarousel() {
                 width: w,
                 height: 40,
                 borderRadius: 22,
-                backgroundColor: "#E0E0E0",
+                backgroundColor: "#EAE3D7",
               }}
             />
           ))}
@@ -84,19 +84,19 @@ export function CategoryCarousel() {
                 });
               }}
               style={{
-                backgroundColor: isActive ? "#D91A21" : "#F5F5F5",
+                backgroundColor: isActive ? "#1A1613" : "#FFFFFF",
                 borderRadius: 22,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 borderWidth: isActive ? 0 : 1,
-                borderColor: "#E0E0E0",
+                borderColor: "#EAE3D7",
               }}
             >
               <Text
                 style={{
                   fontSize: 13,
                   fontWeight: "600",
-                  color: isActive ? "#FFFFFF" : "#121212",
+                  color: isActive ? "#FFFFFF" : "#1A1613",
                 }}
               >
                 {item.name}

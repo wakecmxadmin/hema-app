@@ -68,10 +68,23 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
   return (
     <View className="mt-5 mb-3">
       {/* Section label */}
-      <View className="px-4 mb-3 flex-row items-center gap-2">
-        <View className="w-1 h-4 bg-brand rounded-full" />
-        <Text className="text-[13px] font-[800] text-text-primary uppercase tracking-widest">
+      <View className="px-4 mb-3">
+        <Text
+          style={{
+            fontSize: 10.5,
+            fontWeight: "700",
+            color: "#C97B1F",
+            textTransform: "uppercase",
+            letterSpacing: 1.8,
+            marginBottom: 4,
+          }}
+        >
           Ofertas em Destaque
+        </Text>
+        <Text
+          style={{ fontSize: 22, fontWeight: "800", color: "#1A1613", letterSpacing: -0.7 }}
+        >
+          Promoções
         </Text>
       </View>
 
@@ -105,20 +118,20 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
               {/* 1. CONTAINER EXTERNO: Responsável apenas pela sombra no iOS/Android. SEM overflow: hidden */}
               <View
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 20,
                   backgroundColor: "#FFFFFF",
                   shadowColor: "#D91A21",
                   shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 12,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 16,
                   elevation: 6,
                 }}
               >
                 {/* 2. CONTAINER INTERNO: Mascara o conteúdo para ficar com borda redonda. COM overflow: hidden */}
                 <View
                   style={{
-                    borderRadius: 16,
-                    height: 200,
+                    borderRadius: 20,
+                    height: 188,
                     overflow: "hidden",
                     flexDirection: "row",
                   }}

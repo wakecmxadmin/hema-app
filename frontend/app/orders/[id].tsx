@@ -104,7 +104,7 @@ export default function OrderDetailsScreen() {
 
   if (loading || !order) {
     return (
-      <View className="flex-1 bg-neutral-100 justify-center items-center">
+      <View style={{ flex: 1, backgroundColor: "#FAF6F0", justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#D91A21" />
       </View>
     );
@@ -126,9 +126,9 @@ export default function OrderDetailsScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-100" edges={["top", "bottom"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF6F0" }} edges={["top", "bottom"]}>
       {/* HEADER */}
-      <View className="flex-row items-center justify-between px-5 py-[15px] bg-surface border-b border-neutral-200">
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 15, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#EAE3D7" }}>
         <TouchableOpacity
           onPress={() => router.back()}
           className="w-10 h-10 justify-center"
@@ -204,7 +204,7 @@ export default function OrderDetailsScreen() {
             Entrega
           </Text>
           {isPickup ? (
-            <View className="flex-row items-center bg-neutral-100 p-3 rounded-btn">
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FAF6F0", padding: 12, borderRadius: 12 }}>
               <MaterialCommunityIcons
                 name="storefront"
                 size={24}
@@ -220,7 +220,7 @@ export default function OrderDetailsScreen() {
               </View>
             </View>
           ) : (
-            <View className="flex-row items-center bg-neutral-100 p-3 rounded-btn">
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FAF6F0", padding: 12, borderRadius: 12 }}>
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={24}
@@ -264,7 +264,7 @@ export default function OrderDetailsScreen() {
             <Text className="text-[16px] font-bold text-text-primary">
               Total Pago
             </Text>
-            <Text className="text-[18px] font-bold text-brand">
+            <Text style={{ fontSize: 18, fontWeight: "800", color: "#1A1613" }}>
               {formatPrice(order.total_price)}
             </Text>
           </View>

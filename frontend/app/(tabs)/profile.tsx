@@ -202,10 +202,10 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F5F5F5" }}
+      style={{ flex: 1, backgroundColor: "#FAF6F0" }}
       edges={["top"]}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF6F0" />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -287,7 +287,7 @@ export default function ProfileScreen() {
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2.5,
-                borderColor: "#F5F5F5",
+                borderColor: "#FAF6F0",
                 zIndex: 1,
               }}
             >
@@ -331,7 +331,7 @@ export default function ProfileScreen() {
               style={{
                 fontSize: 11,
                 fontWeight: "700",
-                color: "#C2C2C2",
+                color: "#8A8079",
                 textTransform: "uppercase",
                 letterSpacing: 0.8,
                 marginBottom: 8,
@@ -422,7 +422,9 @@ export default function ProfileScreen() {
             style={{
               height: 56,
               borderRadius: 16,
-              backgroundColor: "#D91A21",
+              backgroundColor: "transparent",
+              borderWidth: 1.5,
+              borderColor: "#D91A21",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
@@ -434,9 +436,9 @@ export default function ProfileScreen() {
             <MaterialCommunityIcons
               name={isAuthenticated ? "logout" : "login"}
               size={20}
-              color="#FFFFFF"
+              color="#D91A21"
             />
-            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>
+            <Text style={{ color: "#D91A21", fontSize: 15, fontWeight: "700" }}>
               {isAuthenticated ? "Sair da Conta" : "Entrar na Conta"}
             </Text>
           </TouchableOpacity>

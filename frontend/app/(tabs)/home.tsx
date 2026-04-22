@@ -177,7 +177,7 @@ export default function HomeScreen() {
       <View style={{ flex: 1 }}>
         <Animated.ScrollView
           ref={scrollRef}
-          style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+          style={{ flex: 1, backgroundColor: "#FAF6F0" }}
           contentContainerStyle={{ paddingTop: HEADER_HEIGHT + 8 }}
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
@@ -431,7 +431,7 @@ function Catalog({
           <View
             key={category.id}
             style={{
-              backgroundColor: isOdd ? "#FAFAFA" : "#FFFFFF",
+              backgroundColor: isOdd ? "#F2ECE2" : "#FAF6F0",
               paddingTop: isOdd ? 8 : 0,
               paddingBottom: 24,
             }}
@@ -440,7 +440,7 @@ function Catalog({
               <View
                 style={{
                   height: 1,
-                  backgroundColor: "#F0F0F0",
+                  backgroundColor: "#EAE3D7",
                   marginHorizontal: 16,
                 }}
               />

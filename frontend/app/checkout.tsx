@@ -241,7 +241,7 @@ export default function CheckoutScreen() {
 
   if (loading && items.length === 0) {
     return (
-      <View className="flex-1 bg-surface-secondary pt-10 justify-center items-center">
+      <View style={{ flex: 1, backgroundColor: "#FAF6F0", paddingTop: 40, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#D91A21" />
         <Text className="mt-3 text-text-secondary">
           Carregando dados do pedido...
@@ -251,7 +251,7 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View className="flex-1 bg-surface-secondary pt-10">
+    <View style={{ flex: 1, backgroundColor: "#FAF6F0", paddingTop: 40 }}>
       <StatusBar barStyle="light-content" />
 
       <ScrollView
@@ -270,7 +270,7 @@ export default function CheckoutScreen() {
         }
       >
         {/* 1. MÉTODO DE ENTREGA */}
-        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: "#1A1613", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}>
           <Text className="text-base font-bold text-text-primary mb-3">
             Como deseja receber?
           </Text>
@@ -442,7 +442,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 2. FORMA DE PAGAMENTO */}
-        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: "#1A1613", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}>
           <Text className="text-base font-bold text-text-primary mb-3">
             Forma de Pagamento
           </Text>
@@ -506,7 +506,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* 3. RESUMO DOS VALORES */}
-        <View className="bg-surface rounded-btn p-4 mb-4 border border-neutral-200">
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: "#1A1613", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}>
           <Text className="text-base font-bold text-text-primary mb-3">
             Resumo da Compra
           </Text>

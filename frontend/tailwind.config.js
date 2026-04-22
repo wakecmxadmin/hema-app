@@ -50,15 +50,40 @@ module.exports = {
           on: "#FFFFFF",    // texto/ícone sobre fundo brand
         },
 
+        // Fundos warm neutrals
+        cream: {
+          DEFAULT: "#FAF6F0", // fundo primário warm
+          deep: "#F2ECE2",    // variação para blocos de seção
+        },
+
         // Fundos e superfícies
         surface: {
           DEFAULT: "#FFFFFF", // fundo geral e cards
           secondary: "#F5F5F5", // fundo de telas alternativas
         },
 
-        // Textos
-        "text-primary": "#121212",
-        "text-secondary": "#666666",
+        // Tinta warm (substitui cinzas frios)
+        ink: {
+          DEFAULT: "#1A1613", // título / texto primário warm
+          mid: "#5C544C",     // texto secundário warm
+          soft: "#8A8079",    // texto terciário / ícones inativos
+        },
+
+        // Divisores warm
+        line: {
+          DEFAULT: "#EAE3D7", // divisor principal
+          soft: "#F2EBDF",    // divisor sutil
+        },
+
+        // Acento âmbar
+        amber: {
+          DEFAULT: "#C97B1F", // kickers e tags
+          soft: "#FAEFD9",    // tint para badges
+        },
+
+        // Textos (mantidos para compatibilidade)
+        "text-primary": "#1A1613",
+        "text-secondary": "#5C544C",
 
         // Escala de cinzas (bordas, fundos secundários, divisores)
         neutral: {
@@ -71,7 +96,8 @@ module.exports = {
         warning: "#FFD700",
 
         // Estados semânticos
-        success: "#28A745",
+        success: "#1F8A4C",
+        "success-soft": "#E6F2EA",
         error: "#DC3545",
       },
 
@@ -86,9 +112,10 @@ module.exports = {
 
       // ─── Border Radius ────────────────────────────────────────────────
       borderRadius: {
-        sm: "4px", // micro elementos, badges
-        btn: "8px", // botões e inputs
-        card: "16px", // cards de produto e containers
+        sm: "4px",   // micro elementos, badges
+        btn: "12px", // botões e inputs
+        card: "20px", // cards de produto e containers
+        lg: "28px",  // header curves
       },
     },
   },

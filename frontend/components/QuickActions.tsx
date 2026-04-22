@@ -44,19 +44,19 @@ export function QuickActions({
               width: 52,
               height: 52,
               borderRadius: 26,
-              backgroundColor: "#FEECED",
+              backgroundColor: "#FAEFD9",
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 8,
             }}
           >
-            <MaterialCommunityIcons name={action.icon} size={24} color="#D91A21" />
+            <MaterialCommunityIcons name={action.icon} size={24} color="#C97B1F" />
           </View>
           <Text
             style={{
               fontSize: 11,
               fontWeight: "600",
-              color: "#121212",
+              color: "#1A1613",
               textAlign: "center",
             }}
           >

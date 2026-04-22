@@ -402,7 +402,7 @@ const s = {
   label: {
     fontSize: 11,
     fontWeight: "700" as const,
-    color: "#C2C2C2",
+    color: "#8A8079",
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -410,9 +410,9 @@ const s = {
   inputBox: {
     height: 54,
     borderRadius: 8,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FAF6F0",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#EAE3D7",
     paddingHorizontal: 16,
     flexDirection: "row" as const,
     alignItems: "center" as const,

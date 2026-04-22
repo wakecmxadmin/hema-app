@@ -71,7 +71,7 @@ function OrderCardSkeleton() {
       ]),
     ).start();
   }, [shimmer]);
-  const s = { opacity: shimmer, backgroundColor: "#E0E0E0" };
+  const s = { opacity: shimmer, backgroundColor: "#EAE3D7" };
   return (
     <View className="bg-surface rounded-card mb-3 overflow-hidden" style={{ elevation: 2 }}>
       <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-200">
@@ -86,7 +86,7 @@ function OrderCardSkeleton() {
         <Animated.View style={[s, { width: "80%", height: 12, borderRadius: 4, marginBottom: 6 }]} />
         <Animated.View style={[s, { width: "60%", height: 12, borderRadius: 4 }]} />
       </View>
-      <View className="flex-row items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-100">
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#EAE3D7", backgroundColor: "#FAF6F0" }}>
         <View className="gap-1">
           <Animated.View style={[s, { width: 36, height: 10, borderRadius: 4 }]} />
           <Animated.View style={[s, { width: 72, height: 18, borderRadius: 4 }]} />
@@ -163,7 +163,7 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
       </View>
 
       {/* Bottom: total + CTA */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-100">
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#EAE3D7", backgroundColor: "#FAF6F0" }}>
         <View>
           <Text className="text-[11px] text-neutral-300 font-[500]">Total</Text>
           <Text className="text-[16px] font-[800] text-text-primary">
@@ -173,10 +173,10 @@ function OrderCard({ order, onPress }: { order: any; onPress: () => void }) {
 
         <TouchableOpacity
           onPress={onPress}
-          className="flex-row items-center gap-1 bg-brand p-2 rounded-full"
+          style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#1A1613", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}
           activeOpacity={0.8}
         >
-          <Text className="text-[12px] font-[700] text-brand-on">Ver detalhes</Text>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF" }}>Ver detalhes</Text>
           <MaterialCommunityIcons name="arrow-right" size={14} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -227,11 +227,11 @@ export default function OrdersTabScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-secondary" edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF6F0" }} edges={["top"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF6F0" />
 
       {/* Header */}
-      <View className="px-5 pt-4 pb-3 bg-surface-secondary">
+      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
         <Text className="text-[26px] font-[800] text-text-primary">Meus Pedidos</Text>
       </View>
 
@@ -243,15 +243,18 @@ export default function OrdersTabScreen() {
             <TouchableOpacity
               key={f.key}
               onPress={() => setActiveFilter(f.key)}
-              className={`px-4 py-2 rounded-full border ${
-                isActive
-                  ? "bg-brand border-brand"
-                  : "bg-surface border-neutral-200"
-              }`}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 999,
+                borderWidth: 1,
+                backgroundColor: isActive ? "#1A1613" : "#FFFFFF",
+                borderColor: isActive ? "#1A1613" : "#EAE3D7",
+              }}
               activeOpacity={0.75}
             >
               <Text
-                className={`text-[13px] font-[600] ${isActive ? "text-brand-on" : "text-text-secondary"}`}
+                style={{ fontSize: 13, fontWeight: "600", color: isActive ? "#FFFFFF" : "#5C544C" }}
               >
                 {f.label}
               </Text>

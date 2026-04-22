@@ -10,39 +10,46 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, label, onSeeAll }: SectionHeaderProps) {
   return (
-    <View className="flex-row items-center justify-between px-4 mt-8 mb-3">
-      {label ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View
+    <View className="flex-row items-end justify-between px-4 mt-6 mb-3">
+      <View>
+        {label && (
+          <Text
             style={{
-              width: 3,
-              height: 20,
-              borderRadius: 2,
-              backgroundColor: "#D91A21",
+              fontSize: 10.5,
+              fontWeight: "700",
+              color: "#C97B1F",
+              textTransform: "uppercase",
+              letterSpacing: 1.8,
+              marginBottom: 4,
             }}
-          />
-          <View>
-            <Text className="text-[11px] font-[700] text-brand uppercase tracking-widest mb-[2px]">
-              {label}
-            </Text>
-            <Text className="text-[18px] font-[800] text-text-primary">
-              {title}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <Text className="text-[18px] font-[800] text-text-primary">{title}</Text>
-      )}
+          >
+            {label}
+          </Text>
+        )}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "800",
+            color: "#1A1613",
+            letterSpacing: -0.7,
+            lineHeight: 26,
+          }}
+        >
+          {title}
+        </Text>
+      </View>
 
       {onSeeAll ? (
         <TouchableOpacity
-          className="flex-row items-center self-center"
+          style={{ flexDirection: "row", alignItems: "center", paddingBottom: 3 }}
           onPress={onSeeAll}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <Text className="text-[13px] font-[600] text-brand">Ver todos</Text>
-          <MaterialCommunityIcons name="chevron-right" size={16} color="#D91A21" />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: "#1A1613" }}>
+            Ver todos
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={14} color="#1A1613" />
         </TouchableOpacity>
       ) : null}
     </View>

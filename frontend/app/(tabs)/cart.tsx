@@ -94,13 +94,11 @@ const CartItemComponent = ({
             alignItems: "center",
             backgroundColor: "#FFFFFF",
             borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E0E0E0",
             padding: 12,
-            shadowColor: "#000",
+            shadowColor: "#1A1613",
             shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
+            shadowOpacity: 0.06,
+            shadowRadius: 6,
             elevation: 2,
           }}
         >
@@ -110,7 +108,7 @@ const CartItemComponent = ({
               width: 84,
               height: 84,
               borderRadius: 8,
-              backgroundColor: "#F5F5F5",
+              backgroundColor: "#FAF6F0",
               overflow: "hidden",
               alignItems: "center",
               justifyContent: "center",
@@ -181,7 +179,7 @@ const CartItemComponent = ({
                 style={{
                   fontSize: 16,
                   fontWeight: "800",
-                  color: "#D91A21",
+                  color: "#1A1613",
                 }}
               >
                 {formattedItemTotal}
@@ -192,10 +190,10 @@ const CartItemComponent = ({
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: "#F5F5F5",
+                  backgroundColor: "#FAF6F0",
                   borderRadius: 20,
                   borderWidth: 1,
-                  borderColor: "#E0E0E0",
+                  borderColor: "#EAE3D7",
                   paddingHorizontal: 4,
                   paddingVertical: 3,
                 }}
@@ -229,7 +227,7 @@ const CartItemComponent = ({
                     elevation: 1,
                   }}
                 >
-                  <Ionicons name="remove" size={14} color="#D91A21" />
+                  <Ionicons name="remove" size={14} color="#1A1613" />
                 </TouchableOpacity>
 
                 <View
@@ -296,8 +294,8 @@ const CartItemComponent = ({
                     (item.product.type === "unit"
                       ? (item.quantity || 0) >= (item.product.stock ?? Infinity)
                       : (item.weight || 0) >= ((item.product.stock ?? Infinity) * 1000))
-                      ? "#E0E0E0"
-                      : "#D91A21"
+                      ? "#EAE3D7"
+                      : "#1A1613"
                   } />
                 </TouchableOpacity>
               </View>
@@ -385,7 +383,7 @@ export default function CartScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF6F0" }} edges={["top"]}>
       <View className="flex-1">
         <StatusBar barStyle="dark-content" />
 
@@ -462,7 +460,7 @@ export default function CartScreen() {
               {showInitialPriceSkeleton ? (
                 <PriceSkeleton />
               ) : (
-                <Text className="text-[24px] font-extrabold text-brand">
+                <Text style={{ fontSize: 24, fontWeight: "800", color: "#1A1613" }}>
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",

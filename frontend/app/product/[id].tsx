@@ -164,7 +164,7 @@ export default function ProductDetailsScreen() {
         </View>
 
         <View className="p-5">
-          <Text className="text-brand text-[12px] font-bold uppercase mb-2">
+          <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#C97B1F", textTransform: "uppercase", letterSpacing: 1.8, marginBottom: 8 }}>
             Produto
           </Text>
 
@@ -173,10 +173,10 @@ export default function ProductDetailsScreen() {
           </Text>
 
           <View className="flex-row items-baseline mb-6">
-            <Text className="text-[28px] font-bold text-brand">
+            <Text style={{ fontSize: 28, fontWeight: "800", color: "#1A1613", letterSpacing: -0.5 }}>
               {mainPriceInfo.price}
             </Text>
-            <Text className="text-[16px] font-bold text-neutral-300 ml-1">
+            <Text style={{ fontSize: 16, fontWeight: "500", color: "#8A8079", marginLeft: 4 }}>
               {mainPriceInfo.label}
             </Text>
           </View>
@@ -222,10 +222,13 @@ export default function ProductDetailsScreen() {
                     style={{
                       width: 130,
                       backgroundColor: "#FFFFFF",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#F0F0F0",
+                      borderRadius: 16,
                       overflow: "hidden",
+                      shadowColor: "#1A1613",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 4,
+                      elevation: 2,
                     }}
                   >
                     <Image
@@ -240,7 +243,7 @@ export default function ProductDetailsScreen() {
                       >
                         {formatName(item.name)}
                       </Text>
-                      <Text style={{ fontSize: 14, fontWeight: "700", color: "#D91A21", marginTop: 4 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1613", marginTop: 4 }}>
                         {similarPriceInfo.price}
                         <Text style={{ fontSize: 10, fontWeight: "400", color: "#AAAAAA" }}>
                           {" "}{similarPriceInfo.label}
