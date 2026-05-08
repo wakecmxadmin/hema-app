@@ -139,7 +139,9 @@ export class OrdersService {
         await supabase.from('orders').delete().eq('id', newOrder.id);
 
         const failedProduct =
-          stockResult?.failed_product || 'um produto';
+          stockError?.message?.split(':')[1]?.trim() ||
+          stockResult?.failed_product ||
+          'um produto';
         throw new HttpException(
           {
             success: false,

@@ -96,6 +96,10 @@ export default function ProductDetailsScreen() {
       setShowAuthModal(true);
       return;
     }
+    if (product.stock <= 0) {
+      Toast.show({ type: "error", text1: "Produto sem estoque disponível" });
+      return;
+    }
     const payload = {
       product_id: product.id,
       price: product.type === "unit" ? product.price : product.price_per_kg,
@@ -104,9 +108,8 @@ export default function ProductDetailsScreen() {
     const success = await addItem(payload);
     if (success) {
       Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
-    } else {
-      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
     }
+    // CartContext já exibe o toast com a mensagem específica do backend em caso de erro
   };
 
   if (loading) {
@@ -266,12 +269,13 @@ export default function ProductDetailsScreen() {
         }}
       >
         <TouchableOpacity
-          className="bg-brand h-[50px] rounded-btn justify-center items-center"
+          className={`h-[50px] rounded-btn justify-center items-center ${product.stock <= 0 ? "bg-neutral-300" : "bg-brand"}`}
           onPress={handleAddToCart}
-          activeOpacity={0.8}
+          activeOpacity={product.stock <= 0 ? 1 : 0.8}
+          disabled={product.stock <= 0}
         >
-          <Text className="text-brand-on text-[16px] font-bold">
-            ADICIONAR AO CARRINHO
+          <Text className={`text-[16px] font-bold ${product.stock <= 0 ? "text-neutral-500" : "text-brand-on"}`}>
+            {product.stock <= 0 ? "SEM ESTOQUE" : "ADICIONAR AO CARRINHO"}
           </Text>
         </TouchableOpacity>
       </View>
