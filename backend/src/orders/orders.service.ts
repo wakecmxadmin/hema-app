@@ -138,8 +138,11 @@ export class OrdersService {
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
         await supabase.from('orders').delete().eq('id', newOrder.id);
 
+        const msgParts = stockError?.message?.split(':');
         const failedProduct =
-          stockError?.message?.split(':')[1]?.trim() ||
+          (msgParts?.[0] === 'INSUFFICIENT_STOCK'
+            ? msgParts.slice(1).join(':').trim()
+            : null) ||
           stockResult?.failed_product ||
           'um produto';
         throw new HttpException(
