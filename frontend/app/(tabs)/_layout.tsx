@@ -1,9 +1,11 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { View, Text, Platform } from "react-native";
+import { View, Text, Platform, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useCart } from "@/context/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const HEMA_LOGO = require("../../assets/images/logo.png");
 
 const BRAND = {
   active: "#D91A21",
@@ -48,6 +50,7 @@ function CartIcon({ color }: { color: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { isStaff } = useCart();
 
   return (
     <Tabs
@@ -107,6 +110,28 @@ export default function TabLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="admin-orders"
+        options={{
+          title: "Hema",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={HEMA_LOGO}
+              style={{
+                width: 36,
+                height: 36,
+                marginTop: -4,
+                marginBottom: -4,
+                opacity: focused ? 1 : 0.45,
+              }}
+              resizeMode="contain"
+            />
+          ),
+          // Esconde a aba completamente quando não for staff.
+          href: isStaff ? undefined : null,
         }}
       />
     </Tabs>

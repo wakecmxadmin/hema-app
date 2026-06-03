@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  FlatList,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -89,28 +90,31 @@ export default function HomeScreen() {
   const [searchOffset, setSearchOffset] = useState(0);
   const [hasMoreSearch, setHasMoreSearch] = useState(true);
 
-  const handleAddToCart = async (product: Product) => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
+  const handleAddToCart = useCallback(
+    async (product: Product) => {
+      if (!isAuthenticated) {
+        setShowAuthModal(true);
+        return;
+      }
 
-    const isKg =
-      product.price_per_kg !== null && product.price_per_kg !== undefined;
-    const isUnit = product.type === "unit" || !isKg;
+      const isKg =
+        product.price_per_kg !== null && product.price_per_kg !== undefined;
+      const isUnit = product.type === "unit" || !isKg;
 
-    Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
 
-    const success = await addItem({
-      product_id: product.id,
-      price: isUnit ? product.price : product.price_per_kg,
-      ...(isUnit ? { quantity: 1 } : { weight: 100 }),
-    });
+      const success = await addItem({
+        product_id: product.id,
+        price: isUnit ? product.price : product.price_per_kg,
+        ...(isUnit ? { quantity: 1 } : { weight: 100 }),
+      });
 
-    if (!success) {
-      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
-    }
-  };
+      if (!success) {
+        Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
+      }
+    },
+    [isAuthenticated, addItem],
+  );
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -157,11 +161,16 @@ export default function HomeScreen() {
     setIsSearchingMore(false);
   };
 
-  const navigateToProduct = (id: string) =>
-    router.push({ pathname: "/product/[id]", params: { id } });
+  const navigateToProduct = useCallback(
+    (id: string) => router.push({ pathname: "/product/[id]", params: { id } }),
+    [router],
+  );
 
-  const navigateToCategory = (id: string, name: string) =>
-    router.push({ pathname: "/category/[id]", params: { id, name } });
+  const navigateToCategory = useCallback(
+    (id: string, name: string) =>
+      router.push({ pathname: "/category/[id]", params: { id, name } }),
+    [router],
+  );
 
   return (
     <SafeAreaView
@@ -317,8 +326,8 @@ function SearchResults({
                 <ProductCard
                   product={product}
                   animationDelay={Math.min(index * 45, 260)}
-                  onPress={() => onProductPress(product.id)}
-                  onAdd={() => onAddToCart(product)}
+                  onPress={onProductPress}
+                  onAdd={onAddToCart}
                 />
               </View>
             ))}
@@ -451,7 +460,8 @@ function Catalog({
               onSeeAll={() => onCategoryPress(category.id, category.name)}
             />
             {isFeatured ? (
-              <ScrollView
+              <FlatList
+                data={category.products.slice(0, 5)}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{
@@ -462,35 +472,38 @@ function Catalog({
                 decelerationRate="fast"
                 snapToInterval={FEATURED_CARD_WIDTH + 12}
                 snapToAlignment="start"
-              >
-                {category.products.slice(0, 5).map((product, index) => (
+                keyExtractor={(item) => item.id}
+                initialNumToRender={2}
+                windowSize={3}
+                renderItem={({ item, index }) => (
                   <ProductCard
-                    key={product.id}
-                    product={product}
+                    product={item}
                     isFeatured
                     animationDelay={index * 70}
-                    onPress={() => onProductPress(product.id)}
-                    onAdd={() => onAddToCart(product)}
+                    onPress={onProductPress}
+                    onAdd={onAddToCart}
                   />
-                ))}
-              </ScrollView>
+                )}
+              />
             ) : (
-              <ScrollView
+              <FlatList
+                data={category.products}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
-              >
-                {category.products.map((product, index) => (
+                keyExtractor={(item) => item.id}
+                initialNumToRender={3}
+                windowSize={3}
+                renderItem={({ item, index }) => (
                   <ProductCard
-                    key={product.id}
-                    product={product}
+                    product={item}
                     isCarousel
                     animationDelay={index * 50}
-                    onPress={() => onProductPress(product.id)}
-                    onAdd={() => onAddToCart(product)}
+                    onPress={onProductPress}
+                    onAdd={onAddToCart}
                   />
-                ))}
-              </ScrollView>
+                )}
+              />
             )}
           </View>
         );

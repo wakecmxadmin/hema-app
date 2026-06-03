@@ -27,9 +27,10 @@ import {
 } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/components/useColorScheme";
-import { CartProvider } from "@/context/CartContext";
+import { CartProvider, useCart } from "@/context/CartContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -128,19 +129,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function NotificationListener() {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      setUserId(session?.user?.id ?? null);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
+  const { user } = useCart();
+  const userId = user?.id ?? null;
   useOrderNotifications(userId);
+  usePushRegistration(userId);
   return null;
 }
 

@@ -5,58 +5,17 @@ import { supabase } from '../lib/supabase';
 export class ProductsService {
   async getHomeCatalog() {
     try {
-      // Busca category_ids distintos de produtos ativos com imagem
-      const { data: activeCategoryIds, error: idsError } = await supabase
-        .from('products')
-        .select('category_id')
-        .eq('is_active', true)
-        .gt('stock', 0)
-        .not('image_url', 'is', null)
-        .not('category_id', 'is', null)
-        .limit(100);
+      // Uma única chamada de RPC substitui 6 queries sequenciais.
+      // A função `get_home_catalog` retorna jsonb com até 5 categorias e
+      // seus 10 primeiros produtos ativos em estoque.
+      const { data, error } = await supabase.rpc('get_home_catalog');
 
-      if (idsError) throw idsError;
-
-      const uniqueCategoryIds = [
-        ...new Set(activeCategoryIds.map((p) => p.category_id)),
-      ].slice(0, 5);
-
-      if (uniqueCategoryIds.length === 0) {
-        return { success: true, message: 'Catálogo carregado com sucesso', data: [] };
-      }
-
-      const { data: categories, error: catError } = await supabase
-        .from('categories')
-        .select('id, name')
-        .in('id', uniqueCategoryIds);
-
-      if (catError) throw catError;
-
-      const catalog = await Promise.all(
-        categories.map(async (category) => {
-          const { data: products, error: prodError } = await supabase
-            .from('products')
-            .select('id, name, price, price_per_kg, image_url, type, stock')
-            .eq('category_id', category.id)
-            .eq('is_active', true)
-            .gt('stock', 0)
-            .not('image_url', 'is', null)
-            .limit(10);
-
-          if (prodError) throw prodError;
-
-          return {
-            id: category.id,
-            name: category.name,
-            products: products || [],
-          };
-        }),
-      );
+      if (error) throw error;
 
       return {
         success: true,
         message: 'Catálogo carregado com sucesso',
-        data: catalog,
+        data: data || [],
       };
     } catch (error: any) {
       throw new HttpException(

@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import * as cartService from "@/services/cart";
 import { supabase } from "@/services/supabase";
+import { setCachedToken } from "@/services/session-cache";
 import { Toast } from "@/util/toast";
 
 type Cart = any;
@@ -26,6 +27,8 @@ type CartContextType = {
   loading: boolean;
   cartCount: number;
   isAuthenticated: boolean;
+  user: any | null;
+  isStaff: boolean;
   refreshCart: () => Promise<void>;
   addItem: (data: AddCartItemDTO) => Promise<boolean>;
   updateItem: (
@@ -34,6 +37,21 @@ type CartContextType = {
   ) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
 };
+
+const STAFF_EMAIL_DOMAINS = (
+  process.env.EXPO_PUBLIC_STAFF_EMAIL_DOMAIN ?? "hemacereais.com.br,pinho.com.br"
+)
+  .split(",")
+  .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+  .filter(Boolean);
+
+function deriveIsStaff(user: any | null | undefined): boolean {
+  if (!user) return false;
+  const email = (user.email ?? "").toLowerCase();
+  const confirmed = !!user.email_confirmed_at;
+  if (!confirmed) return false;
+  return STAFF_EMAIL_DOMAINS.some((d) => email.endsWith(`@${d}`));
+}
 
 const CartContext = createContext<CartContextType | null>(null);
 
@@ -44,10 +62,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
 
   const isAuthenticated = !!session;
+  const user = session?.user ?? null;
+  const isStaff = deriveIsStaff(user);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => setSession(s));
-    const { data: listener } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setCachedToken(s?.access_token ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_, s) => {
+      setSession(s);
+      setCachedToken(s?.access_token ?? null);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -163,6 +189,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       loading,
       cartCount,
       isAuthenticated,
+      user,
+      isStaff,
       refreshCart,
       addItem,
       updateItem,
@@ -174,6 +202,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       loading,
       cartCount,
       isAuthenticated,
+      user,
+      isStaff,
       refreshCart,
       addItem,
       updateItem,

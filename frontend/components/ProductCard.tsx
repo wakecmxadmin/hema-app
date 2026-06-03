@@ -12,11 +12,12 @@ import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 
 import { Product } from "@/types/product";
+import { optimizedImage } from "@/util/image-url";
 
 interface ProductCardProps {
   product: Product;
-  onPress: () => void;
-  onAdd: () => void;
+  onPress: (id: string) => void;
+  onAdd: (product: Product) => void;
   isCarousel?: boolean;
   isFeatured?: boolean;
   animationDelay?: number;
@@ -52,7 +53,7 @@ function useEntryAnimation(delay: number) {
   }));
 }
 
-export function ProductCard({
+function ProductCardImpl({
   product,
   onPress,
   onAdd,
@@ -62,10 +63,14 @@ export function ProductCard({
 }: ProductCardProps) {
   const animStyle = useEntryAnimation(animationDelay);
 
+  const handlePress = useCallback(() => {
+    onPress(product.id);
+  }, [onPress, product.id]);
+
   const handleAdd = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onAdd();
-  }, [onAdd]);
+    onAdd(product);
+  }, [onAdd, product]);
 
   const isKg =
     product.price_per_kg !== null && product.price_per_kg !== undefined;
@@ -92,7 +97,7 @@ export function ProductCard({
             shadowRadius: 3,
             elevation: 2,
           }}
-          onPress={onPress}
+          onPress={handlePress}
           activeOpacity={0.87}
         >
           {/* Image */}
@@ -102,11 +107,12 @@ export function ProductCard({
           >
             {imageUri ? (
               <Image
-                source={{ uri: imageUri }}
+                source={{ uri: optimizedImage(imageUri, { width: 320, resize: "cover" }) }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
-                transition={350}
+                transition={200}
                 cachePolicy="disk"
+                recyclingKey={imageUri}
               />
             ) : (
               <View className="flex-1 items-center justify-center">
@@ -170,17 +176,18 @@ export function ProductCard({
             shadowRadius: 3,
             elevation: 2,
           }}
-          onPress={onPress}
+          onPress={handlePress}
           activeOpacity={0.87}
         >
           <View className="bg-white" style={{ height: 126, width: "100%" }}>
             {imageUri ? (
               <Image
-                source={{ uri: imageUri }}
+                source={{ uri: optimizedImage(imageUri, { width: 320, resize: "cover" }) }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
-                transition={350}
+                transition={200}
                 cachePolicy="disk"
+                recyclingKey={imageUri}
               />
             ) : (
               <View className="flex-1 items-center justify-center">
@@ -239,7 +246,7 @@ export function ProductCard({
           shadowRadius: 3,
           elevation: 2,
         }}
-        onPress={onPress}
+        onPress={handlePress}
         activeOpacity={0.87}
       >
         <View
@@ -248,11 +255,12 @@ export function ProductCard({
         >
           {imageUri ? (
             <Image
-              source={{ uri: imageUri }}
+              source={{ uri: optimizedImage(imageUri, { width: 360, resize: "cover" }) }}
               style={{ width: "100%", height: "100%", backgroundColor: "#FFFFFF" }}
               contentFit="cover"
-              transition={350}
+              transition={200}
               cachePolicy="disk"
+              recyclingKey={imageUri}
             />
           ) : (
             <View className="flex-1 w-full items-center justify-center bg-white">
@@ -286,7 +294,7 @@ export function ProductCard({
               borderRadius: 999, paddingVertical: 10,
               backgroundColor: "#1A1613", alignItems: "center", justifyContent: "center",
             }}
-            onPress={onAdd}
+            onPress={handleAdd}
           >
             <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
               Adicionar
@@ -297,3 +305,5 @@ export function ProductCard({
     </Animated.View>
   );
 }
+
+export const ProductCard = React.memo(ProductCardImpl);

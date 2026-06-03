@@ -12,17 +12,51 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Image } from "expo-image";
 
 import { OrdersService } from "@/services/orders";
 import { Toast } from "@/util/toast";
+import { optimizedImage } from "@/util/image-url";
+import { useCart } from "@/context/CartContext";
+
+function ItemThumbnail({ uri }: { uri?: string | null }) {
+  if (uri) {
+    return (
+      <Image
+        source={{ uri: optimizedImage(uri, { width: 128, resize: "cover" }) }}
+        style={{ width: 56, height: 56, borderRadius: 10, backgroundColor: "#F5EFE4" }}
+        contentFit="cover"
+        transition={150}
+        cachePolicy="disk"
+        recyclingKey={uri}
+      />
+    );
+  }
+  return (
+    <View
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 10,
+        backgroundColor: "#F5EFE4",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <MaterialCommunityIcons name="package-variant" size={26} color="#C2B79E" />
+    </View>
+  );
+}
 
 export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { refreshCart } = useCart();
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrderDetails = async (isInitial = true) => {
@@ -52,6 +86,68 @@ export default function OrderDetailsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchOrderDetails(false);
+  };
+
+  const handleReorder = async () => {
+    setReordering(true);
+    const response = await OrdersService.reorder(id);
+    setReordering(false);
+
+    if (!response.success && !response.data) {
+      Toast.show({
+        type: "error",
+        text1: "Não foi possível repetir o pedido",
+        text2: response.message,
+      });
+      return;
+    }
+
+    // Cart cresceu: sincroniza o badge / contexto.
+    await refreshCart();
+
+    const skipped = response.data?.skipped ?? [];
+    const addedCount = response.data?.added_count ?? 0;
+
+    if (addedCount === 0) {
+      Alert.alert(
+        "Nenhum item disponível",
+        "Os produtos desse pedido não estão disponíveis no momento.",
+      );
+      return;
+    }
+
+    if (skipped.length === 0) {
+      Alert.alert(
+        "Itens adicionados!",
+        `${addedCount} ${addedCount === 1 ? "item foi adicionado" : "itens foram adicionados"} ao carrinho.`,
+        [
+          { text: "Continuar", style: "cancel" },
+          {
+            text: "Ver carrinho",
+            onPress: () => router.push("/(tabs)/cart" as any),
+          },
+        ],
+      );
+    } else {
+      const list = skipped
+        .slice(0, 5)
+        .map((s) => `• ${s.product_name}`)
+        .join("\n");
+      const extra =
+        skipped.length > 5 ? `\n+ ${skipped.length - 5} outros` : "";
+
+      Alert.alert(
+        `${addedCount} ${addedCount === 1 ? "item adicionado" : "itens adicionados"}`,
+        `Alguns produtos não estão disponíveis e foram pulados:\n\n${list}${extra}`,
+        [
+          { text: "Continuar", style: "cancel" },
+          {
+            text: "Ver carrinho",
+            onPress: () => router.push("/(tabs)/cart" as any),
+          },
+        ],
+      );
+    }
   };
 
   const handleCancelOrder = () => {
@@ -178,10 +274,11 @@ export default function OrderDetailsScreen() {
           {order.order_items?.map((item: any) => (
             <View
               key={item.id}
-              className="flex-row justify-between items-center border-b border-neutral-200 pb-3 mb-3"
+              className="flex-row items-center border-b border-neutral-200 pb-3 mb-3"
             >
-              <View className="flex-1 pr-4">
-                <Text className="text-[14px] text-text-primary font-medium mb-1">
+              <ItemThumbnail uri={item.products?.image_url} />
+              <View className="flex-1 px-3">
+                <Text className="text-[14px] text-text-primary font-medium mb-1" numberOfLines={2}>
                   {item.product_name}
                 </Text>
                 <Text className="text-[12px] text-text-secondary">
@@ -271,23 +368,58 @@ export default function OrderDetailsScreen() {
         </View>
       </ScrollView>
 
-      {order.status === "pending" && (
-        <View className="p-4 bg-surface border-t border-neutral-200">
+      <View
+        className="bg-surface border-t border-neutral-200"
+        style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, flexDirection: "row", gap: 10 }}
+      >
+        {order.status === "pending" && (
           <TouchableOpacity
-            className="py-4 rounded-btn border border-brand items-center"
+            style={{
+              flex: 1,
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "#D91A21",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             onPress={handleCancelOrder}
-            disabled={canceling}
+            disabled={canceling || reordering}
           >
             {canceling ? (
               <ActivityIndicator color="#D91A21" />
             ) : (
-              <Text className="text-brand text-[16px] font-bold">
-                Cancelar Pedido
-              </Text>
+              <Text className="text-brand text-[15px] font-bold">Cancelar</Text>
             )}
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            paddingVertical: 14,
+            borderRadius: 12,
+            backgroundColor: "#1A1613",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 6,
+          }}
+          onPress={handleReorder}
+          disabled={canceling || reordering}
+        >
+          {reordering ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="cart-plus" size={18} color="#FFFFFF" />
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF" }}>
+                Repetir pedido
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }

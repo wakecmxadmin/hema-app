@@ -33,4 +33,16 @@ export const OrdersService = {
   async cancelOrder(orderId: string): Promise<ApiResponse<any>> {
     return apiFetch(`/orders/${orderId}/cancel`, { method: "PATCH" });
   },
+
+  // 5. Repetir Pedido — re-adiciona itens disponíveis ao carrinho
+  async reorder(orderId: string): Promise<
+    ApiResponse<{
+      added: { product_name: string }[];
+      skipped: { product_name: string; reason: string }[];
+      added_count: number;
+      skipped_count: number;
+    }>
+  > {
+    return apiFetch(`/orders/${orderId}/reorder`, { method: "POST" });
+  },
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -92,20 +92,28 @@ export default function CategoryScreen() {
     setLoadingMore(false);
   };
 
-  const handleAddToCart = async (product: Product) => {
-    const payload = {
-      product_id: product.id,
-      price: product.type === "unit" ? product.price : product.price_per_kg,
-      ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
-    };
+  const handleAddToCart = useCallback(
+    async (product: Product) => {
+      const payload = {
+        product_id: product.id,
+        price: product.type === "unit" ? product.price : product.price_per_kg,
+        ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
+      };
 
-    const success = await addItem(payload);
-    if (success) {
-      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
-    } else {
-      Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
-    }
-  };
+      const success = await addItem(payload);
+      if (success) {
+        Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
+      } else {
+        Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
+      }
+    },
+    [addItem],
+  );
+
+  const navigateToProduct = useCallback(
+    (id: string) => router.push(`/product/${id}` as any),
+    [router],
+  );
 
   const renderFooter = () => {
     if (!hasMore && products.length > 0) return null;
@@ -200,8 +208,8 @@ export default function CategoryScreen() {
             <View className="w-[48%]">
               <ProductCard
                 product={item}
-                onPress={() => router.push(`/product/${item.id}`)}
-                onAdd={() => handleAddToCart(item)}
+                onPress={navigateToProduct}
+                onAdd={handleAddToCart}
               />
             </View>
           )}

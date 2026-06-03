@@ -5,12 +5,13 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
-  Image,
   ActivityIndicator,
   Alert,
   Platform,
   RefreshControl,
 } from "react-native";
+import { Image } from "expo-image";
+import { optimizedImage } from "@/util/image-url";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -262,8 +263,12 @@ export default function ProfileScreen() {
                 <ActivityIndicator color="#D91A21" size="large" />
               ) : user.avatarUrl ? (
                 <Image
-                  source={{ uri: user.avatarUrl }}
+                  source={{ uri: optimizedImage(user.avatarUrl, { width: 200, resize: "cover" }) }}
                   style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                  cachePolicy="disk"
+                  transition={150}
+                  recyclingKey={user.avatarUrl}
                 />
               ) : (
                 <Text

@@ -16,6 +16,7 @@ import { Image } from "expo-image";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { Product } from "@/types/product";
+import { optimizedImage } from "@/util/image-url";
 
 interface BannerCarouselProps {
   products: Product[];
@@ -238,11 +239,12 @@ export function BannerCarousel({ products, onPress }: BannerCarouselProps) {
                   >
                     {item.image_url ? (
                       <Image
-                        source={{ uri: item.image_url }}
+                        source={{ uri: optimizedImage(item.image_url, { width: 400, resize: "contain" }) }}
                         style={{ width: "100%", height: "100%" }}
                         contentFit="contain"
-                        transition={300}
+                        transition={200}
                         cachePolicy="disk"
+                        recyclingKey={item.image_url}
                       />
                     ) : (
                       <MaterialCommunityIcons

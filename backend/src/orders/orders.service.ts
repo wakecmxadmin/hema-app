@@ -4,12 +4,14 @@ import { supabase } from '../lib/supabase';
 import { calculateDeliveryFee } from '../utils/delivery.util';
 import { PaymentsService } from '../payments/payment.service';
 import { CartService } from '../cart/cart.service';
+import { ExpoPushService } from '../notifications/expo-push.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly cartService: CartService,
     private readonly paymentsService: PaymentsService,
+    private readonly expoPushService: ExpoPushService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -175,6 +177,10 @@ export class OrdersService {
         paymentResult,
       });
 
+      // Fire-and-forget push para a equipe da Hema. Falhas não devem
+      // impactar a resposta do checkout para o cliente.
+      void this.notifyStaffOfNewOrder(newOrder.id, userId, finalTotalPrice, dto.payment_method);
+
       // Limpa o carrinho APENAS se for dinheiro (os outros limpam via webhook depois)
       if (dto.payment_method === 'cash') {
         await supabase.from('cart_items').delete().eq('cart_id', cart.id);
@@ -251,7 +257,7 @@ export class OrdersService {
         .select(
           `
           *,
-          order_items ( id, product_id, product_name, product_price, quantity, weight, subtotal ),
+          order_items ( id, product_id, product_name, product_price, quantity, weight, subtotal, products ( image_url ) ),
           addresses ( label, street, number, complement, neighborhood, city, state, zip_code )
         `,
         )
@@ -346,6 +352,9 @@ export class OrdersService {
         }
       }
 
+      // Push fire-and-forget pra staff (não bloqueia a resposta ao cliente).
+      void this.notifyStaffOfCancelledOrder(orderId, userId);
+
       return {
         success: true,
         message: 'Pedido cancelado com sucesso.',
@@ -438,5 +447,128 @@ export class OrdersService {
 
   async confirmAndPayOrder(userId: string, orderId: string, paymentData: any) {
     // Placeholder para o MP
+  }
+
+  /**
+   * Re-adiciona os itens de um pedido antigo ao carrinho do usuário. Cada item
+   * passa pelo cartService.addItem, então toda validação (produto ativo, estoque,
+   * tipo unit/weight) já é reaproveitada. Itens que falharem ficam em `skipped`
+   * com o motivo — não fazemos partial fulfillment.
+   */
+  async reorder(userId: string, orderId: string) {
+    try {
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select(
+          `id,
+           order_items ( product_id, product_name, quantity, weight )`,
+        )
+        .eq('id', orderId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !order) {
+        throw new HttpException(
+          { success: false, message: 'Pedido não encontrado.' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const items: any[] = order.order_items ?? [];
+      if (items.length === 0) {
+        throw new HttpException(
+          { success: false, message: 'Este pedido não tem itens.' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const added: { product_name: string }[] = [];
+      const skipped: { product_name: string; reason: string }[] = [];
+
+      for (const item of items) {
+        const dto: any = { product_id: item.product_id };
+        if (item.quantity != null) dto.quantity = item.quantity;
+        if (item.weight != null) dto.weight = item.weight;
+
+        try {
+          await this.cartService.addItem(userId, dto);
+          added.push({ product_name: item.product_name });
+        } catch (e: any) {
+          const body =
+            e instanceof HttpException ? (e.getResponse() as any) : null;
+          skipped.push({
+            product_name: item.product_name,
+            reason: body?.message ?? 'Indisponível no momento',
+          });
+        }
+      }
+
+      const message =
+        added.length === 0
+          ? 'Nenhum item está disponível para adicionar ao carrinho.'
+          : skipped.length === 0
+            ? 'Itens adicionados ao carrinho!'
+            : `${added.length} ${added.length === 1 ? 'item adicionado' : 'itens adicionados'}, ${skipped.length} indisponíve${skipped.length === 1 ? 'l' : 'is'}.`;
+
+      return {
+        success: added.length > 0,
+        message,
+        data: { added, skipped, added_count: added.length, skipped_count: skipped.length },
+      };
+    } catch (error: any) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Erro ao repetir o pedido.',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async notifyStaffOfNewOrder(
+    orderId: string,
+    userId: string,
+    totalPrice: number,
+    paymentMethod: string,
+  ): Promise<void> {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+      await this.expoPushService.notifyStaffNewOrder({
+        id: orderId,
+        total_price: totalPrice,
+        payment_method: paymentMethod,
+        customer_name: profile?.name ?? null,
+      });
+    } catch (err: any) {
+      console.error('[ORDER] Falha ao notificar staff sobre novo pedido:', err?.message ?? err);
+    }
+  }
+
+  private async notifyStaffOfCancelledOrder(
+    orderId: string,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+      await this.expoPushService.notifyStaffOrderCancelled({
+        id: orderId,
+        customer_name: profile?.name ?? null,
+      });
+    } catch (err: any) {
+      console.error('[ORDER] Falha ao notificar staff sobre cancelamento:', err?.message ?? err);
+    }
   }
 }

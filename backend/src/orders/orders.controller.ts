@@ -50,4 +50,10 @@ export class OrdersController {
     const userId = req.user.sub;
     return this.ordersService.cancelOrder(userId, id);
   }
+
+  @Post(':id/reorder')
+  reorder(@Req() req: any, @Param('id') id: string) {
+    const userId = req.user.sub;
+    return this.ordersService.reorder(userId, id);
+  }
 }

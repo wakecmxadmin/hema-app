@@ -7,6 +7,7 @@ import {
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { OrdersService } from '../orders/orders.service';
 import { supabase } from '../lib/supabase';
+import { ShippingService } from '../shipping/shipping.service';
 
 export interface ProcessPaymentInput {
   payment_method: string;
@@ -36,6 +37,7 @@ export class PaymentsService {
   constructor(
     @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
+    private readonly shippingService: ShippingService,
   ) {
     this.mpClient = new MercadoPagoConfig({
       accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -50,7 +52,7 @@ export class PaymentsService {
 
     switch (payment_method) {
       case 'cash':
-        await this.notifyN8n(order_id, {
+        await this.notifyOrder(order_id, {
           id: null,
           payment_method_id: 'cash',
           transaction_amount: total_price,
@@ -242,9 +244,9 @@ export class PaymentsService {
 
     await this.ordersService.updateStatus(orderId, mpStatus);
 
-    // Notificar n8n após aprovação do pagamento
     if (mpStatus === 'approved') {
-      await this.notifyN8n(orderId, mpPayment);
+      await this.notifyOrder(orderId, mpPayment);
+      void this.shippingService.createForOrder(orderId);
     }
   }
 
@@ -262,110 +264,180 @@ export class PaymentsService {
     }
   }
 
-  private async notifyN8n(orderId: string, mpPayment: any): Promise<void> {
+  private async notifyOrder(orderId: string, mpPayment: any): Promise<void> {
+    const payload = await this.buildOrderPayload(orderId, mpPayment);
+    if (!payload) return;
+
+    const customerName = payload.customer?.name ?? 'Cliente';
+    const sent = await this.sendWhatsappMessage(customerName);
+    if (sent) return;
+
+    console.warn('[NOTIFY] WhatsApp falhou. Tentando fallback n8n...');
+    await this.sendN8nWebhook(payload);
+  }
+
+  private async buildOrderPayload(
+    orderId: string,
+    mpPayment: any,
+  ): Promise<any | null> {
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        order_items ( id, product_name, product_price, quantity, weight, subtotal ),
+        addresses ( label, street, number, complement, neighborhood, city, state, zip_code )
+      `,
+      )
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      console.error(
+        `[NOTIFY] Pedido ${orderId} não encontrado para notificação`,
+      );
+      return null;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', order.user_id)
+      .single();
+
+    console.log(
+      `[NOTIFY] Profile query for user ${order.user_id}:`,
+      JSON.stringify(profile),
+      profileError?.message ?? 'OK',
+    );
+
+    const paymentLabels: Record<string, string> = {
+      pix: 'PIX',
+      credit_card: 'Cartão de Crédito',
+      debit_card: 'Cartão de Débito',
+      cash: 'Dinheiro',
+    };
+
+    const address = order.addresses;
+    const items = order.order_items ?? [];
+    const isCash = order.payment_method === 'cash';
+
+    return {
+      event: isCash ? 'order_cash' : 'payment_approved',
+      order_id: orderId,
+      order_short_id: orderId.substring(0, 8).toUpperCase(),
+      payment_id: mpPayment.id,
+      payment_method:
+        paymentLabels[order.payment_method] ?? order.payment_method,
+      approved_at: mpPayment.date_approved,
+
+      customer: {
+        name: profile?.name ?? 'Cliente',
+        phone: profile?.phone ?? null,
+      },
+
+      delivery: address
+        ? {
+            label: address.label,
+            street: address.street,
+            number: address.number,
+            complement: address.complement,
+            neighborhood: address.neighborhood,
+            city: address.city,
+            state: address.state,
+            zip_code: address.zip_code,
+          }
+        : null,
+      delivery_method: address ? 'delivery' : 'pickup',
+      delivery_fee: order.delivery_fee,
+
+      items: items.map((item: any) => ({
+        name: item.product_name,
+        price: item.product_price,
+        quantity: item.quantity,
+        weight: item.weight,
+        subtotal: item.subtotal,
+      })),
+      items_count: items.length,
+
+      subtotal: items.reduce(
+        (sum: number, i: any) => sum + Number(i.subtotal),
+        0,
+      ),
+      total: order.total_price,
+    };
+  }
+
+  private async sendWhatsappMessage(customerName: string): Promise<boolean> {
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const recipient = process.env.WHATSAPP_RECIPIENT;
+    const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
+    const templateLanguage =
+      process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR';
+    const graphVersion = process.env.WHATSAPP_GRAPH_VERSION ?? 'v22.0';
+
+    if (!token || !phoneNumberId || !recipient || !templateName) {
+      console.warn(
+        '[WHATSAPP] Credenciais ausentes (TOKEN/PHONE_NUMBER_ID/RECIPIENT/TEMPLATE_NAME). Envio ignorado.',
+      );
+      return false;
+    }
+
+    try {
+      const url = `https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: recipient,
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: templateLanguage },
+            components: [
+              {
+                type: 'body',
+                parameters: [{ type: 'text', text: customerName }],
+              },
+            ],
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error(
+          `[WHATSAPP] Falha no envio → status ${response.status}: ${errBody}`,
+        );
+        return false;
+      }
+
+      console.log(`[WHATSAPP] Template enviado → status ${response.status}`);
+      return true;
+    } catch (err) {
+      console.error('[WHATSAPP] Erro ao enviar mensagem:', err);
+      return false;
+    }
+  }
+
+  private async sendN8nWebhook(payload: any): Promise<void> {
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
     if (!n8nWebhookUrl) {
-      console.warn(
-        '[N8N] N8N_WEBHOOK_URL não configurado. Notificação ignorada.',
-      );
+      console.warn('[N8N] N8N_WEBHOOK_URL não configurado. Fallback ignorado.');
       return;
     }
 
     try {
-      // Busca pedido completo com itens e endereço
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select(
-          `
-          *,
-          order_items ( id, product_name, product_price, quantity, weight, subtotal ),
-          addresses ( label, street, number, complement, neighborhood, city, state, zip_code )
-        `,
-        )
-        .eq('id', orderId)
-        .single();
-
-      if (orderError || !order) {
-        console.error(
-          `[N8N] Pedido ${orderId} não encontrado para notificação`,
-        );
-        return;
-      }
-
-      // Busca dados do usuário (nome e telefone)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('name, phone')
-        .eq('id', order.user_id)
-        .single();
-
-      console.log(
-        `[N8N] Profile query for user ${order.user_id}:`,
-        JSON.stringify(profile),
-        profileError?.message ?? 'OK',
-      );
-
-      const paymentLabels: Record<string, string> = {
-        pix: 'PIX',
-        credit_card: 'Cartão de Crédito',
-        debit_card: 'Cartão de Débito',
-        cash: 'Dinheiro',
-      };
-
-      const address = order.addresses;
-      const items = order.order_items ?? [];
-
-      const isCash = order.payment_method === 'cash';
-
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: isCash ? 'order_cash' : 'payment_approved',
-          order_id: orderId,
-          order_short_id: orderId.substring(0, 8).toUpperCase(),
-          payment_id: mpPayment.id,
-          payment_method:
-            paymentLabels[order.payment_method] ?? order.payment_method,
-          approved_at: mpPayment.date_approved,
-
-          customer: {
-            name: profile?.name ?? 'Cliente',
-            phone: profile?.phone ?? null,
-          },
-
-          delivery: address
-            ? {
-                label: address.label,
-                street: address.street,
-                number: address.number,
-                complement: address.complement,
-                neighborhood: address.neighborhood,
-                city: address.city,
-                state: address.state,
-                zip_code: address.zip_code,
-              }
-            : null,
-          delivery_method: address ? 'delivery' : 'pickup',
-          delivery_fee: order.delivery_fee,
-
-          items: items.map((item: any) => ({
-            name: item.product_name,
-            price: item.product_price,
-            quantity: item.quantity,
-            weight: item.weight,
-            subtotal: item.subtotal,
-          })),
-          items_count: items.length,
-
-          subtotal: items.reduce(
-            (sum: number, i: any) => sum + Number(i.subtotal),
-            0,
-          ),
-          total: order.total_price,
-        }),
+        body: JSON.stringify(payload),
       });
-
       console.log(`[N8N] Notificação enviada → status ${response.status}`);
     } catch (err) {
       console.error('[N8N] Falha ao notificar n8n:', err);
