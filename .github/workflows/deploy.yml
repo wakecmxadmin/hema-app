@@ -46,14 +46,29 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          envs: EXPECTED_SHA
           script: |
-            cd /home/opc/hema-app/backend
-            git pull origin main
+            set -euo pipefail
+
+            cd /home/opc/hema-app
+            git fetch origin main
+            git reset --hard origin/main
+
+            ACTUAL_SHA=$(git rev-parse HEAD)
+            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "ERRO: VM em $ACTUAL_SHA, esperado $EXPECTED_SHA"
+              exit 1
+            fi
+            echo "Código sincronizado em $ACTUAL_SHA"
+
+            cd backend
             docker build -t hema-app-backend-image .
             docker stop hema-app-backend || true
             docker rm hema-app-backend || true
@@ -63,4 +78,7 @@ jobs:
               --env-file .env \
               -p 3006:3000 \
               hema-app-backend-image
-            echo "Deploy concluído com sucesso!"
+
+            sleep 3
+            docker ps --filter name=hema-app-backend --filter status=running | grep -q hema-app-backend
+            echo "Deploy concluído em $ACTUAL_SHA"
