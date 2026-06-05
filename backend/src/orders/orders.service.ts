@@ -445,7 +445,7 @@ export class OrdersService {
     }
   }
 
-  async confirmAndPayOrder(userId: string, orderId: string, paymentData: any) {
+  async confirmAndPayOrder(_userId: string, _orderId: string, _paymentData: unknown) {
     // Placeholder para o MP
   }
 

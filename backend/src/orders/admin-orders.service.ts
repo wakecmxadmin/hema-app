@@ -2,9 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { supabase } from '../lib/supabase';
 import {
   ORDER_STATUSES,
-  OrderStatus,
   UpdateOrderStatusDto,
 } from './dto/update-order-status.dto';
+import type { OrderStatus } from './dto/update-order-status.dto';
 import { ShippingService } from '../shipping/shipping.service';
 
 interface ListOrdersQuery {

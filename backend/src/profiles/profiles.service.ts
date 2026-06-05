@@ -159,7 +159,7 @@ export class ProfileService {
         const deletePath = `/storage/v1/object/avatars/${oldFileName}`;
         try {
           await this.supabaseFetch(deletePath, 'DELETE');
-        } catch (error) {
+        } catch {
           console.warn(`Aviso: Falha ao deletar foto antiga (${oldFileName})`);
         }
       }
