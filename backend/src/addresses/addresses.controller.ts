@@ -13,6 +13,7 @@ import { AddressesService } from './addresses.service';
 import { CreateAddressDTO } from './dto/create-address.dto';
 import { UpdateAddressDTO } from './dto/update-address.dto';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { AuthRequest } from '../auth/types';
 
 @Controller('addresses')
 export class AddressesController {
@@ -20,14 +21,14 @@ export class AddressesController {
 
   @Post()
   @UseGuards(SupabaseAuthGuard)
-  create(@Req() req: any, @Body() createAddressDto: CreateAddressDTO) {
+  create(@Req() req: AuthRequest, @Body() createAddressDto: CreateAddressDTO) {
     const userId = req.user.sub;
     return this.addressesService.createAddress(userId, createAddressDto);
   }
 
   @Get()
   @UseGuards(SupabaseAuthGuard)
-  findAll(@Req() req: any) {
+  findAll(@Req() req: AuthRequest) {
     const userId = req.user.sub;
     return this.addressesService.getMyAddresses(userId);
   }
@@ -35,7 +36,7 @@ export class AddressesController {
   @Patch(':id')
   @UseGuards(SupabaseAuthGuard)
   update(
-    @Req() req: any,
+    @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body() updateAddressDto: UpdateAddressDTO,
   ) {
@@ -45,7 +46,7 @@ export class AddressesController {
 
   @Delete(':id')
   @UseGuards(SupabaseAuthGuard)
-  delete(@Req() req: any, @Param('id') id: string) {
+  delete(@Req() req: AuthRequest, @Param('id') id: string) {
     const userId = req.user.sub;
     return this.addressesService.deleteAddress(userId, id);
   }

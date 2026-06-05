@@ -15,11 +15,11 @@ export class AddressesService {
           .eq('user_id', userId);
       }
 
-      const { data: address, error } = await supabase
+      const { data: address, error } = (await supabase
         .from('addresses')
         .insert({ ...data, user_id: userId })
         .select()
-        .single();
+        .single()) as { data: Record<string, unknown> | null; error: { message: string } | null };
 
       if (error) throw error;
 

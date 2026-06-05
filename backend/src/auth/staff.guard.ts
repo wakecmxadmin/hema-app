@@ -42,9 +42,10 @@ export class StaffGuard implements CanActivate {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    const email = data.user.email?.toLowerCase() ?? '';
+    const email = (data.user.email ?? '').toLowerCase();
+    const confirmedAt = data.user.email_confirmed_at as string | null | undefined;
 
-    if (!isStaffEmail(email, data.user.email_confirmed_at)) {
+    if (!isStaffEmail(email, confirmedAt)) {
       throw new ForbiddenException('Acesso restrito a funcionários da Hema Cereais');
     }
 

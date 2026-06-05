@@ -13,6 +13,7 @@ import { CartService } from './cart.service';
 import { AddCartItemDto } from './dto/create-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart.dto';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { AuthRequest } from '../auth/types';
 
 @Controller('cart')
 @UseGuards(SupabaseAuthGuard)
@@ -20,20 +21,20 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Post('items')
-  addItem(@Req() req: any, @Body() dto: AddCartItemDto) {
+  addItem(@Req() req: AuthRequest, @Body() dto: AddCartItemDto) {
     const userId = req.user.sub;
     return this.cartService.addItem(userId, dto);
   }
 
   @Get()
-  getCart(@Req() req: any) {
+  getCart(@Req() req: AuthRequest) {
     const userId = req.user.sub;
     return this.cartService.getCart(userId);
   }
 
   @Patch('items/:id')
   updateItem(
-    @Req() req: any,
+    @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body() dto: UpdateCartItemDto,
   ) {
@@ -42,13 +43,13 @@ export class CartController {
   }
 
   @Delete('items/:id')
-  removeItem(@Req() req: any, @Param('id') id: string) {
+  removeItem(@Req() req: AuthRequest, @Param('id') id: string) {
     const userId = req.user.sub;
     return this.cartService.removeItem(userId, id);
   }
 
   @Get('validate-stock')
-  validateStock(@Req() req: any) {
+  validateStock(@Req() req: AuthRequest) {
     const userId = req.user.sub;
     return this.cartService.validateStock(userId);
   }
