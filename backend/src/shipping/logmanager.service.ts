@@ -10,7 +10,7 @@ export interface LogManagerItemDimension {
 export interface LogManagerItem {
   quantidade: number;
   descricao: string;
-  dimensoes: LogManagerItemDimension[];
+  dimensoes: LogManagerItemDimension;
 }
 
 export interface LogManagerShipmentPayload {

@@ -105,15 +105,20 @@ export class ShippingService {
       const itens: LogManagerItem[] = items.map((it) => ({
         quantidade: it.quantity ?? 1,
         descricao: it.product_name,
-        dimensoes: [dimensions],
+        dimensoes: dimensions,
       }));
 
       const idEnvio = `HEMA-${order.id.substring(0, 8).toUpperCase()}`;
       const phone = profile?.phone ?? '';
 
+      const now = new Date();
+      const dtCriacao = `${now.toISOString().substring(0, 10)} ${now
+        .toISOString()
+        .substring(11, 19)}`;
+
       const payload: LogManagerShipmentPayload = {
         idEnvio,
-        dtCriacao: new Date().toISOString().substring(0, 10),
+        dtCriacao,
         vlFrete: centavos(order.delivery_fee ?? 0),
         vlPago: centavos(order.total_price ?? 0),
         nomeComprador: profile?.name ?? 'Cliente',
@@ -121,11 +126,9 @@ export class ShippingService {
         telefoneComprador_1: phone,
         idVenda: order.id,
         comentarios: `Pagamento: ${order.payment_method}`,
-        // NFe — não emitimos. Mandamos valores dummy. Se LogManager rejeitar,
-        // teremos que ajustar (ver staff-identification do trade-off).
-        chaveNFE: '',
-        numeroNFE: '',
-        serieNFE: '',
+        chaveNFE: 'SEMNFE',
+        numeroNFE: '0',
+        serieNFE: '0',
         enderecoEntrega: address.street ?? '',
         enderecoEntregaNumero: address.number ?? '',
         enderecoEntregaComplemento: address.complement ?? '',
