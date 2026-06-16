@@ -6,7 +6,6 @@ import {
   StatusBar,
   ScrollView,
   ActivityIndicator,
-  Modal,
   RefreshControl,
   Alert,
   Platform,
@@ -15,8 +14,6 @@ import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
-
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
 import { OrdersService } from "@/services/orders";
@@ -65,7 +62,6 @@ export default function CheckoutScreen() {
 
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = async () => {
@@ -205,22 +201,17 @@ export default function CheckoutScreen() {
     setIsCreatingOrder(false);
 
     if (response.success && response.data) {
-      if (paymentMethod === "cash") {
-        await refreshCart();
-        setShowSuccessModal(true);
-      } else if (response.data.init_point) {
-        await WebBrowser.openBrowserAsync(response.data.init_point);
-        await refreshCart();
-        router.replace("/(tabs)/orders");
-      } else {
-        // Se não houver init_point, mostrar erro
-        console.error("Resposta do servidor sem init_point:", response.data);
-        Toast.show({
-          type: "error",
-          text1: "Erro ao processar pagamento",
-          text2: "Não foi possível gerar o link de pagamento. Tente novamente.",
-        });
-      }
+      // Novo fluxo: pedido nasce em awaiting_store_confirmation. A loja
+      // confirma e só então o cliente paga. Aqui só navegamos para o detalhe;
+      // o pagamento é disparado de lá quando a loja confirmar.
+      await refreshCart();
+      const orderId = response.data.order_id;
+      router.replace(`/orders/${orderId}` as any);
+      Toast.show({
+        type: "success",
+        text1: "Pedido enviado!",
+        text2: "Aguarde a loja confirmar o estoque.",
+      });
     } else {
       if (response.error === "INSUFFICIENT_STOCK") {
         await refreshCart();
@@ -582,41 +573,6 @@ export default function CheckoutScreen() {
         </TouchableOpacity>
       </View>
 
-      <Modal visible={showSuccessModal} transparent={true} animationType="fade">
-        <View className="flex-1 bg-black/60 justify-center items-center p-5">
-          <View
-            className="bg-surface rounded-card p-[30px] items-center w-full max-w-[340px]"
-            style={{
-              elevation: 10,
-              shadowColor: "#000",
-              shadowOpacity: 0.2,
-              shadowRadius: 10,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="check-decagram"
-              size={80}
-              color="#28A745"
-            />
-            <Text className="text-[24px] font-bold text-text-primary mt-4 text-center">
-              Pedido Confirmado!
-            </Text>
-            <Text className="text-base text-text-secondary text-center mt-2 mb-6 leading-[22px]">
-              Recebemos seu pedido e já vamos começar a preparar.
-            </Text>
-            <TouchableOpacity
-              className="bg-brand py-4 px-6 rounded-btn w-full items-center"
-              onPress={() => {
-                setShowSuccessModal(false);
-                refreshCart();
-                router.replace("/(tabs)/home");
-              }}
-            >
-              <Text className="text-brand-on text-base font-bold">Concluir</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

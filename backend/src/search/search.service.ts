@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { supabase } from '../lib/supabase'; 
+import { supabase } from '../lib/supabase';
 
 @Injectable()
 export class SearchService {
@@ -24,7 +24,11 @@ export class SearchService {
       };
     } catch (error: any) {
       throw new HttpException(
-        { success: false, message: 'Erro ao buscar produtos', error: error.message },
+        {
+          success: false,
+          message: 'Erro ao buscar produtos',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

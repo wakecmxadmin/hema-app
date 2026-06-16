@@ -44,6 +44,54 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * Cria a preference do Mercado Pago para um pedido existente que já está em
+   * `awaiting_customer_payment`. Carrega itens + delivery_fee do banco em vez
+   * de receber por parâmetro (no fluxo store-confirm-first os valores podem ter
+   * sido editados pelo admin).
+   */
+  async createPaymentLinkForOrder(orderId: string): Promise<{
+    init_point?: string;
+    sandbox_init_point?: string;
+  }> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select(
+        `id, total_price, delivery_fee, payment_method,
+         order_items ( product_id, product_name, quantity, weight, subtotal )`,
+      )
+      .eq('id', orderId)
+      .single();
+
+    if (error || !order) {
+      throw new BadRequestException('Pedido não encontrado.');
+    }
+
+    const items = (order.order_items as any[]) ?? [];
+    if (items.length === 0) {
+      throw new BadRequestException('Pedido sem itens.');
+    }
+
+    const preference = await this.createMercadoPagoPreference({
+      order_id: orderId,
+      items: items.map((it) => ({
+        product_id: it.product_id,
+        product_name: it.product_name,
+        quantity: it.quantity,
+        weight: it.weight,
+        subtotal: Number(it.subtotal),
+      })),
+      delivery_fee: Number(order.delivery_fee ?? 0),
+      total_price: Number(order.total_price ?? 0),
+      payment_method: order.payment_method,
+    });
+
+    return {
+      init_point: preference?.init_point,
+      sandbox_init_point: (preference as any)?.sandbox_init_point,
+    };
+  }
+
   async processPayment(
     input: ProcessPaymentInput,
   ): Promise<ProcessPaymentResult> {
@@ -164,12 +212,15 @@ export class PaymentsService {
               ],
             };
 
-      console.log('[MP_PREFERENCE] Enviando requisição para criar preference:', {
-        order_id: params.order_id,
-        payment_method: params.payment_method,
-        total_price: params.total_price,
-        items_count: mpItems.length,
-      });
+      console.log(
+        '[MP_PREFERENCE] Enviando requisição para criar preference:',
+        {
+          order_id: params.order_id,
+          payment_method: params.payment_method,
+          total_price: params.total_price,
+          items_count: mpItems.length,
+        },
+      );
 
       const response = await preferenceClient.create({
         body: {
@@ -373,8 +424,7 @@ export class PaymentsService {
     const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const recipient = process.env.WHATSAPP_RECIPIENT;
     const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
-    const templateLanguage =
-      process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR';
+    const templateLanguage = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR';
     const graphVersion = process.env.WHATSAPP_GRAPH_VERSION ?? 'v22.0';
 
     if (!token || !phoneNumberId || !recipient || !templateName) {

@@ -8,15 +8,23 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 
-import { AdminOrdersService, AdminOrderStatus } from "@/services/admin-orders";
+import {
+  AdminOrdersService,
+  AdminOrderStatus,
+  OrderItemEdit,
+} from "@/services/admin-orders";
 import { Toast } from "@/util/toast";
 import { optimizedImage } from "@/util/image-url";
+import { EditItemsModal } from "@/components/admin/EditItemsModal";
 
 function ItemThumbnail({ uri }: { uri?: string | null }) {
   if (uri) {
@@ -69,6 +77,18 @@ function formatPrice(price: number) {
 
 function getStatusBadge(status: string) {
   switch (status) {
+    case "awaiting_store_confirmation":
+      return {
+        label: "Aguardando sua confirmação",
+        color: "#D91A21",
+        bg: "#FEF2F2",
+      };
+    case "awaiting_customer_payment":
+      return {
+        label: "Aguardando pagamento do cliente",
+        color: "#F59E0B",
+        bg: "#FFFBEB",
+      };
     case "pending":
       return { label: "Pendente", color: "#F59E0B", bg: "#FFFBEB" };
     case "waiting_payment":
@@ -100,6 +120,11 @@ export default function AdminOrderDetailScreen() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const fetchDetails = async (isInitial = true) => {
     if (isInitial) setLoading(true);
@@ -176,6 +201,80 @@ export default function AdminOrderDetailScreen() {
     );
   };
 
+  const handleConfirmAsIs = () => {
+    Alert.alert(
+      "Confirmar pedido",
+      order?.payment_method === "cash"
+        ? "Pedido em dinheiro: será confirmado e enviado pra preparação. Cliente paga na entrega."
+        : "Cliente receberá notificação para pagar em até 1h.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            setConfirming(true);
+            const response = await AdminOrdersService.confirm(id);
+            setConfirming(false);
+            if (response.success) {
+              Toast.show({ type: "success", text1: "Pedido confirmado." });
+              fetchDetails(false);
+            } else {
+              Toast.show({
+                type: "error",
+                text1: "Erro ao confirmar",
+                text2: response.message,
+              });
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleApplyEdits = async (edits: OrderItemEdit[]) => {
+    setConfirming(true);
+    const response = await AdminOrdersService.confirm(id, edits);
+    setConfirming(false);
+    if (response.success) {
+      Toast.show({ type: "success", text1: "Pedido confirmado com edições." });
+      setEditOpen(false);
+      fetchDetails(false);
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao confirmar",
+        text2: response.message,
+      });
+    }
+  };
+
+  const handleReject = async () => {
+    const reason = rejectReason.trim();
+    if (!reason) {
+      Toast.show({
+        type: "error",
+        text1: "Informe o motivo",
+        text2: "O cliente receberá esse motivo.",
+      });
+      return;
+    }
+    setRejecting(true);
+    const response = await AdminOrdersService.reject(id, reason);
+    setRejecting(false);
+    if (response.success) {
+      Toast.show({ type: "success", text1: "Pedido rejeitado." });
+      setRejectOpen(false);
+      setRejectReason("");
+      fetchDetails(false);
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao rejeitar",
+        text2: response.message,
+      });
+    }
+  };
+
   if (loading || !order) {
     return (
       <View style={{ flex: 1, backgroundColor: "#FAF6F0", justifyContent: "center", alignItems: "center" }}>
@@ -188,6 +287,8 @@ export default function AdminOrderDetailScreen() {
   const isPickup = !order.addresses;
   const customer = order.customer ?? {};
   const isCancelled = order.status === "cancelled";
+  const needsStoreConfirmation = order.status === "awaiting_store_confirmation";
+  const awaitingCustomerPayment = order.status === "awaiting_customer_payment";
 
   const sectionShadow = Platform.select({
     ios: {
@@ -242,7 +343,119 @@ export default function AdminOrderDetailScreen() {
             {" • "}
             {order.payment_status === "paid" ? "Pago" : order.payment_status === "pending" ? "Pendente" : order.payment_status}
           </Text>
+          {order.was_edited && (
+            <Text className="text-[12px] text-text-secondary mt-0.5">
+              Pedido editado • original: {formatPrice(Number(order.original_total_price))}
+            </Text>
+          )}
         </View>
+
+        {/* CONFIRMAÇÃO DA LOJA */}
+        {needsStoreConfirmation && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#D91A21" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons name="store-clock-outline" size={20} color="#D91A21" />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                Confirmar com o estoque físico
+              </Text>
+            </View>
+            <Text className="text-[12.5px] text-text-secondary mb-4" style={{ lineHeight: 17 }}>
+              Cheque se todos os itens estão disponíveis antes de o cliente pagar.
+              Você pode reduzir/remover itens em falta ao confirmar.
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={confirming}
+              onPress={handleConfirmAsIs}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: "#10B981",
+                marginBottom: 8,
+                opacity: confirming ? 0.6 : 1,
+              }}
+            >
+              {confirming ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="check-bold" size={18} color="#FFFFFF" />
+                  <Text className="text-[15px] font-bold text-white">Confirmar tudo</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={confirming}
+              onPress={() => setEditOpen(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 14,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: "#3B82F6",
+                backgroundColor: "#EFF6FF",
+                marginBottom: 8,
+              }}
+            >
+              <MaterialCommunityIcons name="pencil-outline" size={18} color="#3B82F6" />
+              <Text className="text-[15px] font-bold" style={{ color: "#3B82F6" }}>
+                Editar itens (faltou algum)
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={confirming}
+              onPress={() => setRejectOpen(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 14,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: "#D91A21",
+                backgroundColor: "#FEF2F2",
+              }}
+            >
+              <MaterialCommunityIcons name="close-thick" size={18} color="#D91A21" />
+              <Text className="text-[15px] font-bold" style={{ color: "#D91A21" }}>
+                Rejeitar pedido
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {awaitingCustomerPayment && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#F59E0B" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons name="cash-clock" size={20} color="#F59E0B" />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                Aguardando pagamento
+              </Text>
+            </View>
+            <Text className="text-[12.5px] text-text-secondary" style={{ lineHeight: 17 }}>
+              Você confirmou. O cliente foi notificado e tem 1h pra pagar.
+              {order.payment_window_expires_at
+                ? ` Expira em ${new Date(order.payment_window_expires_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`
+                : ""}
+            </Text>
+          </View>
+        )}
 
         {/* CLIENTE */}
         <View className="bg-surface rounded-card p-4 mb-4" style={sectionShadow}>
@@ -414,7 +627,7 @@ export default function AdminOrderDetailScreen() {
         )}
 
         {/* STATUS */}
-        {!isCancelled && (
+        {!isCancelled && !needsStoreConfirmation && !awaitingCustomerPayment && (
           <View className="bg-surface rounded-card p-4 mb-4" style={sectionShadow}>
             <Text className="text-[16px] font-bold text-text-primary mb-1">
               Atualizar status
@@ -471,7 +684,7 @@ export default function AdminOrderDetailScreen() {
         )}
       </ScrollView>
 
-      {!isCancelled && (
+      {!isCancelled && !needsStoreConfirmation && (
         <View className="p-4 bg-surface border-t border-neutral-200">
           <TouchableOpacity
             className="py-4 rounded-btn border border-brand items-center"
@@ -486,6 +699,103 @@ export default function AdminOrderDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Modal de rejeição */}
+      <Modal
+        visible={rejectOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRejectOpen(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <View className="bg-surface rounded-card p-5">
+              <Text className="text-[18px] font-bold text-text-primary mb-2">
+                Rejeitar pedido
+              </Text>
+              <Text className="text-[12.5px] text-text-secondary mb-3">
+                Esse motivo será enviado ao cliente. Ex: "Faltou o item X no estoque".
+              </Text>
+              <TextInput
+                value={rejectReason}
+                onChangeText={setRejectReason}
+                placeholder="Motivo da rejeição"
+                placeholderTextColor="#A6A6A6"
+                multiline
+                numberOfLines={3}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#EAE3D7",
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 14,
+                  color: "#1A1613",
+                  minHeight: 80,
+                  textAlignVertical: "top",
+                  marginBottom: 16,
+                }}
+              />
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setRejectOpen(false);
+                    setRejectReason("");
+                  }}
+                  disabled={rejecting}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: "#EAE3D7",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text className="text-text-primary text-[14px] font-bold">Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleReject}
+                  disabled={rejecting || !rejectReason.trim()}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 10,
+                    backgroundColor: "#D91A21",
+                    alignItems: "center",
+                    opacity: rejecting || !rejectReason.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {rejecting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text className="text-white text-[14px] font-bold">Rejeitar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal de edição de itens */}
+      <EditItemsModal
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        items={order.order_items ?? []}
+        deliveryFee={Number(order.delivery_fee ?? 0)}
+        loading={confirming}
+        onConfirm={handleApplyEdits}
+      />
     </SafeAreaView>
   );
 }

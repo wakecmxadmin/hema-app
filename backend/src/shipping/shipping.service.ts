@@ -65,7 +65,7 @@ export class ShippingService {
         .select(
           `id, user_id, status, total_price, delivery_fee, payment_method,
            logmanager_envio_id,
-           order_items ( id, product_name, product_price, quantity, weight, subtotal ),
+           order_items ( id, product_id, product_name, product_price, quantity, weight, subtotal ),
            addresses ( street, number, complement, neighborhood, city, state, zip_code )`,
         )
         .eq('id', orderId)
@@ -86,9 +86,7 @@ export class ShippingService {
       }
 
       if (!order.addresses) {
-        this.logger.log(
-          `Pedido ${orderId} é retirada na loja — sem envio.`,
-        );
+        this.logger.log(`Pedido ${orderId} é retirada na loja — sem envio.`);
         return;
       }
 
@@ -151,6 +149,21 @@ export class ShippingService {
             shipping_last_error: null,
           })
           .eq('id', orderId);
+
+        // O item saiu da loja: zera a reserva. O ERP refletirá a saída na
+        // próxima rodada do sync (que sobrescreve products.stock).
+        const commitItems = items.map((it: any) => ({
+          product_id: it.product_id,
+          quantity: it.quantity ? it.quantity : (it.weight || 0) / 1000,
+        }));
+        const { error: commitError } = await supabase.rpc('commit_stock', {
+          items: commitItems,
+        });
+        if (commitError) {
+          this.logger.error(
+            `Falha ao commitar estoque do pedido ${orderId}: ${commitError.message}`,
+          );
+        }
       } else {
         await supabase
           .from('orders')

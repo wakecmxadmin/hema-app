@@ -67,6 +67,52 @@ export class ExpoPushService {
   }
 
   /**
+   * Push para todos os devices de um usuário específico (cliente).
+   * Best-effort: erros são logados, nunca propagados.
+   */
+  async notifyUser(
+    userId: string,
+    payload: { title: string; body: string; data?: Record<string, any> },
+  ): Promise<void> {
+    try {
+      const { data: tokens, error } = await supabase
+        .from('device_tokens')
+        .select('expo_push_token')
+        .eq('user_id', userId);
+
+      if (error) {
+        this.logger.error(
+          `Erro ao buscar tokens do usuário ${userId}: ${error.message}`,
+        );
+        return;
+      }
+
+      if (!tokens || tokens.length === 0) {
+        this.logger.log(
+          `Nenhum token registrado para usuário ${userId} — push ignorado.`,
+        );
+        return;
+      }
+
+      const messages: ExpoPushMessage[] = tokens.map((t) => ({
+        to: t.expo_push_token,
+        title: payload.title,
+        body: payload.body,
+        sound: 'default',
+        priority: 'high',
+        channelId: 'orders',
+        data: payload.data ?? {},
+      }));
+
+      await this.sendBatched(messages);
+    } catch (err: any) {
+      this.logger.error(
+        `Falha ao notificar usuário ${userId}: ${err?.message ?? err}`,
+      );
+    }
+  }
+
+  /**
    * Faz fan-out para todos os tokens marcados como is_staff. Encapsula
    * fetch + monta payload + send + cleanup de tokens inválidos.
    */
@@ -156,7 +202,10 @@ export class ExpoPushService {
 
     if (invalid.length > 0) {
       this.logger.warn(`Removendo ${invalid.length} token(s) inválido(s).`);
-      await supabase.from('device_tokens').delete().in('expo_push_token', invalid);
+      await supabase
+        .from('device_tokens')
+        .delete()
+        .in('expo_push_token', invalid);
     }
   }
 }

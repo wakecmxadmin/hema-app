@@ -25,13 +25,44 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "done", label: "Concluídos" },
 ];
 
-const ACTIVE_STATUSES = ["pending", "confirmed", "preparing", "shipped", "in_delivery"];
+const ACTIVE_STATUSES = [
+  "pending",
+  "awaiting_store_confirmation",
+  "awaiting_customer_payment",
+  "waiting_payment",
+  "confirmed",
+  "preparing",
+  "shipped",
+  "in_delivery",
+];
 const DONE_STATUSES = ["delivered", "completed", "cancelled"];
+const CLIENT_ACTION_STATUSES = ["awaiting_customer_payment"];
 
 function getStatusConfig(status: string) {
   switch (status) {
+    case "awaiting_store_confirmation":
+      return {
+        label: "Aguardando loja",
+        color: "#D91A21",
+        bg: "#FEF2F2",
+        icon: "store-clock-outline" as const,
+      };
+    case "awaiting_customer_payment":
+      return {
+        label: "Pagar agora",
+        color: "#F59E0B",
+        bg: "#FFFBEB",
+        icon: "cash-clock" as const,
+      };
     case "pending":
       return { label: "Em preparo", color: "#F59E0B", bg: "#FFFBEB", icon: "clock-outline" as const };
+    case "waiting_payment":
+      return {
+        label: "Aguard. pagamento",
+        color: "#F59E0B",
+        bg: "#FFFBEB",
+        icon: "cash-clock" as const,
+      };
     case "confirmed":
       return { label: "Confirmado", color: "#3B82F6", bg: "#EFF6FF", icon: "check-outline" as const };
     case "preparing":
@@ -219,12 +250,21 @@ export default function OrdersTabScreen() {
     fetchOrders(false);
   };
 
-  const filteredOrders = orders.filter((o) => {
-    if (activeFilter === "all") return true;
-    if (activeFilter === "active") return ACTIVE_STATUSES.includes(o.status);
-    if (activeFilter === "done") return DONE_STATUSES.includes(o.status);
-    return true;
-  });
+  const filteredOrders = orders
+    .filter((o) => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "active") return ACTIVE_STATUSES.includes(o.status);
+      if (activeFilter === "done") return DONE_STATUSES.includes(o.status);
+      return true;
+    })
+    .sort((a, b) => {
+      // Pedidos que precisam de ação do cliente vêm primeiro, depois ordena
+      // pela data de criação (mais recente primeiro).
+      const aNeedsAction = CLIENT_ACTION_STATUSES.includes(a.status);
+      const bNeedsAction = CLIENT_ACTION_STATUSES.includes(b.status);
+      if (aNeedsAction !== bNeedsAction) return aNeedsAction ? -1 : 1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF6F0" }} edges={["top"]}>

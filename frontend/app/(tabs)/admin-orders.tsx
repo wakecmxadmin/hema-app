@@ -27,6 +27,8 @@ type MaterialIconName = React.ComponentProps<typeof MaterialCommunityIcons>["nam
 // ─── Filter definition ─────────────────────────────────────────────────────────
 type FilterKey =
   | "all"
+  | "needs_confirmation"
+  | "awaiting_payment"
   | "new"
   | "waiting_payment"
   | "in_progress"
@@ -44,8 +46,18 @@ interface FilterDef {
 
 const FILTERS: FilterDef[] = [
   { key: "all", label: "Todos" },
+  {
+    key: "needs_confirmation",
+    label: "Confirmar",
+    statuses: ["awaiting_store_confirmation"],
+  },
+  {
+    key: "awaiting_payment",
+    label: "Aguard. pgto cliente",
+    statuses: ["awaiting_customer_payment"],
+  },
   { key: "new", label: "Novos", statuses: ["pending"] },
-  { key: "waiting_payment", label: "Pagamento", statuses: ["waiting_payment"] },
+  { key: "waiting_payment", label: "Pagamento MP", statuses: ["waiting_payment"] },
   {
     key: "in_progress",
     label: "Em preparo",
@@ -61,6 +73,8 @@ const FILTERS: FilterDef[] = [
 ];
 
 function getFilterCount(key: FilterKey, counts: {
+  needs_confirmation: number;
+  awaiting_payment: number;
   new: number;
   waiting_payment: number;
   in_progress: number;
@@ -72,6 +86,10 @@ function getFilterCount(key: FilterKey, counts: {
   switch (key) {
     case "all":
       return counts.total;
+    case "needs_confirmation":
+      return counts.needs_confirmation;
+    case "awaiting_payment":
+      return counts.awaiting_payment;
     case "new":
       return counts.new;
     case "waiting_payment":
@@ -126,6 +144,22 @@ interface StatusVisuals {
 
 function getStatusVisuals(status: string): StatusVisuals {
   switch (status) {
+    case "awaiting_store_confirmation":
+      return {
+        label: "Aguardando confirmação",
+        color: "#D91A21",
+        bg: "#FEF2F2",
+        accent: "#D91A21",
+        icon: "store-clock-outline",
+      };
+    case "awaiting_customer_payment":
+      return {
+        label: "Aguard. pagamento cliente",
+        color: "#F59E0B",
+        bg: "#FFFBEB",
+        accent: "#F59E0B",
+        icon: "cash-clock",
+      };
     case "pending":
       return {
         label: "Pendente",
@@ -399,6 +433,8 @@ export default function AdminOrdersScreen() {
   // ─── Counts & filtering ─────────────────────────────────────────────────────
   const counts = useMemo(() => {
     const c = {
+      needs_confirmation: 0,
+      awaiting_payment: 0,
       new: 0,
       waiting_payment: 0,
       in_progress: 0,
@@ -408,7 +444,9 @@ export default function AdminOrdersScreen() {
       total: orders.length,
     };
     for (const o of orders) {
-      if (o.status === "pending") c.new++;
+      if (o.status === "awaiting_store_confirmation") c.needs_confirmation++;
+      else if (o.status === "awaiting_customer_payment") c.awaiting_payment++;
+      else if (o.status === "pending") c.new++;
       else if (o.status === "waiting_payment") c.waiting_payment++;
       else if (
         o.status === "confirmed" ||

@@ -43,10 +43,15 @@ export class StaffGuard implements CanActivate {
     }
 
     const email = (data.user.email ?? '').toLowerCase();
-    const confirmedAt = data.user.email_confirmed_at as string | null | undefined;
+    const confirmedAt = data.user.email_confirmed_at as
+      | string
+      | null
+      | undefined;
 
     if (!isStaffEmail(email, confirmedAt)) {
-      throw new ForbiddenException('Acesso restrito a funcionários da Hema Cereais');
+      throw new ForbiddenException(
+        'Acesso restrito a funcionários da Hema Cereais',
+      );
     }
 
     request.user.email = email;

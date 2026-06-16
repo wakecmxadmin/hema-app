@@ -46,7 +46,8 @@ export class CartService {
           throw new HttpException(
             {
               success: false,
-              message: 'A quantidade deve ser um número inteiro para este produto',
+              message:
+                'A quantidade deve ser um número inteiro para este produto',
             },
             HttpStatus.BAD_REQUEST,
           );
@@ -139,7 +140,10 @@ export class CartService {
             HttpStatus.UNPROCESSABLE_ENTITY,
           );
         }
-        if (product.type === 'weight' && ((newWeight || 0) / 1000) > product.stock) {
+        if (
+          product.type === 'weight' &&
+          (newWeight || 0) / 1000 > product.stock
+        ) {
           throw new HttpException(
             {
               success: false,
@@ -291,7 +295,10 @@ export class CartService {
       if (dto.quantity !== undefined && product.type === 'unit') {
         if (!Number.isInteger(dto.quantity)) {
           throw new HttpException(
-            { success: false, message: 'A quantidade deve ser um número inteiro' },
+            {
+              success: false,
+              message: 'A quantidade deve ser um número inteiro',
+            },
             HttpStatus.BAD_REQUEST,
           );
         }
@@ -399,7 +406,11 @@ export class CartService {
     try {
       const cartResponse = await this.getCart(userId);
       if (!cartResponse.data.cart || cartResponse.data.items.length === 0) {
-        return { success: true, message: 'Carrinho vazio', data: { valid: true, adjustments: [] } };
+        return {
+          success: true,
+          message: 'Carrinho vazio',
+          data: { valid: true, adjustments: [] },
+        };
       }
 
       const adjustments: any[] = [];
@@ -465,9 +476,10 @@ export class CartService {
 
       return {
         success: true,
-        message: adjustments.length > 0
-          ? 'Alguns itens foram ajustados por falta de estoque'
-          : 'Todos os itens estão disponíveis',
+        message:
+          adjustments.length > 0
+            ? 'Alguns itens foram ajustados por falta de estoque'
+            : 'Todos os itens estão disponíveis',
         data: {
           valid: adjustments.length === 0,
           adjustments,

@@ -24,14 +24,10 @@ export class OrdersController {
     return this.ordersService.createOrder(userId, dto);
   }
 
-  @Post(':id/pay')
-  payOrder(
-    @Req() req: AuthRequest,
-    @Param('id') order_id: string,
-    @Body() paymentData: Record<string, unknown>,
-  ) {
+  @Post(':id/proceed-to-payment')
+  proceedToPayment(@Req() req: AuthRequest, @Param('id') order_id: string) {
     const userId = req.user.sub;
-    return this.ordersService.confirmAndPayOrder(userId, order_id, paymentData);
+    return this.ordersService.proceedToPayment(userId, order_id);
   }
 
   @Get('my-orders')

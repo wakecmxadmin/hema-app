@@ -64,9 +64,7 @@ export class LogManagerService {
     payload: LogManagerShipmentPayload,
   ): Promise<LogManagerCreateResult> {
     if (!this.apiToken) {
-      this.logger.warn(
-        'LOGMANAGER_API_TOKEN ausente — envio não será criado.',
-      );
+      this.logger.warn('LOGMANAGER_API_TOKEN ausente — envio não será criado.');
       return { ok: false, status: 0, body: { message: 'token ausente' } };
     }
 

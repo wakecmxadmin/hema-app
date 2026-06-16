@@ -24,18 +24,16 @@ export class NotificationsService {
         userData.user.email_confirmed_at,
       );
 
-      const { error } = await supabase
-        .from('device_tokens')
-        .upsert(
-          {
-            user_id: userId,
-            expo_push_token: dto.expo_push_token,
-            platform: dto.platform ?? null,
-            is_staff: isStaff,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,expo_push_token' },
-        );
+      const { error } = await supabase.from('device_tokens').upsert(
+        {
+          user_id: userId,
+          expo_push_token: dto.expo_push_token,
+          platform: dto.platform ?? null,
+          is_staff: isStaff,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,expo_push_token' },
+      );
 
       if (error) throw error;
 

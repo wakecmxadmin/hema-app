@@ -2,6 +2,8 @@ import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export const ORDER_STATUSES = [
   'pending',
+  'awaiting_store_confirmation',
+  'awaiting_customer_payment',
   'waiting_payment',
   'confirmed',
   'preparing',

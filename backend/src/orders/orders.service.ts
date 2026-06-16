@@ -1,17 +1,26 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { supabase } from '../lib/supabase';
 import { calculateDeliveryFee } from '../utils/delivery.util';
 import { PaymentsService } from '../payments/payment.service';
 import { CartService } from '../cart/cart.service';
 import { ExpoPushService } from '../notifications/expo-push.service';
+import { ShippingService } from '../shipping/shipping.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly cartService: CartService,
+    @Inject(forwardRef(() => PaymentsService))
     private readonly paymentsService: PaymentsService,
     private readonly expoPushService: ExpoPushService,
+    private readonly shippingService: ShippingService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -84,15 +93,17 @@ export class OrdersService {
         (calculatedTotal + deliveryFee).toFixed(2),
       );
 
-      // Insere o pedido principal
+      // Insere o pedido principal. Nasce em `awaiting_store_confirmation`:
+      // a loja precisa conferir o estoque físico antes de o cliente pagar.
       const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: userId,
           address_id: dto.address_id || null,
-          status: 'pending',
+          status: 'awaiting_store_confirmation',
           payment_status: 'pending',
           total_price: finalTotalPrice,
+          original_total_price: finalTotalPrice,
           delivery_fee: deliveryFee,
           payment_method: dto.payment_method,
         })
@@ -124,9 +135,7 @@ export class OrdersService {
         const product = item.product;
         const isUnit = product.type === 'unit';
         // Para unit: quantidade inteira. Para weight: peso em KG
-        const qty = isUnit
-          ? item.quantity
-          : (item.weight || 0) / 1000;
+        const qty = isUnit ? item.quantity : (item.weight || 0) / 1000;
         return { product_id: product.id, quantity: qty };
       });
 
@@ -158,51 +167,26 @@ export class OrdersService {
         );
       }
 
-      // Processa Pagamento
-      console.log('[ORDER] Iniciando processamento de pagamento:', {
-        payment_method: dto.payment_method,
-        total_price: finalTotalPrice,
-        order_id: newOrder.id,
-      });
+      // Push fire-and-forget pra equipe: novo pedido aguardando confirmação.
+      void this.notifyStaffOfNewOrder(
+        newOrder.id,
+        userId,
+        finalTotalPrice,
+        dto.payment_method,
+      );
 
-      const paymentResult = await this.paymentsService.processPayment({
-        payment_method: dto.payment_method,
-        total_price: finalTotalPrice,
-        delivery_fee: deliveryFee,
-        order_id: newOrder.id,
-        items: orderItemsToInsert,
-      });
-
-      console.log('[ORDER] Resultado do processamento de pagamento:', {
-        paymentResult,
-      });
-
-      // Fire-and-forget push para a equipe da Hema. Falhas não devem
-      // impactar a resposta do checkout para o cliente.
-      void this.notifyStaffOfNewOrder(newOrder.id, userId, finalTotalPrice, dto.payment_method);
-
-      // Limpa o carrinho APENAS se for dinheiro (os outros limpam via webhook depois)
-      if (dto.payment_method === 'cash') {
-        await supabase.from('cart_items').delete().eq('cart_id', cart.id);
-        await supabase
-          .from('carts')
-          .update({ total_price: 0 })
-          .eq('id', cart.id);
-      }
+      // Limpa o carrinho — o pedido já foi criado com sucesso, mesmo que a
+      // loja venha a rejeitar/editar depois.
+      await supabase.from('cart_items').delete().eq('cart_id', cart.id);
+      await supabase.from('carts').update({ total_price: 0 }).eq('id', cart.id);
 
       return {
         success: true,
-        message: 'Pedido criado com sucesso!',
+        message: 'Pedido criado. Aguardando confirmação da loja.',
         data: {
           order_id: newOrder.id,
-          status: paymentResult.orderStatus,
+          status: 'awaiting_store_confirmation',
           total_price: finalTotalPrice,
-          ...(paymentResult.init_point && {
-            init_point: paymentResult.init_point,
-          }),
-          ...(paymentResult.sandbox_init_point && {
-            sandbox_init_point: paymentResult.sandbox_init_point,
-          }),
         },
       };
     } catch (error: any) {
@@ -306,7 +290,11 @@ export class OrdersService {
         );
       }
 
-      const cancelableStatuses = ['pending'];
+      const cancelableStatuses = [
+        'pending',
+        'awaiting_store_confirmation',
+        'awaiting_customer_payment',
+      ];
 
       if (!cancelableStatuses.includes(order.status)) {
         throw new HttpException(
@@ -333,21 +321,21 @@ export class OrdersService {
 
       if (updateError) throw updateError;
 
-      // Devolver estoque dos itens do pedido cancelado
+      // Libera as reservas dos itens do pedido cancelado
       if (orderItems && orderItems.length > 0) {
-        const restoreItems = orderItems.map((item: any) => ({
+        const releaseItems = orderItems.map((item: any) => ({
           product_id: item.product_id,
           quantity: item.quantity ? item.quantity : (item.weight || 0) / 1000,
         }));
 
-        const { error: restoreError } = await supabase.rpc('restore_stock', {
-          items: restoreItems,
+        const { error: releaseError } = await supabase.rpc('release_stock', {
+          items: releaseItems,
         });
 
-        if (restoreError) {
+        if (releaseError) {
           console.error(
-            `[ORDER] Erro ao devolver estoque do pedido ${orderId}:`,
-            restoreError,
+            `[ORDER] Erro ao liberar reserva do pedido ${orderId}:`,
+            releaseError,
           );
         }
       }
@@ -381,7 +369,9 @@ export class OrdersService {
       .single();
 
     if (error || !order) {
-      console.error(`[ORDER] Pedido ${orderId} não encontrado para atualização`);
+      console.error(
+        `[ORDER] Pedido ${orderId} não encontrado para atualização`,
+      );
       return;
     }
 
@@ -440,13 +430,76 @@ export class OrdersService {
           .from('carts')
           .update({ total_price: 0 })
           .eq('id', cart.id);
-        console.log(`[ORDER] Carrinho do usuário ${order.user_id} limpo após aprovação.`);
+        console.log(
+          `[ORDER] Carrinho do usuário ${order.user_id} limpo após aprovação.`,
+        );
       }
     }
   }
 
-  async confirmAndPayOrder(_userId: string, _orderId: string, _paymentData: unknown) {
-    // Placeholder para o MP
+  /**
+   * Cliente clica em "Pagar agora" após a loja confirmar. Só funciona em
+   * `awaiting_customer_payment`. Para PIX/cartão cria a preference no MP e
+   * retorna o init_point. Para dinheiro vai direto pra `confirmed` e dispara
+   * o envio (não há pagamento online, paga na entrega).
+   */
+  async proceedToPayment(userId: string, orderId: string) {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('id, user_id, status, payment_method')
+      .eq('id', orderId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !order) {
+      throw new HttpException(
+        { success: false, message: 'Pedido não encontrado.' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (order.status !== 'awaiting_customer_payment') {
+      throw new HttpException(
+        {
+          success: false,
+          message: `Pedido não está aguardando pagamento (status: ${order.status}).`,
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    if (order.payment_method === 'cash') {
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'confirmed' })
+        .eq('id', orderId)
+        .eq('status', 'awaiting_customer_payment');
+
+      if (updateError) {
+        throw new HttpException(
+          { success: false, message: 'Falha ao confirmar pedido em dinheiro.' },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      void this.shippingService.createForOrder(orderId);
+
+      return {
+        success: true,
+        message: 'Pedido confirmado. Pague na entrega.',
+        data: { status: 'confirmed' },
+      };
+    }
+
+    // PIX ou cartão — cria a preference do MP agora.
+    const { init_point, sandbox_init_point } =
+      await this.paymentsService.createPaymentLinkForOrder(orderId);
+
+    return {
+      success: true,
+      message: 'Link de pagamento gerado.',
+      data: { init_point, sandbox_init_point },
+    };
   }
 
   /**
@@ -513,7 +566,12 @@ export class OrdersService {
       return {
         success: added.length > 0,
         message,
-        data: { added, skipped, added_count: added.length, skipped_count: skipped.length },
+        data: {
+          added,
+          skipped,
+          added_count: added.length,
+          skipped_count: skipped.length,
+        },
       };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
@@ -548,7 +606,10 @@ export class OrdersService {
         customer_name: profile?.name ?? null,
       });
     } catch (err: any) {
-      console.error('[ORDER] Falha ao notificar staff sobre novo pedido:', err?.message ?? err);
+      console.error(
+        '[ORDER] Falha ao notificar staff sobre novo pedido:',
+        err?.message ?? err,
+      );
     }
   }
 
@@ -568,7 +629,10 @@ export class OrdersService {
         customer_name: profile?.name ?? null,
       });
     } catch (err: any) {
-      console.error('[ORDER] Falha ao notificar staff sobre cancelamento:', err?.message ?? err);
+      console.error(
+        '[ORDER] Falha ao notificar staff sobre cancelamento:',
+        err?.message ?? err,
+      );
     }
   }
 }

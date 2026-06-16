@@ -23,7 +23,10 @@ export class NotificationsController {
   }
 
   @Delete('token/:expoPushToken')
-  unregisterToken(@Req() req: AuthRequest, @Param('expoPushToken') token: string) {
+  unregisterToken(
+    @Req() req: AuthRequest,
+    @Param('expoPushToken') token: string,
+  ) {
     return this.notificationsService.unregisterToken(req.user.sub, token);
   }
 }

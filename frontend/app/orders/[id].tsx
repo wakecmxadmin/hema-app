@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
+import * as WebBrowser from "expo-web-browser";
 
 import { OrdersService } from "@/services/orders";
 import { Toast } from "@/util/toast";
@@ -58,6 +59,7 @@ export default function OrderDetailsScreen() {
   const [canceling, setCanceling] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [proceedingToPayment, setProceedingToPayment] = useState(false);
 
   const fetchOrderDetails = async (isInitial = true) => {
     if (isInitial) setLoading(true);
@@ -180,6 +182,34 @@ export default function OrderDetailsScreen() {
     );
   };
 
+  const handleProceedToPayment = async () => {
+    setProceedingToPayment(true);
+    const response = await OrdersService.proceedToPayment(id);
+    setProceedingToPayment(false);
+
+    if (!response.success || !response.data) {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao gerar pagamento",
+        text2: response.message,
+      });
+      return;
+    }
+
+    if (response.data.init_point) {
+      await WebBrowser.openBrowserAsync(response.data.init_point);
+      fetchOrderDetails(false);
+    } else {
+      // Dinheiro — já foi confirmado pelo backend.
+      Toast.show({
+        type: "success",
+        text1: "Pedido confirmado",
+        text2: "Pague na entrega.",
+      });
+      fetchOrderDetails(false);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return Number(price).toLocaleString("pt-BR", {
       style: "currency",
@@ -189,8 +219,37 @@ export default function OrderDetailsScreen() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "awaiting_store_confirmation":
+        return {
+          label: "Aguardando confirmação da loja",
+          color: "#D91A21",
+          bg: "#FEF2F2",
+        };
+      case "awaiting_customer_payment":
+        return {
+          label: "Aguardando seu pagamento",
+          color: "#F59E0B",
+          bg: "#FFFBEB",
+        };
       case "pending":
         return { label: "Pendente", color: "#F59E0B", bg: "#FFFBEB" };
+      case "waiting_payment":
+        return {
+          label: "Aguardando pagamento",
+          color: "#F59E0B",
+          bg: "#FFFBEB",
+        };
+      case "confirmed":
+        return { label: "Confirmado", color: "#3B82F6", bg: "#EFF6FF" };
+      case "preparing":
+        return { label: "Preparando", color: "#F59E0B", bg: "#FFFBEB" };
+      case "shipped":
+      case "in_delivery":
+        return { label: "Em rota", color: "#3B82F6", bg: "#EFF6FF" };
+      case "delivered":
+        return { label: "Entregue", color: "#10B981", bg: "#ECFDF5" };
+      case "completed":
+        return { label: "Finalizado", color: "#10B981", bg: "#ECFDF5" };
       case "cancelled":
         return { label: "Cancelado", color: "#D91A21", bg: "#FEF2F2" };
       default:
@@ -208,6 +267,16 @@ export default function OrderDetailsScreen() {
 
   const badge = getStatusBadge(order.status);
   const isPickup = !order.addresses;
+  const isAwaitingStoreConfirmation =
+    order.status === "awaiting_store_confirmation";
+  const isAwaitingPayment = order.status === "awaiting_customer_payment";
+  const isCancelled = order.status === "cancelled";
+  const isCash = order.payment_method === "cash";
+  const wasEdited = !!order.was_edited;
+  const canCancel =
+    order.status === "pending" ||
+    order.status === "awaiting_store_confirmation" ||
+    order.status === "awaiting_customer_payment";
 
   const sectionShadow = Platform.select({
     ios: {
@@ -265,6 +334,124 @@ export default function OrderDetailsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* BANNER: Aguardando loja confirmar */}
+        {isAwaitingStoreConfirmation && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#D91A21" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons name="store-clock-outline" size={22} color="#D91A21" />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                Aguardando a loja confirmar
+              </Text>
+            </View>
+            <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 18 }}>
+              A loja vai conferir o estoque físico e te avisar em instantes. Você
+              receberá uma notificação quando estiver pronto pra pagar.
+            </Text>
+          </View>
+        )}
+
+        {/* BANNER: Aguardando pagamento (cliente) */}
+        {isAwaitingPayment && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#F59E0B" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons name="cash-clock" size={22} color="#F59E0B" />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                {wasEdited ? "Loja editou seu pedido" : "Loja confirmou seu pedido"}
+              </Text>
+            </View>
+            {wasEdited && order.original_total_price && (
+              <View
+                style={{
+                  backgroundColor: "#FFFBEB",
+                  borderRadius: 8,
+                  padding: 10,
+                  marginBottom: 10,
+                }}
+              >
+                <Text className="text-[12.5px] text-text-secondary" style={{ lineHeight: 17 }}>
+                  Faltou algum item. Total original era{" "}
+                  <Text className="font-bold">
+                    {formatPrice(Number(order.original_total_price))}
+                  </Text>
+                  , novo total é{" "}
+                  <Text className="font-bold">
+                    {formatPrice(Number(order.total_price))}
+                  </Text>
+                  . Revise os itens abaixo antes de pagar.
+                </Text>
+              </View>
+            )}
+            <Text className="text-[13px] text-text-secondary mb-3" style={{ lineHeight: 18 }}>
+              {isCash
+                ? "Toque para confirmar — você paga na entrega."
+                : `Pague em até 1h pra garantir seu pedido${
+                    order.payment_window_expires_at
+                      ? ` (expira ${new Date(
+                          order.payment_window_expires_at,
+                        ).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })})`
+                      : ""
+                  }.`}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={proceedingToPayment}
+              onPress={handleProceedToPayment}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: "#10B981",
+                opacity: proceedingToPayment ? 0.6 : 1,
+              }}
+            >
+              {proceedingToPayment ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name={isCash ? "check-bold" : "cash-multiple"}
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF" }}>
+                    {isCash ? "Confirmar pedido" : "Pagar agora"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* BANNER: Rejeitado pela loja */}
+        {isCancelled && order.rejection_reason && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#D91A21" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons name="close-circle-outline" size={22} color="#D91A21" />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                Pedido cancelado
+              </Text>
+            </View>
+            <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 18 }}>
+              Motivo: {order.rejection_reason}
+            </Text>
+          </View>
+        )}
 
         {/* LISTA DE ITENS */}
         <View className="bg-surface rounded-card p-4 mb-4" style={sectionShadow}>
@@ -359,7 +546,7 @@ export default function OrderDetailsScreen() {
           </View>
           <View className="flex-row justify-between border-t border-neutral-200 pt-3 mt-1">
             <Text className="text-[16px] font-bold text-text-primary">
-              Total Pago
+              {order.payment_status === "paid" ? "Total Pago" : "Total"}
             </Text>
             <Text style={{ fontSize: 18, fontWeight: "800", color: "#1A1613" }}>
               {formatPrice(order.total_price)}
@@ -372,7 +559,7 @@ export default function OrderDetailsScreen() {
         className="bg-surface border-t border-neutral-200"
         style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, flexDirection: "row", gap: 10 }}
       >
-        {order.status === "pending" && (
+        {canCancel && (
           <TouchableOpacity
             style={{
               flex: 1,

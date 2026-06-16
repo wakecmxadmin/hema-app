@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateAddressDTO } from './dto/create-address.dto';
 import { UpdateAddressDTO } from './dto/update-address.dto';
-import { supabase } from '../lib/supabase'; 
+import { supabase } from '../lib/supabase';
 
 @Injectable()
 export class AddressesService {
@@ -19,7 +19,10 @@ export class AddressesService {
         .from('addresses')
         .insert({ ...data, user_id: userId })
         .select()
-        .single()) as { data: Record<string, unknown> | null; error: { message: string } | null };
+        .single()) as {
+        data: Record<string, unknown> | null;
+        error: { message: string } | null;
+      };
 
       if (error) throw error;
 

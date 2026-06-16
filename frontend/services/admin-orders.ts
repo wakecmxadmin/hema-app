@@ -2,6 +2,8 @@ import { apiFetch, ApiResponse } from "./api";
 
 export type AdminOrderStatus =
   | "pending"
+  | "awaiting_store_confirmation"
+  | "awaiting_customer_payment"
   | "waiting_payment"
   | "confirmed"
   | "preparing"
@@ -10,6 +12,12 @@ export type AdminOrderStatus =
   | "delivered"
   | "completed"
   | "cancelled";
+
+export interface OrderItemEdit {
+  order_item_id: string;
+  new_quantity?: number;
+  new_weight?: number;
+}
 
 export interface AdminOrderListItem {
   id: string;
@@ -72,5 +80,22 @@ export const AdminOrdersService = {
 
   async cancel(orderId: string): Promise<ApiResponse<any>> {
     return apiFetch(`/admin/orders/${orderId}/cancel`, { method: "PATCH" });
+  },
+
+  async confirm(
+    orderId: string,
+    edits?: OrderItemEdit[],
+  ): Promise<ApiResponse<any>> {
+    return apiFetch(`/admin/orders/${orderId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify(edits && edits.length > 0 ? { edits } : {}),
+    });
+  },
+
+  async reject(orderId: string, reason: string): Promise<ApiResponse<any>> {
+    return apiFetch(`/admin/orders/${orderId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
   },
 };

@@ -2,6 +2,19 @@ import { apiFetch, ApiResponse } from "./api";
 
 export type PaymentMethod = "pix" | "credit_card" | "cash";
 
+export type OrderStatus =
+  | "pending"
+  | "awaiting_store_confirmation"
+  | "awaiting_customer_payment"
+  | "waiting_payment"
+  | "confirmed"
+  | "preparing"
+  | "shipped"
+  | "in_delivery"
+  | "delivered"
+  | "completed"
+  | "cancelled";
+
 export const OrdersService = {
   async createOrder({
     address_id,
@@ -32,6 +45,18 @@ export const OrdersService = {
   // 4. Cancelar Pedido
   async cancelOrder(orderId: string): Promise<ApiResponse<any>> {
     return apiFetch(`/orders/${orderId}/cancel`, { method: "PATCH" });
+  },
+
+  // 4.b. Pagar pedido confirmado pela loja. Para PIX/cartão devolve init_point
+  // do MP. Para dinheiro, marca como confirmado direto (pagamento na entrega).
+  async proceedToPayment(orderId: string): Promise<
+    ApiResponse<{
+      init_point?: string;
+      sandbox_init_point?: string;
+      status?: string;
+    }>
+  > {
+    return apiFetch(`/orders/${orderId}/proceed-to-payment`, { method: "POST" });
   },
 
   // 5. Repetir Pedido — re-adiciona itens disponíveis ao carrinho

@@ -4,12 +4,14 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { StaffGuard } from '../auth/staff.guard';
 import { AdminOrdersService } from './admin-orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { ConfirmOrderDto, RejectOrderDto } from './dto/confirm-order.dto';
 
 @Controller('admin/orders')
 @UseGuards(StaffGuard)
@@ -39,6 +41,16 @@ export class AdminOrdersController {
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
     return this.adminOrdersService.updateStatus(id, dto);
+  }
+
+  @Post(':id/confirm')
+  confirm(@Param('id') id: string, @Body() dto: ConfirmOrderDto) {
+    return this.adminOrdersService.confirmOrder(id, dto);
+  }
+
+  @Post(':id/reject')
+  reject(@Param('id') id: string, @Body() dto: RejectOrderDto) {
+    return this.adminOrdersService.rejectOrder(id, dto);
   }
 
   @Patch(':id/cancel')
