@@ -11,7 +11,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Toast } from "@/util/toast";
 import { useRouter } from "expo-router";
@@ -23,6 +23,7 @@ import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 import { EmptyState } from "@/components/EmptyState";
+import { useDeliveryEstimate } from "@/hooks/useDeliveryEstimate";
 
 // --- CART ITEM COMPONENT ---
 const CartItemComponent = ({
@@ -315,6 +316,7 @@ export default function CartScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const deliveryEstimate = useDeliveryEstimate();
 
   useFocusEffect(
     useCallback(() => {
@@ -468,6 +470,41 @@ export default function CartScreen() {
                 </Text>
               )}
             </View>
+
+            {deliveryEstimate && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  backgroundColor: "#ECFDF5",
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  marginBottom: 12,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="truck-fast-outline"
+                  size={18}
+                  color="#10B981"
+                />
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 13,
+                    color: "#065F46",
+                    fontWeight: "600",
+                  }}
+                >
+                  Seu pedido chegará{" "}
+                  <Text style={{ fontWeight: "800" }}>
+                    {deliveryEstimate.dayLabel}
+                  </Text>{" "}
+                  até as 21h
+                </Text>
+              </View>
+            )}
 
             <TouchableOpacity
               className="bg-brand h-14 rounded-full items-center justify-center flex-row"
