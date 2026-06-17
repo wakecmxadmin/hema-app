@@ -75,6 +75,14 @@ function resolveNotification(order: any): NotifConfig | null {
   return null;
 }
 
+const PUSH_TYPE_ICONS: Record<string, string> = {
+  new_order: "package-variant-closed",
+  order_confirmed_by_store: "check-circle-outline",
+  order_rejected: "close-circle-outline",
+  order_payment_expired: "clock-alert-outline",
+  order_cancelled: "close-circle-outline",
+};
+
 export function useOrderNotifications(userId: string | null) {
   const { add } = useNotifications();
   const notifiedOrders = useRef<Set<string>>(new Set());
@@ -85,6 +93,41 @@ export function useOrderNotifications(userId: string | null) {
       permissionGranted.current = granted;
     });
   }, []);
+
+  // Push notifications recebidas via Expo (server → device) também devem
+  // aparecer no painel de notificações. Cobrimos os dois caminhos:
+  // 1. addNotificationReceivedListener: app em foreground/background
+  // 2. addNotificationResponseReceivedListener: usuário toca na notificação
+  // Dedup é por (type, orderId) — se Realtime já adicionou, ignoramos.
+  useEffect(() => {
+    const handleIncoming = (notification: Notifications.Notification) => {
+      const content = notification.request.content;
+      const title = (content.title ?? "").trim();
+      const body = (content.body ?? "").trim();
+      const data: any = content.data ?? {};
+      if (!title && !body) return;
+
+      const orderId: string | undefined = data?.orderId;
+      const type: string | undefined = data?.type;
+      const dedupeKey = `push-${type ?? "generic"}-${orderId ?? notification.request.identifier}`;
+      if (notifiedOrders.current.has(dedupeKey)) return;
+      notifiedOrders.current.add(dedupeKey);
+
+      const icon = (type && PUSH_TYPE_ICONS[type]) || "bell-outline";
+
+      add({ orderId, icon, title: title || "Notificação", body });
+    };
+
+    const received = Notifications.addNotificationReceivedListener(handleIncoming);
+    const responded = Notifications.addNotificationResponseReceivedListener(
+      (response) => handleIncoming(response.notification),
+    );
+
+    return () => {
+      received.remove();
+      responded.remove();
+    };
+  }, [add]);
 
   useEffect(() => {
     if (!userId) return;

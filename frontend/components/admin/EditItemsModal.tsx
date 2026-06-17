@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -142,23 +143,27 @@ export function EditItemsModal({
       transparent
       onRequestClose={onClose}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "flex-end",
-        }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
         <View
-          className="bg-surface"
           style={{
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            maxHeight: "85%",
-            paddingTop: 12,
-            paddingBottom: Platform.OS === "ios" ? 28 : 16,
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
           }}
         >
+          <View
+            className="bg-surface"
+            style={{
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: "85%",
+              paddingTop: 12,
+              paddingBottom: Platform.OS === "ios" ? 28 : 16,
+            }}
+          >
           <View
             style={{
               width: 40,
@@ -182,6 +187,7 @@ export function EditItemsModal({
           <ScrollView
             style={{ flexGrow: 0 }}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}
+            keyboardShouldPersistTaps="handled"
           >
             {items.map((it) => {
               const state = edits[it.id];
@@ -438,7 +444,8 @@ export function EditItemsModal({
             </View>
           </View>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -132,6 +132,14 @@ export default function CheckoutScreen() {
     });
   };
 
+  // Dinheiro só é aceito na retirada. Se cliente tinha selecionado cash e
+  // troca pra entrega, força reset pra PIX.
+  useEffect(() => {
+    if (deliveryMethod === "delivery" && paymentMethod === "cash") {
+      setPaymentMethod("pix");
+    }
+  }, [deliveryMethod, paymentMethod]);
+
   useEffect(() => {
     if (
       deliveryMethod === "delivery" &&
@@ -286,7 +294,7 @@ export default function CheckoutScreen() {
                     : "text-text-secondary"
                 }`}
               >
-                Delivery
+                Entrega
               </Text>
             </TouchableOpacity>
 
@@ -438,14 +446,21 @@ export default function CheckoutScreen() {
             Forma de Pagamento
           </Text>
           <View className="gap-3">
-            {(["pix", "credit_card", "cash"] as PaymentMethod[]).map((method) => {
+            {(deliveryMethod === "pickup"
+              ? (["pix", "credit_card", "cash"] as PaymentMethod[])
+              : (["pix", "credit_card"] as PaymentMethod[])
+            ).map((method) => {
               const isActive = paymentMethod === method;
               const icons = {
                 pix: "qrcode",
                 credit_card: "credit-card-outline",
                 cash: "cash",
               } as const;
-              const labels = { pix: "PIX", credit_card: "Cartão de Crédito", cash: "Dinheiro na Entrega" };
+              const labels = {
+                pix: "PIX",
+                credit_card: "Cartão de Crédito",
+                cash: "Pague na entrega",
+              };
               const descriptions = {
                 pix: "Aprovação imediata",
                 credit_card: "Débito à vista",

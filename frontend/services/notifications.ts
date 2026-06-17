@@ -2,7 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface AppNotification {
   id: string;
-  orderId: string;
+  /** Opcional: presente quando a notificação está vinculada a um pedido específico (permite navegação) */
+  orderId?: string;
   icon: string;
   title: string;
   body: string;

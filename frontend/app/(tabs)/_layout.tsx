@@ -4,6 +4,7 @@ import { View, Text, Platform, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useCart } from "@/context/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAwaitingOrdersCount } from "@/hooks/useAwaitingOrdersCount";
 
 const HEMA_LOGO = require("../../assets/images/logo.png");
 
@@ -13,6 +14,49 @@ const BRAND = {
   bg: "#FFFFFF",
   border: "#E0E0E0",
 };
+
+function AdminOrdersIcon({ focused, isStaff }: { focused: boolean; isStaff: boolean }) {
+  const awaitingCount = useAwaitingOrdersCount(isStaff);
+
+  return (
+    <View style={{ width: 44, height: 44, justifyContent: "center", alignItems: "center" }}>
+      <Image
+        source={HEMA_LOGO}
+        style={{
+          width: 36,
+          height: 36,
+          marginTop: -4,
+          marginBottom: -4,
+          opacity: focused ? 1 : 0.45,
+        }}
+        resizeMode="contain"
+      />
+      {awaitingCount > 0 && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            right: -2,
+            top: -2,
+            backgroundColor: BRAND.active,
+            borderRadius: 10,
+            minWidth: 18,
+            height: 18,
+            paddingHorizontal: 4,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 1.5,
+            borderColor: BRAND.bg,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "bold", textAlign: "center" }}>
+            {awaitingCount > 99 ? "99+" : awaitingCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function CartIcon({ color }: { color: string }) {
   const { cartCount } = useCart();
@@ -118,17 +162,7 @@ export default function TabLayout() {
         options={{
           title: "Hema",
           tabBarIcon: ({ focused }) => (
-            <Image
-              source={HEMA_LOGO}
-              style={{
-                width: 36,
-                height: 36,
-                marginTop: -4,
-                marginBottom: -4,
-                opacity: focused ? 1 : 0.45,
-              }}
-              resizeMode="contain"
-            />
+            <AdminOrdersIcon focused={focused} isStaff={isStaff} />
           ),
           // Esconde a aba completamente quando não for staff.
           href: isStaff ? undefined : null,

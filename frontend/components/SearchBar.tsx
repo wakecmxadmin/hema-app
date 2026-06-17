@@ -14,6 +14,14 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+
+import { searchProducts } from "@/services/search";
+import { optimizedImage } from "@/util/image-url";
+import { Product } from "@/types/product";
+
+const PRODUCT_SUGGESTION_LIMIT = 6;
 
 interface Suggestion {
   label: string;
@@ -74,8 +82,11 @@ export function SearchBar({
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [recents, setRecents] = useState<string[]>([]);
+  const [productResults, setProductResults] = useState<Product[]>([]);
+  const router = useRouter();
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const productFetchSeq = useRef(0);
   const inputRef = useRef<TextInput>(null);
 
   const scrimOpacity = useRef(new Animated.Value(0)).current;
@@ -140,7 +151,35 @@ export function SearchBar({
   const handleQueryChange = (text: string) => {
     setQuery(text);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => onSearch(text), 300);
+    timeoutRef.current = setTimeout(() => {
+      onSearch(text);
+
+      const trimmed = text.trim();
+      if (!trimmed) {
+        setProductResults([]);
+        return;
+      }
+
+      // Sequence guard: ignora respostas que chegam fora de ordem.
+      const seq = ++productFetchSeq.current;
+      void searchProducts(trimmed, PRODUCT_SUGGESTION_LIMIT, 0).then((res) => {
+        if (seq !== productFetchSeq.current) return;
+        if (res.success && res.data) setProductResults(res.data);
+        else setProductResults([]);
+      });
+    }, 300);
+  };
+
+  const handleProductTap = (productId: string) => {
+    closeExpanded();
+    router.push({ pathname: "/product/[id]", params: { id: productId } });
+  };
+
+  const formatPrice = (p: Product): string => {
+    if (p.type === "weight" && p.price_per_kg != null) {
+      return `${Number(p.price_per_kg).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/kg`;
+    }
+    return Number(p.price ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
   const handleClearPill = () => {
@@ -160,10 +199,24 @@ export function SearchBar({
   type ListItem =
     | { key: string; kind: "header"; label: string; animIdx: number }
     | { key: string; kind: "recent"; label: string; animIdx: number }
-    | { key: string; kind: "suggestion"; label: string; category?: string; animIdx: number };
+    | { key: string; kind: "suggestion"; label: string; category?: string; animIdx: number }
+    | { key: string; kind: "product"; product: Product; animIdx: number };
 
   const listData: ListItem[] = [];
   let aidx = 0;
+
+  // Produtos vêm primeiro quando há resultados — é o que o usuário quer ver.
+  if (productResults.length > 0) {
+    listData.push({
+      key: "h-products",
+      kind: "header",
+      label: `Produtos`,
+      animIdx: aidx++,
+    });
+    productResults.forEach((p, i) => {
+      listData.push({ key: `p-${p.id ?? i}`, kind: "product", product: p, animIdx: aidx++ });
+    });
+  }
 
   if (filteredRecents.length > 0) {
     listData.push({ key: "h-recent", kind: "header", label: "Buscas recentes", animIdx: aidx++ });
@@ -173,7 +226,7 @@ export function SearchBar({
   }
 
   if (filteredSuggestions.length > 0) {
-    const popLabel = query ? `Resultados para "${query}"` : "Populares agora";
+    const popLabel = query ? `Categorias` : "Populares agora";
     listData.push({ key: "h-pop", kind: "header", label: popLabel, animIdx: aidx++ });
     filteredSuggestions.forEach((s, i) => {
       listData.push({ key: `s-${i}`, kind: "suggestion", ...s, animIdx: aidx++ });
@@ -334,6 +387,48 @@ export function SearchBar({
                         <MaterialCommunityIcons
                           name="arrow-top-left"
                           size={15}
+                          color="#C2C2C2"
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                }
+
+                if (item.kind === "product") {
+                  const p = item.product;
+                  return (
+                    <Animated.View style={{ opacity: anim, transform: [{ translateY }] }}>
+                      <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => handleProductTap(p.id)}
+                        activeOpacity={0.7}
+                      >
+                        {p.image_url ? (
+                          <Image
+                            source={{ uri: optimizedImage(p.image_url, { width: 96, resize: "cover" }) ?? undefined }}
+                            style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#F5EFE4" }}
+                            contentFit="cover"
+                            transition={100}
+                            cachePolicy="disk"
+                          />
+                        ) : (
+                          <View style={styles.rowIcon}>
+                            <MaterialCommunityIcons
+                              name="package-variant"
+                              size={16}
+                              color="#8A8079"
+                            />
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.rowLabel} numberOfLines={2}>
+                            {p.name}
+                          </Text>
+                          <Text style={styles.rowCategory}>{formatPrice(p)}</Text>
+                        </View>
+                        <MaterialCommunityIcons
+                          name="chevron-right"
+                          size={18}
                           color="#C2C2C2"
                         />
                       </TouchableOpacity>
