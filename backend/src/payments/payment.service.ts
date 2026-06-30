@@ -419,11 +419,22 @@ export class PaymentsService {
     };
   }
 
-  private async sendWhatsappMessage(customerName: string): Promise<boolean> {
+  async sendNewOrderNotification(customerName: string): Promise<void> {
+    const templateName = process.env.WHATSAPP_TEMPLATE_NAME_NEW_ORDER;
+    if (!templateName) {
+      console.warn(
+        '[WHATSAPP] WHATSAPP_TEMPLATE_NAME_NEW_ORDER não configurado. Envio ignorado.',
+      );
+      return;
+    }
+    await this.sendWhatsappMessage(customerName, templateName);
+  }
+
+  private async sendWhatsappMessage(customerName: string, templateOverride?: string): Promise<boolean> {
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
     const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const recipient = process.env.WHATSAPP_RECIPIENT;
-    const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
+    const templateName = templateOverride ?? process.env.WHATSAPP_TEMPLATE_NAME;
     const templateLanguage = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR';
     const graphVersion = process.env.WHATSAPP_GRAPH_VERSION ?? 'v22.0';
 

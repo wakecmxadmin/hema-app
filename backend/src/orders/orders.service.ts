@@ -599,12 +599,16 @@ export class OrdersService {
         .eq('id', userId)
         .single();
 
+      const customerName = profile?.name ?? 'Cliente';
+
       await this.expoPushService.notifyStaffNewOrder({
         id: orderId,
         total_price: totalPrice,
         payment_method: paymentMethod,
-        customer_name: profile?.name ?? null,
+        customer_name: customerName,
       });
+
+      void this.paymentsService.sendNewOrderNotification(customerName);
     } catch (err: any) {
       console.error(
         '[ORDER] Falha ao notificar staff sobre novo pedido:',
