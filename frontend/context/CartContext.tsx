@@ -39,7 +39,7 @@ type CartContextType = {
 };
 
 const STAFF_EMAIL_DOMAINS = (
-  process.env.EXPO_PUBLIC_STAFF_EMAIL_DOMAIN ?? "hemacereais.com.br,pinho.com.br"
+  process.env.EXPO_PUBLIC_STAFF_EMAIL_DOMAIN ?? "hemacereais.com.br,pinho.com.br,wakecomex.com"
 )
   .split(",")
   .map((d) => d.trim().toLowerCase().replace(/^@/, ""))

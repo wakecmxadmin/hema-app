@@ -1,4 +1,4 @@
-const DEFAULT_DOMAINS = ['hemacereais.com.br', 'pinho.com.br'];
+const DEFAULT_DOMAINS = ['hemacereais.com.br', 'pinho.com.br', 'wakecomex.com'];
 
 export function getStaffDomains(): string[] {
   const raw = process.env.STAFF_EMAIL_DOMAIN;
