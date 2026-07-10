@@ -9,6 +9,7 @@ export type OrderStatus =
   | "waiting_payment"
   | "confirmed"
   | "preparing"
+  | "awaiting_dispatch"
   | "shipped"
   | "in_delivery"
   | "delivered"

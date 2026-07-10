@@ -367,6 +367,18 @@ export default function CheckoutScreen() {
                   </TouchableOpacity>
                 </View>
 
+                <View className="flex-row bg-neutral-100 p-3 rounded-btn items-start mb-3">
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={20}
+                    color="#D91A21"
+                  />
+                  <Text className="ml-3 flex-1 text-xs text-text-secondary">
+                    Entregas chegam entre 14h e 21h. Pedidos feitos até as
+                    12h são entregues no mesmo dia.
+                  </Text>
+                </View>
+
                 {loadingAddresses ? (
                   <ActivityIndicator
                     size="small"

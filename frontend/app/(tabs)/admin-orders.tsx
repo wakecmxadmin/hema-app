@@ -61,7 +61,7 @@ const FILTERS: FilterDef[] = [
   {
     key: "in_progress",
     label: "Em preparo",
-    statuses: ["confirmed", "preparing", "shipped", "in_delivery"],
+    statuses: ["confirmed", "preparing", "awaiting_dispatch", "shipped", "in_delivery"],
   },
   { key: "done", label: "Entregues", statuses: ["delivered", "completed"] },
   { key: "cancelled", label: "Cancelados", statuses: ["cancelled"] },
@@ -191,6 +191,14 @@ function getStatusVisuals(status: string): StatusVisuals {
         bg: "#FFFBEB",
         accent: "#3B82F6",
         icon: "food-outline",
+      };
+    case "awaiting_dispatch":
+      return {
+        label: "Aguard. saída p/ entrega",
+        color: "#8B5CF6",
+        bg: "#F5F3FF",
+        accent: "#8B5CF6",
+        icon: "storefront-outline",
       };
     case "shipped":
     case "in_delivery":

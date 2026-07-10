@@ -60,6 +60,7 @@ const STATUS_FLOW: { key: AdminOrderStatus; label: string; icon: any; color: str
   { key: "waiting_payment", label: "Aguard. pgto", icon: "cash-clock", color: "#F59E0B" },
   { key: "confirmed", label: "Confirmado", icon: "check-outline", color: "#3B82F6" },
   { key: "preparing", label: "Preparando", icon: "food-outline", color: "#F59E0B" },
+  { key: "awaiting_dispatch", label: "Aguard. saída p/ entrega", icon: "storefront-outline", color: "#8B5CF6" },
   { key: "shipped", label: "Em rota", icon: "truck-delivery-outline", color: "#3B82F6" },
   { key: "delivered", label: "Entregue", icon: "check-circle-outline", color: "#10B981" },
   { key: "completed", label: "Finalizado", icon: "flag-checkered", color: "#10B981" },
@@ -97,6 +98,8 @@ function getStatusBadge(status: string) {
       return { label: "Confirmado", color: "#3B82F6", bg: "#EFF6FF" };
     case "preparing":
       return { label: "Preparando", color: "#F59E0B", bg: "#FFFBEB" };
+    case "awaiting_dispatch":
+      return { label: "Aguard. saída p/ entrega", color: "#8B5CF6", bg: "#F5F3FF" };
     case "shipped":
     case "in_delivery":
       return { label: "Em rota", color: "#3B82F6", bg: "#EFF6FF" };
@@ -636,7 +639,9 @@ export default function AdminOrderDetailScreen() {
               Toque para alterar para o status desejado.
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {STATUS_FLOW.map((s) => {
+              {STATUS_FLOW.filter(
+                (s) => s.key !== "awaiting_dispatch" || !isPickup
+              ).map((s) => {
                 const isCurrent = order.status === s.key;
                 const isUpdating = updating === s.key;
                 return (

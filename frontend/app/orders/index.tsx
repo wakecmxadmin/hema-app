@@ -81,6 +81,13 @@ export default function OrdersListScreen() {
           bg: "#FDEDED",
           icon: "cancel",
         };
+      case "awaiting_dispatch":
+        return {
+          label: "Aguard. saída p/ entrega",
+          color: "#8B5CF6",
+          bg: "#F5F3FF",
+          icon: "storefront-outline",
+        };
       default:
         return {
           label: status,

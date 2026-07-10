@@ -65,6 +65,13 @@ function resolveNotification(order: any): NotifConfig | null {
       body: "A loja já começou a preparar seu pedido.",
     };
   }
+  if (status === "awaiting_dispatch") {
+    return {
+      icon: "storefront-outline",
+      title: "Pedido Pronto! 📦",
+      body: "Seu pedido está pronto e aguardando a saída para entrega.",
+    };
+  }
   if (status === "cancelled") {
     return {
       icon: "close-circle-outline",

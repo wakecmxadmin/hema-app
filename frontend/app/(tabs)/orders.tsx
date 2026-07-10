@@ -32,6 +32,7 @@ const ACTIVE_STATUSES = [
   "waiting_payment",
   "confirmed",
   "preparing",
+  "awaiting_dispatch",
   "shipped",
   "in_delivery",
 ];
@@ -67,6 +68,13 @@ function getStatusConfig(status: string) {
       return { label: "Confirmado", color: "#3B82F6", bg: "#EFF6FF", icon: "check-outline" as const };
     case "preparing":
       return { label: "Preparando", color: "#F59E0B", bg: "#FFFBEB", icon: "food-outline" as const };
+    case "awaiting_dispatch":
+      return {
+        label: "Aguard. saída p/ entrega",
+        color: "#8B5CF6",
+        bg: "#F5F3FF",
+        icon: "storefront-outline" as const,
+      };
     case "shipped":
     case "in_delivery":
       return { label: "Saiu para entrega", color: "#3B82F6", bg: "#EFF6FF", icon: "truck-delivery-outline" as const };

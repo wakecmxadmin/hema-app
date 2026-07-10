@@ -24,7 +24,7 @@ function ItemThumbnail({ uri }: { uri?: string | null }) {
   if (uri) {
     return (
       <Image
-        source={{ uri: optimizedImage(uri, { width: 128, resize: "cover" }) }}
+        source={{ uri: optimizedImage(uri, { width: 128, resize: "cover" }) ?? undefined }}
         style={{ width: 56, height: 56, borderRadius: 10, backgroundColor: "#F5EFE4" }}
         contentFit="cover"
         transition={150}
@@ -243,6 +243,12 @@ export default function OrderDetailsScreen() {
         return { label: "Confirmado", color: "#3B82F6", bg: "#EFF6FF" };
       case "preparing":
         return { label: "Preparando", color: "#F59E0B", bg: "#FFFBEB" };
+      case "awaiting_dispatch":
+        return {
+          label: "Aguard. saída p/ entrega",
+          color: "#8B5CF6",
+          bg: "#F5F3FF",
+        };
       case "shipped":
       case "in_delivery":
         return { label: "Em rota", color: "#3B82F6", bg: "#EFF6FF" };
