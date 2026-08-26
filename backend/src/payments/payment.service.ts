@@ -293,9 +293,16 @@ export class PaymentsService {
       `[WEBHOOK] payment_id=${paymentId} | order_id=${orderId} | mp_status=${mpStatus}`,
     );
 
-    await this.ordersService.updateStatus(orderId, mpStatus);
+    const { applied, status } = await this.ordersService.updateStatus(
+      orderId,
+      mpStatus,
+    );
 
-    if (mpStatus === 'approved') {
+    // Só notifica e despacha quando a confirmação realmente foi aplicada —
+    // senão um webhook ignorado (tentativa recusada, evento duplicado) geraria
+    // WhatsApp de "pedido confirmado" e envio no LogManager para um pedido que
+    // não está confirmado.
+    if (applied && status === 'confirmed') {
       await this.notifyOrder(orderId, mpPayment);
       void this.shippingService.createForOrder(orderId);
     }
@@ -430,7 +437,10 @@ export class PaymentsService {
     await this.sendWhatsappMessage(customerName, templateName);
   }
 
-  private async sendWhatsappMessage(customerName: string, templateOverride?: string): Promise<boolean> {
+  private async sendWhatsappMessage(
+    customerName: string,
+    templateOverride?: string,
+  ): Promise<boolean> {
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
     const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const recipient = process.env.WHATSAPP_RECIPIENT;
