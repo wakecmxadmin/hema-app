@@ -14,6 +14,7 @@ export interface ProcessPaymentInput {
   total_price: number;
   delivery_fee: number;
   order_id: string;
+  discount_amount?: number;
   items: {
     product_id: string;
     product_name: string;
@@ -57,7 +58,7 @@ export class PaymentsService {
     const { data: order, error } = await supabase
       .from('orders')
       .select(
-        `id, total_price, delivery_fee, payment_method,
+        `id, total_price, delivery_fee, payment_method, discount_amount,
          order_items ( product_id, product_name, quantity, weight, subtotal )`,
       )
       .eq('id', orderId)
@@ -83,6 +84,7 @@ export class PaymentsService {
       })),
       delivery_fee: Number(order.delivery_fee ?? 0),
       total_price: Number(order.total_price ?? 0),
+      discount_amount: Number(order.discount_amount ?? 0),
       payment_method: order.payment_method,
     });
 
@@ -95,8 +97,14 @@ export class PaymentsService {
   async processPayment(
     input: ProcessPaymentInput,
   ): Promise<ProcessPaymentResult> {
-    const { payment_method, total_price, delivery_fee, order_id, items } =
-      input;
+    const {
+      payment_method,
+      total_price,
+      delivery_fee,
+      order_id,
+      items,
+      discount_amount,
+    } = input;
 
     switch (payment_method) {
       case 'cash':
@@ -120,6 +128,7 @@ export class PaymentsService {
           items,
           delivery_fee,
           total_price,
+          discount_amount,
           payment_method,
         });
 
@@ -169,18 +178,44 @@ export class PaymentsService {
     items: ProcessPaymentInput['items'];
     delivery_fee: number;
     total_price: number;
+    discount_amount?: number;
     payment_method: string;
   }) {
     try {
       const preferenceClient = new Preference(this.mpClient);
 
-      const mpItems: any[] = params.items.map((item) => ({
-        id: item.product_id,
-        title: item.product_name,
-        quantity: item.quantity || 1,
-        unit_price: Number((item.subtotal / (item.quantity || 1)).toFixed(2)),
-        currency_id: 'BRL',
-      }));
+      const discountAmount = Number(params.discount_amount ?? 0);
+
+      // O MP cobra a soma dos `items`, não `total_price` — sem isso, um
+      // pedido com cupom cobraria o valor cheio. Como o MP rejeita
+      // `unit_price <= 0` (não dá pra mandar o desconto como item negativo),
+      // um pedido com desconto vira um único item consolidado com o valor
+      // exato dos produtos já descontado, sem sobra de centavos.
+      const mpItems: any[] =
+        discountAmount > 0
+          ? [
+              {
+                id: params.order_id,
+                title: `Pedido #${params.order_id.slice(0, 8)} — ${params.items.length} ite${params.items.length === 1 ? 'm' : 'ns'}`,
+                quantity: 1,
+                unit_price: Number(
+                  (
+                    params.items.reduce((sum, it) => sum + it.subtotal, 0) -
+                    discountAmount
+                  ).toFixed(2),
+                ),
+                currency_id: 'BRL',
+              },
+            ]
+          : params.items.map((item) => ({
+              id: item.product_id,
+              title: item.product_name,
+              quantity: item.quantity || 1,
+              unit_price: Number(
+                (item.subtotal / (item.quantity || 1)).toFixed(2),
+              ),
+              currency_id: 'BRL',
+            }));
 
       if (params.delivery_fee > 0) {
         mpItems.push({

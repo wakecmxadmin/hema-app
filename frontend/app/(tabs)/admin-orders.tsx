@@ -495,13 +495,60 @@ export default function AdminOrdersScreen() {
   const listHeader = (
     <>
       {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12 }}>
-        <Text className="text-[25px] font-[800] text-text-primary" numberOfLines={1} adjustsFontSizeToFit>
-          Gestão de Pedidos
-        </Text>
-        <Text className="text-[13px] text-text-secondary mt-1" numberOfLines={1} style={{ lineHeight: 18 }}>
-          {orders.length} pedido{orders.length === 1 ? "" : "s"} no total
-        </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 20,
+          paddingTop: 14,
+          paddingBottom: 12,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text className="text-[25px] font-[800] text-text-primary" numberOfLines={1} adjustsFontSizeToFit>
+            Gestão de Pedidos
+          </Text>
+          <Text className="text-[13px] text-text-secondary mt-1" numberOfLines={1} style={{ lineHeight: 18 }}>
+            {orders.length} pedido{orders.length === 1 ? "" : "s"} no total
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => router.push("/admin/coupons" as any)}
+          hitSlop={10}
+          activeOpacity={0.7}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: "#EAE3D7",
+            backgroundColor: "#FFFFFF",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 8,
+          }}
+        >
+          <MaterialCommunityIcons name="ticket-percent-outline" size={20} color="#1A1613" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push("/admin/ifood" as any)}
+          hitSlop={10}
+          activeOpacity={0.7}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: "#EAE3D7",
+            backgroundColor: "#FFFFFF",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <MaterialCommunityIcons name="storefront-outline" size={20} color="#1A1613" />
+        </TouchableOpacity>
       </View>
 
       {/* Search */}

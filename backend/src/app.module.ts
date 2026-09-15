@@ -10,6 +10,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { PaymentsModule } from './payments/payment.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ShippingModule } from './shipping/shipping.module';
+import { IfoodModule } from './ifood/ifood.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ShippingModule } from './shipping/shipping.module';
     PaymentsModule,
     NotificationsModule,
     ShippingModule,
+    IfoodModule,
+    CouponsModule,
   ],
 })
 export class AppModule {}

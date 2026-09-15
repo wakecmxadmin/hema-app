@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { supabase } from '../lib/supabase';
 import { ExpoPushService } from '../notifications/expo-push.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 /**
  * Cancela pedidos que ficaram em `awaiting_customer_payment` além da janela
@@ -11,7 +12,10 @@ import { ExpoPushService } from '../notifications/expo-push.service';
 export class PaymentTimeoutCron {
   private readonly logger = new Logger(PaymentTimeoutCron.name);
 
-  constructor(private readonly expoPushService: ExpoPushService) {}
+  constructor(
+    private readonly expoPushService: ExpoPushService,
+    private readonly couponsService: CouponsService,
+  ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async cancelExpiredPayments(): Promise<void> {
@@ -74,6 +78,8 @@ export class PaymentTimeoutCron {
           );
         }
       }
+
+      await this.couponsService.revertRedemption(order.id);
 
       void this.expoPushService.notifyUser(order.user_id, {
         title: 'Pedido expirou ⏰',

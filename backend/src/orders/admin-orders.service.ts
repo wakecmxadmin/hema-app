@@ -8,6 +8,7 @@ import type { OrderStatus } from './dto/update-order-status.dto';
 import { ConfirmOrderDto, RejectOrderDto } from './dto/confirm-order.dto';
 import { ShippingService } from '../shipping/shipping.service';
 import { ExpoPushService } from '../notifications/expo-push.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 interface ListOrdersQuery {
   status?: string;
@@ -23,6 +24,7 @@ export class AdminOrdersService {
   constructor(
     private readonly shippingService: ShippingService,
     private readonly expoPushService: ExpoPushService,
+    private readonly couponsService: CouponsService,
   ) {}
 
   async findAll(query: ListOrdersQuery) {
@@ -231,7 +233,7 @@ export class AdminOrdersService {
         .from('orders')
         .select(
           `id, user_id, status, payment_method, delivery_fee, total_price,
-           original_total_price,
+           original_total_price, coupon_discount_percent,
            order_items ( id, product_id, product_price, quantity, weight, subtotal )`,
         )
         .eq('id', orderId)
@@ -387,6 +389,9 @@ export class AdminOrdersService {
           );
         }
       }
+
+      // Loja recusou — não é justo o cliente perder o cupom por isso.
+      await this.couponsService.revertRedemption(orderId);
 
       void this.expoPushService.notifyUser(order.user_id, {
         title: 'Pedido cancelado pela loja ❌',
@@ -547,13 +552,28 @@ export class AdminOrdersService {
       }
     }
 
+    // O desconto é percentual por definição — reaplica o mesmo percentual
+    // sobre o novo subtotal, nunca congela o valor absoluto. Congelar
+    // quebraria: 30% de R$ 100 = R$ 30 fixo aplicado a um subtotal reduzido a
+    // R$ 25 daria total negativo. Como a edição só permite reduzir itens, o
+    // desconto nunca cresce — não abre brecha de fraude.
+    const discountPercent = Number(order.coupon_discount_percent ?? 0);
+    const newDiscount = Number(
+      ((newSubtotalSum * discountPercent) / 100).toFixed(2),
+    );
     const newTotal = Number(
-      (newSubtotalSum + Number(order.delivery_fee ?? 0)).toFixed(2),
+      (newSubtotalSum - newDiscount + Number(order.delivery_fee ?? 0)).toFixed(
+        2,
+      ),
     );
 
     await supabase
       .from('orders')
-      .update({ total_price: newTotal })
+      .update({
+        subtotal: Number(newSubtotalSum.toFixed(2)),
+        discount_amount: newDiscount,
+        total_price: newTotal,
+      })
       .eq('id', orderId);
   }
 
@@ -634,6 +654,8 @@ export class AdminOrdersService {
           );
         }
       }
+
+      await this.couponsService.revertRedemption(orderId);
 
       return {
         success: true,

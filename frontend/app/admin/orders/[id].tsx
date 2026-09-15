@@ -557,9 +557,23 @@ export default function AdminOrderDetailScreen() {
           <View className="flex-row justify-between mb-2">
             <Text className="text-[14px] text-text-secondary">Subtotal</Text>
             <Text className="text-[14px] text-text-primary">
-              {formatPrice(Number(order.total_price) - Number(order.delivery_fee))}
+              {formatPrice(
+                order.subtotal != null
+                  ? Number(order.subtotal)
+                  : Number(order.total_price) - Number(order.delivery_fee),
+              )}
             </Text>
           </View>
+          {Number(order.discount_amount) > 0 && (
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-[14px] text-text-secondary">
+                Desconto{order.coupon_code ? ` (${order.coupon_code})` : ""}
+              </Text>
+              <Text className="text-[14px] text-brand">
+                -{formatPrice(Number(order.discount_amount))}
+              </Text>
+            </View>
+          )}
           <View className="flex-row justify-between mb-2">
             <Text className="text-[14px] text-text-secondary">Taxa de Entrega</Text>
             <Text className="text-[14px] text-text-primary">

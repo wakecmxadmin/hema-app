@@ -12,6 +12,7 @@ import { PaymentsService } from '../payments/payment.service';
 import { CartService } from '../cart/cart.service';
 import { ExpoPushService } from '../notifications/expo-push.service';
 import { ShippingService } from '../shipping/shipping.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class OrdersService {
@@ -21,6 +22,7 @@ export class OrdersService {
     private readonly paymentsService: PaymentsService,
     private readonly expoPushService: ExpoPushService,
     private readonly shippingService: ShippingService,
+    private readonly couponsService: CouponsService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -89,12 +91,15 @@ export class OrdersService {
         };
       });
 
+      const roundedSubtotal = Number(calculatedTotal.toFixed(2));
       const finalTotalPrice = Number(
-        (calculatedTotal + deliveryFee).toFixed(2),
+        (roundedSubtotal + deliveryFee).toFixed(2),
       );
 
       // Insere o pedido principal. Nasce em `awaiting_store_confirmation`:
       // a loja precisa conferir o estoque físico antes de o cliente pagar.
+      // O desconto (se houver cupom) só é conhecido depois da RPC abaixo,
+      // então o pedido nasce sem desconto e é atualizado em seguida.
       const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -102,6 +107,7 @@ export class OrdersService {
           address_id: dto.address_id || null,
           status: 'awaiting_store_confirmation',
           payment_status: 'pending',
+          subtotal: roundedSubtotal,
           total_price: finalTotalPrice,
           original_total_price: finalTotalPrice,
           delivery_fee: deliveryFee,
@@ -130,7 +136,9 @@ export class OrdersService {
         throw new Error('Falha ao inserir itens do pedido.');
       }
 
-      // Dedução atômica de estoque via RPC
+      // Dedução atômica de estoque e (se houver) consumo do cupom via RPC.
+      // As duas coisas vivem na mesma transação Postgres: um erro de estoque
+      // não pode queimar o cupom, então elas só podem commitar juntas.
       const stockItems = cartItems.map((item: any) => {
         const product = item.product;
         const isUnit = product.type === 'unit';
@@ -139,22 +147,50 @@ export class OrdersService {
         return { product_id: product.id, quantity: qty };
       });
 
-      const { data: stockResult, error: stockError } = await supabase.rpc(
-        'deduct_stock',
-        { items: stockItems },
+      const { data: redeemResult, error: redeemError } = await supabase.rpc(
+        'deduct_stock_and_redeem',
+        {
+          items: stockItems,
+          p_code: dto.coupon_code || null,
+          p_user_id: userId,
+          p_order_id: newOrder.id,
+          p_subtotal: roundedSubtotal,
+        },
       );
 
-      if (stockError || (stockResult && !stockResult.success)) {
+      if (redeemError || (redeemResult && !redeemResult.success)) {
         // Rollback: remove order items e order
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
         await supabase.from('orders').delete().eq('id', newOrder.id);
 
-        const msgParts = stockError?.message?.split(':');
+        const [errorCode, ...rest] = (redeemError?.message ?? '').split(':');
+
+        if (errorCode === 'COUPON_INVALID') {
+          throw new HttpException(
+            {
+              success: false,
+              message: 'Cupom inválido ou expirado.',
+              error: 'COUPON_INVALID',
+            },
+            HttpStatus.CONFLICT,
+          );
+        }
+
+        if (errorCode === 'COUPON_BELOW_MIN_ORDER') {
+          const minOrder = Number(rest.join(':').trim());
+          throw new HttpException(
+            {
+              success: false,
+              message: `Válido em compras acima de ${minOrder.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`,
+              error: 'COUPON_BELOW_MIN_ORDER',
+            },
+            HttpStatus.CONFLICT,
+          );
+        }
+
         const failedProduct =
-          (msgParts?.[0] === 'INSUFFICIENT_STOCK'
-            ? msgParts.slice(1).join(':').trim()
-            : null) ||
-          stockResult?.failed_product ||
+          (errorCode === 'INSUFFICIENT_STOCK' ? rest.join(':').trim() : null) ||
+          redeemResult?.failed_product ||
           'um produto';
         throw new HttpException(
           {
@@ -167,11 +203,39 @@ export class OrdersService {
         );
       }
 
+      const discountAmount = Number(redeemResult?.discount_amount ?? 0);
+      let orderTotalPrice = finalTotalPrice;
+
+      if (discountAmount > 0) {
+        orderTotalPrice = Number(
+          (roundedSubtotal - discountAmount + deliveryFee).toFixed(2),
+        );
+
+        const { error: discountUpdateError } = await supabase
+          .from('orders')
+          .update({
+            coupon_id: redeemResult.coupon_id,
+            coupon_code: redeemResult.code,
+            coupon_discount_percent: redeemResult.discount_percent,
+            discount_amount: discountAmount,
+            total_price: orderTotalPrice,
+            original_total_price: orderTotalPrice,
+          })
+          .eq('id', newOrder.id);
+
+        if (discountUpdateError) {
+          console.error(
+            `[ORDERS] Falha ao gravar desconto do pedido ${newOrder.id}:`,
+            discountUpdateError.message,
+          );
+        }
+      }
+
       // Push fire-and-forget pra equipe: novo pedido aguardando confirmação.
       void this.notifyStaffOfNewOrder(
         newOrder.id,
         userId,
-        finalTotalPrice,
+        orderTotalPrice,
         dto.payment_method,
       );
 
@@ -186,7 +250,8 @@ export class OrdersService {
         data: {
           order_id: newOrder.id,
           status: 'awaiting_store_confirmation',
-          total_price: finalTotalPrice,
+          total_price: orderTotalPrice,
+          discount_amount: discountAmount,
         },
       };
     } catch (error: any) {
@@ -339,6 +404,10 @@ export class OrdersService {
           );
         }
       }
+
+      // Devolve o uso do cupom (se houver) — cancelamento não deve fazer o
+      // cliente perder o cupom.
+      await this.couponsService.revertRedemption(orderId);
 
       // Push fire-and-forget pra staff (não bloqueia a resposta ao cliente).
       void this.notifyStaffOfCancelledOrder(orderId, userId);
@@ -529,15 +598,17 @@ export class OrdersService {
 
   private async releaseOrderStock(orderId: string): Promise<void> {
     const items = await this.getStockItems(orderId);
-    if (items.length === 0) return;
-
-    const { error } = await supabase.rpc('release_stock', { items });
-    if (error) {
-      console.error(
-        `[ORDER] Erro ao liberar reserva do pedido ${orderId}:`,
-        error,
-      );
+    if (items.length > 0) {
+      const { error } = await supabase.rpc('release_stock', { items });
+      if (error) {
+        console.error(
+          `[ORDER] Erro ao liberar reserva do pedido ${orderId}:`,
+          error,
+        );
+      }
     }
+
+    await this.couponsService.revertRedemption(orderId);
   }
 
   private async reserveOrderStock(orderId: string): Promise<void> {
@@ -550,6 +621,31 @@ export class OrdersService {
         `[ORDER][ALERTA] Não foi possível re-reservar o estoque do pedido ${orderId}:`,
         error,
       );
+      return;
+    }
+
+    // Pedido tinha cupom e foi ressuscitado por um pagamento aprovado depois
+    // de cancelado: precisa re-consumir o cupom, seguindo o mesmo padrão de
+    // alerta acima em vez de travar um pedido já pago.
+    const { data: order } = await supabase
+      .from('orders')
+      .select('coupon_code, subtotal, user_id')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (order?.coupon_code) {
+      const { error: redeemError } = await supabase.rpc('redeem_coupon', {
+        p_code: order.coupon_code,
+        p_user_id: order.user_id,
+        p_order_id: orderId,
+        p_subtotal: order.subtotal,
+      });
+      if (redeemError) {
+        console.error(
+          `[ORDER][ALERTA] Não foi possível re-consumir o cupom "${order.coupon_code}" do pedido ${orderId}:`,
+          redeemError.message,
+        );
+      }
     }
   }
 

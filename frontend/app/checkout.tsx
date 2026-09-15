@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  TextInput,
   StatusBar,
   ScrollView,
   ActivityIndicator,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
 import { OrdersService } from "@/services/orders";
+import { CouponsService } from "@/services/coupons";
 import { validateCartStockService } from "@/services/cart";
 import { Toast } from "@/util/toast";
 
@@ -63,6 +65,13 @@ export default function CheckoutScreen() {
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount_percent: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const loadData = async () => {
     await refreshCart();
@@ -123,7 +132,16 @@ export default function CheckoutScreen() {
   }, [deliveryMethod, selectedAddress]);
 
   const displayDeliveryFee = currentDeliveryFee === -1 ? 0 : currentDeliveryFee;
-  const total = subtotal + displayDeliveryFee;
+
+  // Sempre derivado do subtotal atual — nunca guardado, pra não ficar
+  // defasado se o carrinho mudar depois do cupom aplicado.
+  const discountAmount = appliedCoupon
+    ? Number(
+        Math.min(subtotal, (subtotal * appliedCoupon.discount_percent) / 100).toFixed(2),
+      )
+    : 0;
+
+  const total = subtotal - discountAmount + displayDeliveryFee;
 
   const formatPrice = (price: number) => {
     return price.toLocaleString("pt-BR", {
@@ -131,6 +149,64 @@ export default function CheckoutScreen() {
       currency: "BRL",
     });
   };
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setCouponLoading(true);
+    const response = await CouponsService.validate(code);
+    setCouponLoading(false);
+
+    if (response.success && response.data) {
+      setAppliedCoupon({
+        code: response.data.code,
+        discount_percent: response.data.discount_percent,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Toast.show({
+        type: "success",
+        text1: "Cupom aplicado!",
+        text2: `${response.data.discount_percent}% de desconto`,
+      });
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Cupom inválido",
+        text2: response.message,
+      });
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+  };
+
+  // O carrinho pode mudar (item removido, estoque ajustado) depois do cupom
+  // aplicado — revalida pra não deixar um valor mínimo deixar de ser atendido
+  // sem avisar o cliente.
+  useEffect(() => {
+    if (!appliedCoupon || subtotal <= 0) return;
+
+    let cancelled = false;
+    CouponsService.validate(appliedCoupon.code).then((response) => {
+      if (cancelled) return;
+      if (!response.success) {
+        setAppliedCoupon(null);
+        Toast.show({
+          type: "error",
+          text1: "Cupom removido",
+          text2: response.message || "O cupom não é mais válido para este carrinho.",
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal]);
 
   // Dinheiro só é aceito na retirada. Se cliente tinha selecionado cash e
   // troca pra entrega, força reset pra PIX.
@@ -204,6 +280,7 @@ export default function CheckoutScreen() {
     const response = await OrdersService.createOrder({
       address_id: addressToLog,
       payment_method: paymentMethod,
+      coupon_code: appliedCoupon?.code,
     });
 
     setIsCreatingOrder(false);
@@ -227,6 +304,16 @@ export default function CheckoutScreen() {
           type: "error",
           text1: "Produto ficou indisponível",
           text2: response.message || "Revise seu carrinho e tente novamente.",
+        });
+      } else if (
+        response.error === "COUPON_INVALID" ||
+        response.error === "COUPON_BELOW_MIN_ORDER"
+      ) {
+        setAppliedCoupon(null);
+        Toast.show({
+          type: "error",
+          text1: "Cupom não pôde ser aplicado",
+          text2: response.message,
         });
       } else {
         Toast.show({
@@ -523,6 +610,52 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
+        {/* 2.5 CUPOM DE DESCONTO */}
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: "#1A1613", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}>
+          <Text className="text-base font-bold text-text-primary mb-3">
+            Cupom de Desconto
+          </Text>
+          {appliedCoupon ? (
+            <View className="flex-row items-center justify-between bg-brand/5 border border-brand/30 rounded-btn px-3 py-3">
+              <View className="flex-row items-center flex-1">
+                <MaterialCommunityIcons name="ticket-percent" size={20} color="#D91A21" />
+                <Text className="ml-2 text-sm font-bold text-brand">
+                  {appliedCoupon.code} · {appliedCoupon.discount_percent}% OFF
+                </Text>
+              </View>
+              <TouchableOpacity onPress={removeCoupon} hitSlop={8}>
+                <MaterialCommunityIcons name="close-circle" size={20} color="#888888" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className="flex-row gap-2">
+              <TextInput
+                value={couponInput}
+                onChangeText={(text) => setCouponInput(text.toUpperCase())}
+                placeholder="Código do cupom"
+                placeholderTextColor="#A8A29E"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                editable={!couponLoading}
+                className="flex-1 border border-neutral-200 rounded-btn px-3 py-3 text-sm text-text-primary"
+              />
+              <TouchableOpacity
+                onPress={applyCoupon}
+                disabled={couponLoading || !couponInput.trim()}
+                className={`px-4 rounded-btn items-center justify-center ${
+                  couponLoading || !couponInput.trim() ? "bg-neutral-200" : "bg-brand"
+                }`}
+              >
+                {couponLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text className="text-brand-on text-sm font-bold">Aplicar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {/* 3. RESUMO DOS VALORES */}
         <View style={{ backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: "#1A1613", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}>
           <Text className="text-base font-bold text-text-primary mb-3">
@@ -536,6 +669,16 @@ export default function CheckoutScreen() {
               {formatPrice(subtotal)}
             </Text>
           </View>
+          {discountAmount > 0 && (
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-sm text-text-secondary">
+                Desconto ({appliedCoupon?.discount_percent}%)
+              </Text>
+              <Text className="text-sm text-brand font-medium">
+                -{formatPrice(discountAmount)}
+              </Text>
+            </View>
+          )}
           <View className="flex-row justify-between mb-2">
             <Text className="text-sm text-text-secondary">Taxa de Entrega</Text>
             <Text

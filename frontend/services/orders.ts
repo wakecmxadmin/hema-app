@@ -20,15 +20,18 @@ export const OrdersService = {
   async createOrder({
     address_id,
     payment_method,
+    coupon_code,
   }: {
     address_id?: string | null;
     payment_method: PaymentMethod;
+    coupon_code?: string | null;
   }): Promise<ApiResponse<any>> {
     return apiFetch("/orders/checkout", {
       method: "POST",
       body: JSON.stringify({
         address_id: address_id || null,
         payment_method,
+        coupon_code: coupon_code || undefined,
       }),
     });
   },
