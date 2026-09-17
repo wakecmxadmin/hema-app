@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { StaffGuard } from '../auth/staff.guard';
 import { IfoodApiService } from './ifood-api.service';
 import { IfoodAuthService } from './ifood-auth.service';
+import { IfoodCallLogService } from './ifood-call-log.service';
 import { IfoodCatalogService } from './ifood-catalog.service';
 import { IfoodEventsService } from './ifood-events.service';
 
@@ -17,6 +18,7 @@ export class IfoodController {
     private readonly api: IfoodApiService,
     private readonly catalog: IfoodCatalogService,
     private readonly events: IfoodEventsService,
+    private readonly callLog: IfoodCallLogService,
   ) {}
 
   /** Diagnóstico: confirma se as credenciais autenticam. */
@@ -34,6 +36,28 @@ export class IfoodController {
         syncAutomatico: process.env.IFOOD_SYNC_ENABLED === 'true',
       },
     };
+  }
+
+  /**
+   * Endpoint 1/3 da homologação: `POST /authentication/v1.0/oauth/token`.
+   * Força a renovação do token (ignora o cache) para demonstrar a chamada
+   * de autenticação isoladamente na tela.
+   */
+  @Post('auth/token')
+  async renewToken() {
+    this.auth.invalidate();
+    const token = await this.auth.getAccessToken();
+    return {
+      success: !!token,
+      message: token ? 'Token renovado.' : 'Falha ao autenticar no iFood.',
+      data: { autenticado: !!token, modo: this.auth.mode },
+    };
+  }
+
+  /** Últimas chamadas feitas à Merchant-API — painel de monitoramento. */
+  @Get('call-log')
+  callLogList() {
+    return { success: true, message: 'ok', data: this.callLog.list() };
   }
 
   /**

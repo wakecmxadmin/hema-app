@@ -564,11 +564,34 @@ export default function AdminOrderDetailScreen() {
               )}
             </Text>
           </View>
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-[14px] text-text-secondary">Cupom</Text>
+            {order.coupon_code ? (
+              <View className="flex-row items-center gap-1.5">
+                <View
+                  className="rounded-md"
+                  style={{ backgroundColor: "#E6F4EA", paddingHorizontal: 7, paddingVertical: 3 }}
+                >
+                  <Text
+                    className="font-bold"
+                    style={{ fontSize: 11.5, color: "#137333", letterSpacing: 0.3 }}
+                  >
+                    {order.coupon_code.toUpperCase()}
+                  </Text>
+                </View>
+                {order.coupon_discount_percent != null && (
+                  <Text className="text-[13px] text-text-secondary">
+                    -{Number(order.coupon_discount_percent)}%
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <Text className="text-[13px] text-text-secondary">Nenhum cupom utilizado</Text>
+            )}
+          </View>
           {Number(order.discount_amount) > 0 && (
             <View className="flex-row justify-between mb-2">
-              <Text className="text-[14px] text-text-secondary">
-                Desconto{order.coupon_code ? ` (${order.coupon_code})` : ""}
-              </Text>
+              <Text className="text-[14px] text-text-secondary">Desconto</Text>
               <Text className="text-[14px] text-brand">
                 -{formatPrice(Number(order.discount_amount))}
               </Text>

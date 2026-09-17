@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { supabase } from '../lib/supabase';
+import { IfoodCallLogService } from './ifood-call-log.service';
 
 interface CachedToken {
   accessToken: string;
@@ -33,6 +34,8 @@ export class IfoodAuthService {
   private readonly logger = new Logger(IfoodAuthService.name);
   private cached: CachedToken | null = null;
   private inFlight: Promise<string | null> | null = null;
+
+  constructor(@Optional() private readonly callLog?: IfoodCallLogService) {}
 
   /** Renova este tanto de tempo antes de expirar. */
   private readonly renewMarginMs = 5 * 60 * 1000;
@@ -213,19 +216,34 @@ export class IfoodAuthService {
   // ---------------------------------------------------------------------
 
   private async post(path: string, body: Record<string, string>): Promise<any> {
-    const url = `${this.apiUrl}/authentication/v1.0${path}`;
+    const fullPath = `/authentication/v1.0${path}`;
+    const url = `${this.apiUrl}${fullPath}`;
+    const startedAt = Date.now();
+    const headersSent = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    };
 
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
+        headers: headersSent,
         body: new URLSearchParams(body),
       });
 
       const payload: any = await response.json().catch(() => ({}));
+
+      this.callLog?.record({
+        flow: 'auth',
+        method: 'POST',
+        path: fullPath,
+        status: response.status,
+        ok: response.ok,
+        durationMs: Date.now() - startedAt,
+        headers: headersSent,
+        request: body,
+        response: payload,
+      });
 
       if (!response.ok) {
         this.logger.error(
@@ -236,6 +254,17 @@ export class IfoodAuthService {
 
       return payload;
     } catch (err: any) {
+      this.callLog?.record({
+        flow: 'auth',
+        method: 'POST',
+        path: fullPath,
+        status: 0,
+        ok: false,
+        durationMs: Date.now() - startedAt,
+        headers: headersSent,
+        request: body,
+        response: { message: err?.message ?? 'network error' },
+      });
       this.logger.error(`Falha de rede em ${path}: ${err?.message ?? err}`);
       return null;
     }

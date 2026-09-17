@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { IfoodAuthService } from './ifood-auth.service';
+import { IfoodCallFlow, IfoodCallLogService } from './ifood-call-log.service';
 
 export interface IfoodApiResult<T = any> {
   ok: boolean;
@@ -50,7 +51,16 @@ export interface IfoodUnsellableCategory {
 export class IfoodApiService {
   private readonly logger = new Logger(IfoodApiService.name);
 
-  constructor(private readonly auth: IfoodAuthService) {}
+  constructor(
+    private readonly auth: IfoodAuthService,
+    @Optional() private readonly callLog?: IfoodCallLogService,
+  ) {}
+
+  /** Classifica a chamada pra agrupar no painel de monitoramento do app. */
+  private classify(path: string, method: string): IfoodCallFlow {
+    if (!path.startsWith('/item/v1.0/ingestion')) return 'other';
+    return method.toUpperCase() === 'PATCH' ? 'ingestion-partial' : 'ingestion-full';
+  }
 
   private get apiUrl(): string {
     return (
@@ -89,38 +99,68 @@ export class IfoodApiService {
     return status === 429 || status === 408 || status >= 500;
   }
 
+  private parsedRequestBody(init: RequestInit): unknown {
+    if (typeof init.body !== 'string') return undefined;
+    try {
+      return JSON.parse(init.body);
+    } catch {
+      return init.body;
+    }
+  }
+
   async request<T = any>(
     path: string,
     init: RequestInit = {},
     isRetry = false,
     attempt = 1,
+    startedAt = Date.now(),
   ): Promise<IfoodApiResult<T>> {
+    const method = init.method ?? 'GET';
+    let headersSent: Record<string, string> | undefined;
+    const logResult = (result: IfoodApiResult<any>) => {
+      this.callLog?.record({
+        flow: this.classify(path, method),
+        method,
+        path,
+        status: result.status,
+        ok: result.ok,
+        durationMs: Date.now() - startedAt,
+        headers: headersSent,
+        request: this.parsedRequestBody(init),
+        response: result.body,
+      });
+      return result;
+    };
+
     const token = await this.auth.getAccessToken();
     if (!token) {
-      return {
+      return logResult({
         ok: false,
         status: 0,
         body: { message: 'sem token de acesso' } as any,
-      };
+      });
     }
 
     const url = `${this.apiUrl}${path.startsWith('/') ? path : `/${path}`}`;
+    headersSent = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(init.headers as Record<string, string> | undefined),
+    };
 
     try {
       const response = await fetch(url, {
         ...init,
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(init.headers ?? {}),
+          ...headersSent,
         },
       });
 
       // Token revogado no meio do caminho: renova uma vez e repete.
       if (response.status === 401 && !isRetry) {
         this.auth.invalidate();
-        return this.request<T>(path, init, true, attempt);
+        return this.request<T>(path, init, true, attempt, startedAt);
       }
 
       // Throttle ou instabilidade do lado deles: espera e tenta de novo.
@@ -134,7 +174,7 @@ export class IfoodApiService {
             `tentativa ${attempt}/${this.maxAttempts}, repetindo em ${wait}ms.`,
         );
         await this.sleep(wait);
-        return this.request<T>(path, init, isRetry, attempt + 1);
+        return this.request<T>(path, init, isRetry, attempt + 1, startedAt);
       }
 
       const body: any = await response.json().catch(() => ({}));
@@ -145,7 +185,7 @@ export class IfoodApiService {
         );
       }
 
-      return { ok: response.ok, status: response.status, body };
+      return logResult({ ok: response.ok, status: response.status, body });
     } catch (err: any) {
       // Rede caiu: mesma política de backoff dos erros transitórios.
       if (attempt < this.maxAttempts) {
@@ -155,17 +195,17 @@ export class IfoodApiService {
             `tentativa ${attempt}/${this.maxAttempts}, repetindo em ${wait}ms.`,
         );
         await this.sleep(wait);
-        return this.request<T>(path, init, isRetry, attempt + 1);
+        return this.request<T>(path, init, isRetry, attempt + 1, startedAt);
       }
 
       this.logger.error(
         `Falha de rede em ${init.method ?? 'GET'} ${path}: ${err?.message ?? err}`,
       );
-      return {
+      return logResult({
         ok: false,
         status: 0,
         body: { message: err?.message ?? 'network error' } as any,
-      };
+      });
     }
   }
 

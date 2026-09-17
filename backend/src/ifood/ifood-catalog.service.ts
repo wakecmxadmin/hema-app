@@ -65,6 +65,8 @@ export interface SyncResult {
   modo: 'patch' | 'post';
   falhas: { lote: number; status: number; body: any }[];
   dryRun: boolean;
+  /** Até 3 itens do payload real (`ItemIntegrationRequest`) — pra pré-visualizar o body antes de enviar. */
+  amostraPayload: any[];
 }
 
 const BATCH_SIZE = 500;
@@ -209,7 +211,7 @@ export class IfoodCatalogService {
    */
   private ingestionPath(mode: 'patch' | 'post', reset = false): string {
     const base = `/item/v1.0/ingestion/${this.api.merchantId}`;
-    return mode === 'post' && reset ? `${base}?reset=true` : base;
+    return mode === 'post' ? `${base}?reset=${reset}` : base;
   }
 
   /**
@@ -290,6 +292,7 @@ export class IfoodCatalogService {
       modo: mode,
       falhas: [],
       dryRun,
+      amostraPayload: [],
     };
 
     if (!dryRun && !this.api.isConfigured()) {
@@ -323,6 +326,8 @@ export class IfoodCatalogService {
         }
         items.push(mapped);
       }
+
+      result.amostraPayload = this.toApiPayload(items.slice(0, 3), fields);
 
       for (let i = 0; i < items.length; i += BATCH_SIZE) {
         const batch = items.slice(i, i + BATCH_SIZE);
@@ -423,7 +428,10 @@ export class IfoodCatalogService {
       }
     }
 
-    result.amostraSellable = result.amostraSellable.slice(0, 10);
+    // Limite generoso pra caber numa tabela na tela sem pesar o payload —
+    // sellableCount/unsellableCount continuam com o total real.
+    result.amostraSellable = result.amostraSellable.slice(0, 30);
+    result.unsellable = result.unsellable.slice(0, 30);
     result.ok = true;
     return result;
   }

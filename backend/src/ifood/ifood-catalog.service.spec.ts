@@ -342,7 +342,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
       expect(api.listUnsellableItems).not.toHaveBeenCalled();
     });
 
-    it('limita a amostra a 10 itens mesmo com múltiplos catálogos', async () => {
+    it('limita a amostra a 30 itens mesmo com múltiplos catálogos', async () => {
       api.listCatalogs.mockResolvedValue({
         ok: true,
         status: 200,
@@ -360,7 +360,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
       api.listSellableItems.mockResolvedValue({
         ok: true,
         status: 200,
-        body: Array.from({ length: 8 }, (_, i) => item(i)),
+        body: Array.from({ length: 20 }, (_, i) => item(i)),
       });
       api.listUnsellableItems.mockResolvedValue({
         ok: true,
@@ -370,8 +370,8 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
 
       const result = await service.verify();
 
-      expect(result.sellableCount).toBe(16);
-      expect(result.amostraSellable).toHaveLength(10);
+      expect(result.sellableCount).toBe(40);
+      expect(result.amostraSellable).toHaveLength(30);
     });
   });
 });
