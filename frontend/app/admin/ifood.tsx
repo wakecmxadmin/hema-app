@@ -8,7 +8,6 @@ import {
   RefreshControl,
   StatusBar,
   Alert,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -17,11 +16,11 @@ import { useRouter } from "expo-router";
 import {
   IfoodService,
   IfoodStatus,
-  IfoodSyncResult,
-  IfoodCatalogVerification,
-  IfoodSellableItem,
-  IfoodCallLogEntry,
-  IfoodCallFlow,
+  IfoodChangesResult,
+  IfoodSyncRun,
+  IfoodCodeQuality,
+  IfoodCodigoClasse,
+  IfoodLote,
 } from "@/services/ifood";
 import { useCart } from "@/context/CartContext";
 
@@ -48,7 +47,7 @@ const CODE = {
   muted: "#A79E92",
 };
 
-const LOG_POLL_MS = 4000;
+const RUNS_POLL_MS = 15000;
 
 /** Rótulo legível para cada motivo de descarte devolvido pelo backend. */
 const MOTIVOS: Record<string, string> = {
@@ -58,27 +57,91 @@ const MOTIVOS: Record<string, string> = {
   "tipo desconhecido": "Tipo desconhecido",
   "sem preco": "Sem preço",
   "estoque invalido": "Estoque inválido",
+  inativo: "Inativos — não estão à venda",
 };
 
-const FLOW_LABEL: Record<IfoodCallFlow, string> = {
-  auth: "Autenticação",
-  "ingestion-full": "Ingestão completa",
-  "ingestion-partial": "Ingestão parcial",
-  other: "Outro",
+const LOTE_LABEL: Record<IfoodLote, string> = {
+  novos: "Novos",
+  alterados: "Alterados",
+  removidos: "Removidos",
 };
+
+const RUN_STATUS: Record<IfoodSyncRun["status"], { label: string; ok: boolean }> = {
+  running: { label: "Em andamento", ok: true },
+  success: { label: "Sucesso", ok: true },
+  empty: { label: "Nada mudou", ok: true },
+  partial: { label: "Parcial", ok: false },
+  error: { label: "Erro", ok: false },
+};
+
+const fmtData = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const CLASSES: {
+  key: IfoodCodigoClasse;
+  label: string;
+  hint: string;
+  tone: Tone;
+}[] = [
+  {
+    key: "ean",
+    label: "EAN válido",
+    hint: "Vincula ao catálogo do iFood.",
+    tone: "ok",
+  },
+  {
+    key: "ean-sem-zero",
+    label: "EAN sem o zero à esquerda",
+    hint: "Completado com zeros no envio — vincula.",
+    tone: "ok",
+  },
+  {
+    key: "ean-invalido",
+    label: "EAN com dígito errado",
+    hint: "Erro de cadastro — corrigir na origem.",
+    tone: "err",
+  },
+  {
+    key: "balanca",
+    label: "Código de balança (granel)",
+    hint: "Sem EAN: cadastro manual no iFood.",
+    tone: "default",
+  },
+  {
+    key: "interno",
+    label: "Código interno",
+    hint: "Sem EAN: cadastro manual no iFood.",
+    tone: "default",
+  },
+];
+
+type Tone = "default" | "ok" | "warn" | "err";
+
+const toneColor = (tone: Tone) =>
+  tone === "ok"
+    ? COLORS.ok
+    : tone === "warn"
+      ? COLORS.warn
+      : tone === "err"
+        ? COLORS.err
+        : COLORS.text;
 
 function Row({
   label,
   value,
+  hint,
   tone = "default",
 }: {
   label: string;
   value: string;
-  tone?: "default" | "ok" | "warn";
+  hint?: string;
+  tone?: Tone;
 }) {
-  const color =
-    tone === "ok" ? COLORS.ok : tone === "warn" ? COLORS.warn : COLORS.text;
-
   return (
     <View
       style={{
@@ -90,12 +153,34 @@ function Row({
         borderBottomColor: COLORS.border,
       }}
     >
-      <Text style={{ fontSize: 13.5, color: COLORS.muted }}>{label}</Text>
-      <Text
-        style={{ fontSize: 13.5, fontWeight: "700", color, flexShrink: 1, textAlign: "right" }}
+      <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+        <Text style={{ fontSize: 13.5, color: COLORS.muted }}>{label}</Text>
+        {hint && (
+          <Text style={{ fontSize: 11.5, color: COLORS.muted, opacity: 0.8, marginTop: 2 }}>
+            {hint}
+          </Text>
+        )}
+      </View>
+      {/* Contagem tem largura reservada e nunca encolhe; texto longo
+          (merchantId, erro) pode ocupar até metade da linha e quebrar. */}
+      <View
+        style={
+          /^\d+$/.test(value)
+            ? { width: 56, alignItems: "flex-end" }
+            : { flexShrink: 1, maxWidth: "55%", alignItems: "flex-end" }
+        }
       >
-        {value}
-      </Text>
+        <Text
+          style={{
+            fontSize: 13.5,
+            fontWeight: "700",
+            color: toneColor(tone),
+            textAlign: "right",
+          }}
+        >
+          {value}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -103,12 +188,10 @@ function Row({
 function Card({
   title,
   subtitle,
-  number,
   children,
 }: {
   title: string;
   subtitle?: string;
-  number?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -124,34 +207,17 @@ function Card({
         marginBottom: 18,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: subtitle ? 4 : 8 }}>
-        {number !== undefined && (
-          <View
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 11,
-              backgroundColor: COLORS.brand,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 8,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFFFFF" }}>{number}</Text>
-          </View>
-        )}
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: "800",
-            color: COLORS.text,
-            letterSpacing: 0.3,
-            flexShrink: 1,
-          }}
-        >
-          {title}
-        </Text>
-      </View>
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "800",
+          color: COLORS.text,
+          letterSpacing: 0.3,
+          marginBottom: subtitle ? 4 : 8,
+        }}
+      >
+        {title}
+      </Text>
       {subtitle && (
         <Text style={{ fontSize: 12.5, color: COLORS.muted, marginBottom: 12, lineHeight: 17 }}>
           {subtitle}
@@ -162,54 +228,33 @@ function Card({
   );
 }
 
-/** Mostra o endpoint real chamado — é o que a homologação pede pra ver rodando. */
-function EndpointTag({ method, path }: { method: string; path: string }) {
+/** Selo de sucesso/erro — a informação principal de cada envio. */
+function ResultBadge({ ok, label }: { ok: boolean; label?: string }) {
   return (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#F4F0E8",
-        borderRadius: 9,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        marginBottom: 12,
-      }}
-    >
-      <View
-        style={{
-          backgroundColor: COLORS.text,
-          borderRadius: 5,
-          paddingHorizontal: 6,
-          paddingVertical: 2,
-          marginRight: 8,
-        }}
-      >
-        <Text style={{ fontSize: 10.5, fontWeight: "800", color: "#FFFFFF" }}>{method}</Text>
-      </View>
-      <Text
-        style={{ fontSize: 11.5, fontFamily: "monospace", color: COLORS.muted, flexShrink: 1 }}
-      >
-        {path}
-      </Text>
-    </View>
-  );
-}
-
-function StatusBadge({ status, ok }: { status: number; ok: boolean }) {
-  const bg = ok ? COLORS.okBg : COLORS.errBg;
-  const fg = ok ? COLORS.ok : COLORS.err;
-  return (
-    <View
-      style={{
-        backgroundColor: bg,
+        backgroundColor: ok ? COLORS.okBg : COLORS.errBg,
         borderRadius: 6,
         paddingHorizontal: 8,
         paddingVertical: 3,
       }}
     >
-      <Text style={{ fontSize: 11.5, fontWeight: "800", color: fg }}>
-        {status > 0 ? `HTTP ${status}` : "SEM RESPOSTA"}
+      <MaterialCommunityIcons
+        name={ok ? "check-circle" : "alert-circle"}
+        size={13}
+        color={ok ? COLORS.ok : COLORS.err}
+      />
+      <Text
+        style={{
+          fontSize: 11.5,
+          fontWeight: "800",
+          color: ok ? COLORS.ok : COLORS.err,
+          marginLeft: 4,
+        }}
+      >
+        {label ?? (ok ? "Sucesso" : "Erro")}
       </Text>
     </View>
   );
@@ -285,105 +330,36 @@ function SecondaryButton({
   );
 }
 
-/** Alterna entre duas opções — usado pro `reset` da carga completa. */
-function SegmentedToggle({
-  value,
-  onChange,
-  options,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  options: [string, string];
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        backgroundColor: "#F4F0E8",
-        borderRadius: 10,
-        padding: 3,
-        marginBottom: 12,
-      }}
-    >
-      {options.map((label, i) => {
-        const active = (i === 1) === value;
-        return (
-          <TouchableOpacity
-            key={label}
-            onPress={() => onChange(i === 1)}
-            activeOpacity={0.8}
-            style={{
-              flex: 1,
-              paddingVertical: 8,
-              borderRadius: 8,
-              alignItems: "center",
-              backgroundColor: active ? COLORS.card : "transparent",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12.5,
-                fontWeight: "700",
-                color: active ? COLORS.text : COLORS.muted,
-              }}
-            >
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-/**
- * Link "ver / ocultar body da requisição" — usado pra mostrar o payload
- * antes de enviar. Some sozinho assim que o envio real começa.
- */
-function PreviewToggle({
+/** Link "ver / ocultar" para detalhes técnicos. */
+function DetailsToggle({
   open,
   onToggle,
-  loading,
+  label,
 }: {
   open: boolean;
   onToggle: () => void;
-  loading?: boolean;
+  label: string;
 }) {
   return (
     <TouchableOpacity
       onPress={onToggle}
       activeOpacity={0.7}
-      style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}
+      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
     >
       <MaterialCommunityIcons
-        name={open ? "eye-off-outline" : "eye-outline"}
+        name={open ? "chevron-up" : "chevron-down"}
         size={16}
         color={COLORS.brand}
       />
-      <Text style={{ fontSize: 12.5, fontWeight: "700", color: COLORS.brand, marginLeft: 6 }}>
-        {open ? "Ocultar body da requisição" : "Ver body da requisição"}
+      <Text style={{ fontSize: 12.5, fontWeight: "700", color: COLORS.brand, marginLeft: 4 }}>
+        {open ? `Ocultar ${label}` : `Ver ${label}`}
       </Text>
-      {loading && (
-        <ActivityIndicator size="small" color={COLORS.brand} style={{ marginLeft: 8 }} />
-      )}
     </TouchableOpacity>
   );
 }
 
-/**
- * JSON em bloco de código escuro — com scroll horizontal pra não quebrar
- * linhas longas. `accent` marca uma prévia (ainda não enviada) em vermelho,
- * pra diferenciar visualmente de uma resposta real.
- */
-function JsonBox({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: unknown;
-  accent?: boolean;
-}) {
+/** JSON em bloco de código escuro, com scroll horizontal pra linhas longas. */
+function JsonBox({ label, value }: { label: string; value: unknown }) {
   return (
     <View
       style={{
@@ -400,7 +376,7 @@ function JsonBox({
         style={{
           fontSize: 10.5,
           fontWeight: "800",
-          color: accent ? "#FF9587" : CODE.muted,
+          color: CODE.muted,
           letterSpacing: 0.6,
           textTransform: "uppercase",
           paddingHorizontal: 12,
@@ -427,260 +403,172 @@ function JsonBox({
   );
 }
 
-/** JSON de uma chamada real, exibido logo abaixo do botão que a disparou. */
-function CallJsonCard({ call }: { call: IfoodCallLogEntry }) {
-  return (
-    <View style={{ marginTop: 10 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text
-          style={{ fontSize: 11, fontFamily: "monospace", color: COLORS.muted, flexShrink: 1 }}
-        >
-          {call.method} {call.path}
-        </Text>
-        <StatusBadge status={call.status} ok={call.ok} />
-      </View>
-      <JsonBox label="Headers (autenticação inclusa)" value={call.headers} />
-      <JsonBox label="RESPONSE" value={call.response} />
-    </View>
-  );
-}
-
-function SyncResultCard({ result }: { result: IfoodSyncResult }) {
-  return (
-    <View style={{ marginTop: 12 }}>
-      <Row label="Produtos no catálogo" value={String(result.total)} />
-      <Row
-        label={result.dryRun ? "Seriam enviados" : "Enviados"}
-        value={String(result.enviados)}
-        tone="ok"
-      />
-      <Row
-        label="Ignorados"
-        value={String(result.ignorados)}
-        tone={result.ignorados > 0 ? "warn" : "default"}
-      />
-      <Row label="Lotes" value={String(result.lotes)} />
-
-      {Object.entries(result.motivoIgnorados).map(([motivo, qtd]) => (
-        <Row
-          key={motivo}
-          label={MOTIVOS[motivo] ?? motivo}
-          value={String(qtd)}
-          tone="warn"
-        />
-      ))}
-
-      {result.falhas.map((f) => (
-        <Row
-          key={f.lote}
-          label={`Lote ${f.lote} com falha`}
-          value={`HTTP ${f.status}`}
-          tone="warn"
-        />
-      ))}
-    </View>
-  );
-}
-
-interface TableColumn {
-  key: string;
-  label: string;
-  width: number;
-}
-
-/** Tabela com rolagem lateral — usada nos dados que o iFood devolve na conferência. */
-function DataTable<T>({
-  columns,
-  rows,
-  keyExtractor,
-  renderCell,
+/** Contagens da diferença + ignorados — comum à simulação e ao histórico. */
+function ChangeCounts({
+  novos,
+  alterados,
+  removidos,
+  inalterados,
+  ignorados,
+  motivoIgnorados,
 }: {
-  columns: TableColumn[];
-  rows: T[];
-  keyExtractor: (row: T, index: number) => string;
-  renderCell: (row: T, columnKey: string) => React.ReactNode;
+  novos: number;
+  alterados: number;
+  removidos: number;
+  inalterados: number;
+  ignorados: number;
+  motivoIgnorados: Record<string, number>;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator style={{ marginTop: 10 }}>
-      <View>
-        <View
-          style={{
-            flexDirection: "row",
-            paddingBottom: 8,
-            borderBottomWidth: 1.5,
-            borderBottomColor: COLORS.text,
-          }}
-        >
-          {columns.map((col) => (
-            <Text
-              key={col.key}
-              style={{
-                width: col.width,
-                fontSize: 10.5,
-                fontWeight: "800",
-                color: COLORS.muted,
-                textTransform: "uppercase",
-                letterSpacing: 0.4,
-                paddingRight: 8,
-              }}
-            >
-              {col.label}
-            </Text>
-          ))}
-        </View>
-        {rows.map((row, i) => (
-          <View
-            key={keyExtractor(row, i)}
-            style={{
-              flexDirection: "row",
-              paddingVertical: 9,
-              borderBottomWidth: 1,
-              borderBottomColor: COLORS.border,
-              alignItems: "center",
-            }}
-          >
-            {columns.map((col) => (
-              <View key={col.key} style={{ width: col.width, paddingRight: 8 }}>
-                {renderCell(row, col.key)}
-              </View>
-            ))}
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    <>
+      <Row label="Novos" hint="Criados no iFood (POST)" value={String(novos)} tone={novos ? "ok" : "default"} />
+      <Row
+        label="Alterados"
+        hint="Atualizados no iFood (PATCH)"
+        value={String(alterados)}
+        tone={alterados ? "ok" : "default"}
+      />
+      <Row
+        label="Removidos"
+        hint="Desativados no iFood"
+        value={String(removidos)}
+        tone={removidos ? "warn" : "default"}
+      />
+      <Row label="Sem alteração" value={String(inalterados)} />
+      <Row
+        label="Ignorados"
+        hint="Não sobem ao iFood"
+        value={String(ignorados)}
+        tone={ignorados - (motivoIgnorados.inativo ?? 0) > 0 ? "warn" : "default"}
+      />
+      {Object.entries(motivoIgnorados).map(([motivo, qtd]) => (
+        <Row
+          key={motivo}
+          label={`   ${MOTIVOS[motivo] ?? motivo}`}
+          hint={motivo === "inativo" ? "   Esperado — nada a corrigir" : "   Produto ativo: corrigir o cadastro"}
+          value={String(qtd)}
+          tone={motivo === "inativo" ? "default" : "warn"}
+        />
+      ))}
+    </>
   );
 }
 
-const SELLABLE_COLUMNS: TableColumn[] = [
-  { key: "img", label: "", width: 40 },
-  { key: "nome", label: "Nome", width: 170 },
-  { key: "categoria", label: "Categoria", width: 110 },
-  { key: "codigo", label: "EAN / código", width: 120 },
-  { key: "preco", label: "Preço", width: 80 },
-  { key: "unidade", label: "Unid.", width: 55 },
-];
-
-function renderSellableCell(item: IfoodSellableItem, key: string): React.ReactNode {
-  switch (key) {
-    case "img":
-      return item.logosUrls?.[0] ? (
-        <Image
-          source={{ uri: item.logosUrls[0] }}
-          style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: COLORS.border }}
-        />
-      ) : (
-        <View
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 6,
-            backgroundColor: COLORS.border,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <MaterialCommunityIcons name="image-off-outline" size={14} color={COLORS.muted} />
-        </View>
-      );
-    case "nome":
-      return (
-        <Text style={{ fontSize: 12.5, color: COLORS.text, fontWeight: "600" }} numberOfLines={2}>
-          {item.itemName || "—"}
-        </Text>
-      );
-    case "categoria":
-      return (
-        <Text style={{ fontSize: 12, color: COLORS.muted }} numberOfLines={2}>
-          {item.categoryName || "—"}
-        </Text>
-      );
-    case "codigo":
-      return (
-        <Text style={{ fontSize: 11.5, color: COLORS.muted, fontFamily: "monospace" }}>
-          {item.itemEan || item.itemExternalCode || "—"}
-        </Text>
-      );
-    case "preco":
-      return (
-        <Text style={{ fontSize: 12.5, color: COLORS.ok, fontWeight: "700" }}>
-          {item.itemPrice ? `R$ ${item.itemPrice.value.toFixed(2)}` : "—"}
-        </Text>
-      );
-    case "unidade":
-      return <Text style={{ fontSize: 12, color: COLORS.muted }}>{item.itemUnit || "—"}</Text>;
-    default:
-      return null;
-  }
-}
-
-const UNSELLABLE_COLUMNS: TableColumn[] = [
-  { key: "produto", label: "Produto ID", width: 150 },
-  { key: "motivo", label: "Motivo", width: 260 },
-];
-
-function renderUnsellableCell(
-  item: { produtoId: string; motivo: string[] },
-  key: string,
-): React.ReactNode {
-  switch (key) {
-    case "produto":
-      return (
-        <Text
-          style={{ fontSize: 11.5, color: COLORS.text, fontFamily: "monospace" }}
-          numberOfLines={2}
-        >
-          {item.produtoId}
-        </Text>
-      );
-    case "motivo":
-      return (
-        <Text style={{ fontSize: 12, color: COLORS.warn }} numberOfLines={3}>
-          {item.motivo.join(", ")}
-        </Text>
-      );
-    default:
-      return null;
-  }
-}
-
-function LogEntryRow({ entry }: { entry: IfoodCallLogEntry }) {
+function FalhasList({ falhas }: { falhas: IfoodChangesResult["falhas"] }) {
   const [open, setOpen] = useState(false);
-  const hora = new Date(entry.timestamp).toLocaleTimeString("pt-BR");
+  if (!falhas.length) return null;
+  return (
+    <>
+      <DetailsToggle open={open} onToggle={() => setOpen((v) => !v)} label="erros do iFood" />
+      {open &&
+        falhas.map((f) => (
+          <JsonBox
+            key={f.lote}
+            label={`Lote ${f.lote} (${LOTE_LABEL[f.tipo]}) — HTTP ${f.status}`}
+            value={f.body}
+          />
+        ))}
+    </>
+  );
+}
+
+function ChangesResultView({ result }: { result: IfoodChangesResult }) {
+  const [payloadOpen, setPayloadOpen] = useState(false);
+  const temAmostra = Object.keys(result.amostra).length > 0;
 
   return (
-    <View
-      style={{
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-        paddingVertical: 10,
-      }}
-    >
+    <View style={{ marginTop: 14 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
+        <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.muted }}>
+          {result.dryRun ? "SIMULAÇÃO — NADA FOI ENVIADO" : "ÚLTIMO ENVIO"}
+        </Text>
+        <ResultBadge
+          ok={result.ok && !result.erro}
+          label={
+            result.erro
+              ? "Erro"
+              : !result.ok
+                ? "Com falhas"
+                : result.lotes === 0
+                  ? "Nada mudou"
+                  : result.dryRun
+                    ? `${result.enviados} a enviar`
+                    : "Sucesso"
+          }
+        />
+      </View>
+
+      {result.erro ? (
+        <Text style={{ fontSize: 12.5, color: COLORS.err, paddingVertical: 10 }}>{result.erro}</Text>
+      ) : (
+        <>
+          <ChangeCounts {...result} />
+          {!result.dryRun && (
+            <Row label="Enviados" value={`${result.enviados} em ${result.lotes} lote(s)`} />
+          )}
+          <FalhasList falhas={result.falhas} />
+          {temAmostra && (
+            <>
+              <DetailsToggle
+                open={payloadOpen}
+                onToggle={() => setPayloadOpen((v) => !v)}
+                label="exemplo do payload"
+              />
+              {payloadOpen &&
+                (Object.keys(result.amostra) as IfoodLote[]).map((tipo) => (
+                  <JsonBox
+                    key={tipo}
+                    label={`${LOTE_LABEL[tipo]} — até 3 itens`}
+                    value={result.amostra[tipo]}
+                  />
+                ))}
+            </>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+function RunRow({ run }: { run: IfoodSyncRun }) {
+  const [open, setOpen] = useState(false);
+  const st = RUN_STATUS[run.status] ?? { label: run.status, ok: false };
+  const duracao = run.finished_at
+    ? Math.round((new Date(run.finished_at).getTime() - new Date(run.started_at).getTime()) / 1000)
+    : null;
+
+  const resumo =
+    run.status === "error" && run.error
+      ? run.error
+      : run.status === "empty"
+        ? "Nenhum produto mudou"
+        : `${run.novos} novos · ${run.alterados} alterados · ${run.removidos} removidos`;
+
+  return (
+    <View style={{ borderBottomWidth: 1, borderBottomColor: COLORS.border, paddingVertical: 10 }}>
       <TouchableOpacity
         onPress={() => setOpen((v) => !v)}
         activeOpacity={0.7}
         style={{ flexDirection: "row", alignItems: "center" }}
       >
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 12.5, fontWeight: "700", color: COLORS.text }}>
-            {FLOW_LABEL[entry.flow]}
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.text }}>
+            {fmtData(run.started_at)} · {run.trigger === "cron" ? "Automática" : "Manual"}
+            {run.force ? " (forçada)" : ""}
           </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: "monospace",
-              color: COLORS.muted,
-              marginTop: 2,
-            }}
-          >
-            {entry.method} {entry.path}
+          <Text style={{ fontSize: 11.5, color: COLORS.muted, marginTop: 2 }} numberOfLines={2}>
+            {resumo}
+            {duracao !== null ? ` · ${duracao}s` : ""}
           </Text>
         </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <StatusBadge status={entry.status} ok={entry.ok} />
-          <Text style={{ fontSize: 10.5, color: COLORS.muted, marginTop: 4 }}>
-            {hora} · {entry.durationMs}ms
-          </Text>
-        </View>
+        <ResultBadge ok={st.ok} label={st.label} />
         <MaterialCommunityIcons
           name={open ? "chevron-up" : "chevron-down"}
           size={18}
@@ -690,11 +578,19 @@ function LogEntryRow({ entry }: { entry: IfoodCallLogEntry }) {
       </TouchableOpacity>
 
       {open && (
-        <>
-          <JsonBox label="Headers (autenticação inclusa)" value={entry.headers} />
-          <JsonBox label="REQUEST" value={entry.request} />
-          <JsonBox label="RESPONSE" value={entry.response} />
-        </>
+        <View style={{ marginTop: 6 }}>
+          <ChangeCounts
+            novos={run.novos}
+            alterados={run.alterados}
+            removidos={run.removidos}
+            inalterados={run.inalterados}
+            ignorados={run.ignorados}
+            motivoIgnorados={run.motivo_ignorados ?? {}}
+          />
+          <Row label="Enviados" value={`${run.enviados} em ${run.lotes} lote(s)`} />
+          {run.error && <Row label="Erro" value={run.error} tone="err" />}
+          <FalhasList falhas={run.falhas ?? []} />
+        </View>
       )}
     </View>
   );
@@ -705,198 +601,83 @@ export default function IfoodIntegrationScreen() {
   const { isStaff } = useCart();
 
   const [status, setStatus] = useState<IfoodStatus | null>(null);
+  const [quality, setQuality] = useState<IfoodCodeQuality | null>(null);
+  const [runs, setRuns] = useState<IfoodSyncRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Endpoint 1/3 — POST /authentication/v1.0/oauth/token
-  const [tokenBusy, setTokenBusy] = useState(false);
-  const [tokenCalledAt, setTokenCalledAt] = useState<Date | null>(null);
-  const [tokenMessage, setTokenMessage] = useState<string | null>(null);
-  const [tokenOk, setTokenOk] = useState<boolean | null>(null);
-  const [tokenCalls, setTokenCalls] = useState<IfoodCallLogEntry[]>([]);
-  const [tokenPreviewOpen, setTokenPreviewOpen] = useState(false);
+  const [busy, setBusy] = useState<"none" | "dry" | "real">("none");
+  const [result, setResult] = useState<IfoodChangesResult | null>(null);
+  const [invalidosOpen, setInvalidosOpen] = useState(false);
 
-  // Endpoint 2/3 — POST /item/v1.0/ingestion/{merchantId}?reset=
-  const [fullReset, setFullReset] = useState(false);
-  const [fullBusy, setFullBusy] = useState<"none" | "dry" | "real">("none");
-  const [fullResult, setFullResult] = useState<IfoodSyncResult | null>(null);
-  const [fullCalls, setFullCalls] = useState<IfoodCallLogEntry[]>([]);
-  const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
-  const [fullPreviewLoading, setFullPreviewLoading] = useState(false);
-  const [fullPreviewPayload, setFullPreviewPayload] = useState<any[] | null>(null);
-
-  // Endpoint 3/3 — PATCH /item/v1.0/ingestion/{merchantId} (price-stock)
-  const [partialBusy, setPartialBusy] = useState<"none" | "dry" | "real">("none");
-  const [partialResult, setPartialResult] = useState<IfoodSyncResult | null>(null);
-  const [partialCalls, setPartialCalls] = useState<IfoodCallLogEntry[]>([]);
-  const [partialPreviewOpen, setPartialPreviewOpen] = useState(false);
-  const [partialPreviewLoading, setPartialPreviewLoading] = useState(false);
-  const [partialPreviewPayload, setPartialPreviewPayload] = useState<any[] | null>(null);
-
-  const [verification, setVerification] = useState<IfoodCatalogVerification | null>(null);
-  const [verifying, setVerifying] = useState(false);
-
-  // Monitoramento — histórico de chamadas
-  const [log, setLog] = useState<IfoodCallLogEntry[]>([]);
-  const logPoll = useRef<ReturnType<typeof setInterval> | null>(null);
+  const runsPoll = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
     const response = await IfoodService.status();
     if (response.success && response.data) setStatus(response.data);
+  }, []);
+
+  const fetchQuality = useCallback(async () => {
+    const response = await IfoodService.codeQuality();
+    if (response.success && response.data) setQuality(response.data);
+  }, []);
+
+  const fetchRuns = useCallback(async () => {
+    const response = await IfoodService.syncRuns();
+    if (response.success && response.data) setRuns(response.data);
+  }, []);
+
+  const loadAll = useCallback(async () => {
+    await Promise.all([fetchStatus(), fetchQuality(), fetchRuns()]);
     setLoading(false);
     setRefreshing(false);
-  }, []);
-
-  const fetchLog = useCallback(async () => {
-    const response = await IfoodService.callLog();
-    if (response.success && response.data) setLog(response.data);
-    return response.data ?? [];
-  }, []);
-
-  /** Chamadas de um fluxo feitas depois de `since` — em ordem cronológica (lote 1, 2, ...). */
-  const callsSince = (
-    entries: IfoodCallLogEntry[],
-    flow: IfoodCallLogEntry["flow"],
-    since: Date,
-  ): IfoodCallLogEntry[] =>
-    entries
-      .filter(
-        (e) => e.flow === flow && new Date(e.timestamp).getTime() >= since.getTime() - 500,
-      )
-      .sort((a, b) => a.id - b.id);
+  }, [fetchStatus, fetchQuality, fetchRuns]);
 
   useEffect(() => {
     if (!isStaff) {
       setLoading(false);
       return;
     }
-    fetchStatus();
-    fetchLog();
+    loadAll();
 
-    logPoll.current = setInterval(fetchLog, LOG_POLL_MS);
+    runsPoll.current = setInterval(fetchRuns, RUNS_POLL_MS);
     return () => {
-      if (logPoll.current) clearInterval(logPoll.current);
+      if (runsPoll.current) clearInterval(runsPoll.current);
     };
-  }, [isStaff, fetchStatus, fetchLog]);
+  }, [isStaff, loadAll, fetchRuns]);
 
-  const runToken = async () => {
-    const startedAt = new Date();
-    setTokenPreviewOpen(false);
-    setTokenBusy(true);
-    const response = await IfoodService.authToken();
-    setTokenBusy(false);
-    setTokenCalledAt(new Date());
-    setTokenOk(response.success);
-    setTokenMessage(response.message);
-    fetchStatus();
-
-    const entries = await fetchLog();
-    setTokenCalls(callsSince(entries, "auth", startedAt));
+  const simulate = async () => {
+    setBusy("dry");
+    const response = await IfoodService.syncChanges({ dryRun: true });
+    setBusy("none");
+    if (response.data) setResult(response.data);
+    else Alert.alert("Falha na simulação", response.message);
+    return response.data ?? null;
   };
 
-  const toggleTokenPreview = () => setTokenPreviewOpen((v) => !v);
+  const send = async () => {
+    setBusy("real");
+    const response = await IfoodService.syncChanges();
+    setBusy("none");
+    if (response.data) setResult(response.data);
+    else Alert.alert("Falha na sincronização", response.message);
+    fetchRuns();
+  };
 
-  const toggleFullPreview = async () => {
-    if (fullPreviewOpen) {
-      setFullPreviewOpen(false);
+  /** Sempre simula antes, pra confirmação mostrar exatamente o que vai subir. */
+  const confirmSend = async () => {
+    const plano = await simulate();
+    if (!plano || plano.erro) return;
+    if (plano.lotes === 0) {
+      Alert.alert("Nada para enviar", "Nenhum produto mudou desde o último envio.");
       return;
     }
-    setFullPreviewOpen(true);
-    if (!fullPreviewPayload) {
-      setFullPreviewLoading(true);
-      const response = await IfoodService.sync({ dryRun: true, mode: "post", reset: fullReset });
-      setFullPreviewLoading(false);
-      if (response.data) setFullPreviewPayload(response.data.amostraPayload);
-    }
-  };
-
-  const togglePartialPreview = async () => {
-    if (partialPreviewOpen) {
-      setPartialPreviewOpen(false);
-      return;
-    }
-    setPartialPreviewOpen(true);
-    if (!partialPreviewPayload) {
-      setPartialPreviewLoading(true);
-      const response = await IfoodService.sync({ dryRun: true, fields: "price-stock" });
-      setPartialPreviewLoading(false);
-      if (response.data) setPartialPreviewPayload(response.data.amostraPayload);
-    }
-  };
-
-  const runFullSync = async (dryRun: boolean) => {
-    const startedAt = new Date();
-    if (!dryRun) setFullPreviewOpen(false);
-    setFullBusy(dryRun ? "dry" : "real");
-    const response = await IfoodService.sync({ dryRun, mode: "post", reset: fullReset });
-    setFullBusy("none");
-
-    if (response.data) setFullResult(response.data);
-    if (!response.success && !response.data) {
-      Alert.alert("Falha na carga completa", response.message);
-    }
-
-    if (dryRun) {
-      setFullCalls([]);
-    } else {
-      const entries = await fetchLog();
-      setFullCalls(callsSince(entries, "ingestion-full", startedAt));
-    }
-  };
-
-  const runPartialSync = async (dryRun: boolean) => {
-    const startedAt = new Date();
-    if (!dryRun) setPartialPreviewOpen(false);
-    setPartialBusy(dryRun ? "dry" : "real");
-    const response = await IfoodService.sync({ dryRun, fields: "price-stock" });
-    setPartialBusy("none");
-
-    if (response.data) setPartialResult(response.data);
-    if (!response.success && !response.data) {
-      Alert.alert("Falha na atualização parcial", response.message);
-    }
-
-    if (dryRun) {
-      setPartialCalls([]);
-    } else {
-      const entries = await fetchLog();
-      setPartialCalls(callsSince(entries, "ingestion-partial", startedAt));
-    }
-  };
-
-  const runVerify = async () => {
-    setVerifying(true);
-    const response = await IfoodService.verifyCatalog();
-    setVerifying(false);
-    fetchLog();
-
-    if (response.data) {
-      setVerification(response.data);
-    } else {
-      Alert.alert("Falha na conferência", response.message);
-    }
-  };
-
-  const confirmFullSync = () => {
     Alert.alert(
-      "Enviar carga completa ao iFood?",
-      fullReset
-        ? "O catálogo da loja será resetado e reenviado por completo."
-        : "Todos os produtos serão publicados na loja vinculada, com preço e estoque atuais.",
+      "Enviar alterações ao iFood?",
+      `${plano.novos} novos, ${plano.alterados} alterados e ${plano.removidos} removidos — ${plano.enviados} itens em ${plano.lotes} lote(s).`,
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Enviar", style: "destructive", onPress: () => runFullSync(false) },
-      ],
-    );
-  };
-
-  const confirmPartialSync = () => {
-    Alert.alert(
-      "Enviar atualização parcial?",
-      "Preço e estoque atuais serão atualizados na loja vinculada, sem tocar nome, imagem ou categoria.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Enviar", style: "destructive", onPress: () => runPartialSync(false) },
+        { text: "Enviar", style: "destructive", onPress: send },
       ],
     );
   };
@@ -917,25 +698,8 @@ export default function IfoodIntegrationScreen() {
     );
   }
 
-  const merchantId = status?.merchantId ?? "{merchantId}";
-  const fullBusyAny = fullBusy !== "none";
-  const partialBusyAny = partialBusy !== "none";
-
-  const tokenPreviewBody =
-    status?.modo === "distributed"
-      ? { grantType: "refresh_token", clientId: "••••••", refreshToken: "••••••" }
-      : { grantType: "client_credentials", clientId: "••••••", clientSecret: "••••••" };
-  const tokenPreviewHeaders = {
-    "Content-Type": "application/x-www-form-urlencoded",
-    Accept: "application/json",
-  };
-  const ingestionPreviewHeaders = {
-    Authorization: status?.autenticado
-      ? "Bearer <token em cache — gerado na seção 1>"
-      : "— sem token, gere um na seção 1 —",
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
+  const ultimo = runs.find((r) => r.status !== "running") ?? runs[0];
+  const conectado = !!status?.configurado && !!status?.autenticado;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={["top"]}>
@@ -972,284 +736,118 @@ export default function IfoodIntegrationScreen() {
               refreshing={refreshing}
               onRefresh={() => {
                 setRefreshing(true);
-                fetchStatus();
-                fetchLog();
+                loadAll();
               }}
               tintColor={COLORS.brand}
             />
           }
         >
-          <Card title="Conexão">
+          <Card title="Status">
             <Row
-              label="Credenciais"
-              value={status?.configurado ? "Configuradas" : "Ausentes"}
-              tone={status?.configurado ? "ok" : "warn"}
-            />
-            <Row
-              label="Autenticação"
-              value={status?.autenticado ? "Token válido" : "Sem token"}
-              tone={status?.autenticado ? "ok" : "warn"}
-            />
-            <Row
-              label="Modo"
-              value={status?.modo === "distributed" ? "Distribuído" : "Centralizado"}
+              label="Conexão com o iFood"
+              value={
+                !status?.configurado
+                  ? "Credenciais ausentes"
+                  : status.autenticado
+                    ? "Conectado"
+                    : "Falha ao autenticar"
+              }
+              tone={conectado ? "ok" : "err"}
             />
             <Row label="Loja (merchantId)" value={status?.merchantId ?? "Não vinculada"} />
             <Row
               label="Sincronização automática"
-              value={status?.syncAutomatico ? "A cada hora" : "Desligada"}
+              value={status?.syncAutomatico ? "A cada 30 min" : "Desligada"}
+              tone={status?.syncAutomatico ? "ok" : "default"}
+            />
+            <Row
+              label="Última sincronização"
+              value={
+                ultimo
+                  ? `${fmtData(ultimo.started_at)} · ${RUN_STATUS[ultimo.status]?.label ?? ultimo.status}`
+                  : "Nenhuma ainda"
+              }
+              tone={ultimo ? (RUN_STATUS[ultimo.status]?.ok ? "ok" : "err") : "default"}
             />
           </Card>
 
-          {/* Endpoint 1/3 — Autenticação */}
           <Card
-            number={1}
-            title="Autenticação"
-            subtitle="Gera o token usado por todas as outras chamadas."
+            title="Sincronizar catálogo"
+            subtitle="Envia só o que mudou desde o último envio aceito pelo iFood: produtos novos, alterados e removidos. Na primeira vez, tudo é novo."
           >
-            <EndpointTag method="POST" path="/authentication/v1.0/oauth/token" />
-
-            <PreviewToggle open={tokenPreviewOpen} onToggle={toggleTokenPreview} />
-            {tokenPreviewOpen && (
-              <>
-                <JsonBox label="Headers (prévia)" value={tokenPreviewHeaders} accent />
-                <JsonBox label="Body da requisição (prévia)" value={tokenPreviewBody} accent />
-              </>
-            )}
-
-            <View style={{ marginTop: tokenPreviewOpen ? 12 : 0 }}>
-              <PrimaryButton label="Gerar / renovar token" onPress={runToken} busy={tokenBusy} />
-            </View>
-
-            {tokenCalls.map((call) => (
-              <CallJsonCard key={call.id} call={call} />
-            ))}
-            {tokenMessage && (
-              <View style={{ marginTop: 12 }}>
-                <Row
-                  label="Resultado"
-                  value={tokenOk ? "Autenticado" : "Falhou"}
-                  tone={tokenOk ? "ok" : "warn"}
-                />
-                <Row label="Mensagem" value={tokenMessage} />
-                {tokenCalledAt && (
-                  <Row label="Chamado em" value={tokenCalledAt.toLocaleTimeString("pt-BR")} />
-                )}
-              </View>
-            )}
-          </Card>
-
-          {/* Endpoint 2/3 — Ingestão completa */}
-          <Card
-            number={2}
-            title="Ingestão — carga completa"
-            subtitle="Criação/reativação de itens. Envia o catálogo inteiro."
-          >
-            <EndpointTag
-              method="POST"
-              path={`/item/v1.0/ingestion/${merchantId}${fullReset ? "?reset=true" : "?reset=false"}`}
-            />
-            <SegmentedToggle
-              value={fullReset}
-              onChange={(v) => {
-                setFullReset(v);
-                setFullPreviewPayload(null);
-                setFullPreviewOpen(false);
-              }}
-              options={["Sem reset", "Com reset"]}
-            />
-
-            <PreviewToggle
-              open={fullPreviewOpen}
-              onToggle={toggleFullPreview}
-              loading={fullPreviewLoading}
-            />
-            {fullPreviewOpen && !fullPreviewLoading && (
-              <>
-                <JsonBox label="Headers (prévia)" value={ingestionPreviewHeaders} accent />
-                <JsonBox
-                  label="Body da requisição (prévia — até 3 itens)"
-                  value={fullPreviewPayload}
-                  accent
-                />
-              </>
-            )}
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: fullPreviewOpen ? 12 : 0 }}>
+            <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <SecondaryButton
                   label="Simular"
-                  onPress={() => runFullSync(true)}
-                  busy={fullBusy === "dry"}
-                  disabled={fullBusyAny && fullBusy !== "dry"}
+                  onPress={simulate}
+                  busy={busy === "dry"}
+                  disabled={busy === "real"}
                 />
               </View>
               <View style={{ flex: 1.3 }}>
                 <PrimaryButton
-                  label="Enviar carga completa"
-                  onPress={confirmFullSync}
-                  busy={fullBusy === "real"}
-                  disabled={(fullBusyAny && fullBusy !== "real") || !status?.autenticado}
+                  label="Enviar alterações"
+                  onPress={confirmSend}
+                  busy={busy === "real"}
+                  disabled={busy === "dry" || !conectado}
                 />
               </View>
             </View>
-            {fullResult?.dryRun && (
-              <JsonBox label="RESULTADO (SIMULAÇÃO — NENHUMA CHAMADA FOI FEITA)" value={fullResult} />
-            )}
-            {fullCalls.map((call) => (
-              <CallJsonCard key={call.id} call={call} />
-            ))}
-            {fullResult && (
-              <>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.muted, marginTop: 14 }}>
-                  {fullResult.dryRun ? "SIMULAÇÃO — NADA FOI PUBLICADO" : "ÚLTIMO ENVIO"}
-                </Text>
-                <SyncResultCard result={fullResult} />
-              </>
+
+            {result && (
+              <ChangesResultView
+                key={`${result.dryRun}-${result.runId ?? ""}-${result.enviados}`}
+                result={result}
+              />
             )}
           </Card>
 
-          {/* Endpoint 3/3 — Ingestão parcial */}
-          <Card
-            number={3}
-            title="Ingestão — atualização parcial"
-            subtitle="Só preço e estoque (barcode + prices + inventory). Não toca nome, imagem ou categoria."
-          >
-            <EndpointTag method="PATCH" path={`/item/v1.0/ingestion/${merchantId}`} />
-
-            <PreviewToggle
-              open={partialPreviewOpen}
-              onToggle={togglePartialPreview}
-              loading={partialPreviewLoading}
-            />
-            {partialPreviewOpen && !partialPreviewLoading && (
-              <>
-                <JsonBox label="Headers (prévia)" value={ingestionPreviewHeaders} accent />
-                <JsonBox
-                  label="Body da requisição (prévia — até 3 itens)"
-                  value={partialPreviewPayload}
-                  accent
-                />
-              </>
-            )}
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: partialPreviewOpen ? 12 : 0 }}>
-              <View style={{ flex: 1 }}>
-                <SecondaryButton
-                  label="Simular"
-                  onPress={() => runPartialSync(true)}
-                  busy={partialBusy === "dry"}
-                  disabled={partialBusyAny && partialBusy !== "dry"}
-                />
-              </View>
-              <View style={{ flex: 1.3 }}>
-                <PrimaryButton
-                  label="Enviar atualização"
-                  onPress={confirmPartialSync}
-                  busy={partialBusy === "real"}
-                  disabled={(partialBusyAny && partialBusy !== "real") || !status?.autenticado}
-                />
-              </View>
-            </View>
-            {partialResult?.dryRun && (
-              <JsonBox label="RESULTADO (SIMULAÇÃO — NENHUMA CHAMADA FOI FEITA)" value={partialResult} />
-            )}
-            {partialCalls.map((call) => (
-              <CallJsonCard key={call.id} call={call} />
-            ))}
-            {partialResult && (
-              <>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.muted, marginTop: 14 }}>
-                  {partialResult.dryRun ? "SIMULAÇÃO — NADA FOI PUBLICADO" : "ÚLTIMO ENVIO"}
-                </Text>
-                <SyncResultCard result={partialResult} />
-              </>
-            )}
-          </Card>
-
-          {/* Conferência — complementa os 3 endpoints acima */}
-          <Card
-            title="Conferir no iFood"
-            subtitle="O que ficou gravado depois de um envio real — Catalog v2.0, que funciona no app de teste independente da homologação (que vale só pro app de produção)."
-          >
-            <SecondaryButton
-              label="Conferir no iFood"
-              onPress={runVerify}
-              busy={verifying}
-            />
-
-            {verification && (
-              <View style={{ marginTop: 12 }}>
+          {quality && (
+            <Card
+              title="Qualidade dos códigos"
+              subtitle={`Produtos ativos com código: ${quality.total}. Só EAN válido vincula ao catálogo do iFood.`}
+            >
+              {CLASSES.map((c) => (
                 <Row
-                  label="Itens vendáveis"
-                  value={String(verification.sellableCount)}
-                  tone="ok"
+                  key={c.key}
+                  label={c.label}
+                  hint={c.hint}
+                  value={String(quality.grupos[c.key])}
+                  tone={quality.grupos[c.key] > 0 ? c.tone : "default"}
                 />
-                <Row
-                  label="Itens rejeitados"
-                  value={String(verification.unsellableCount)}
-                  tone={verification.unsellableCount > 0 ? "warn" : "default"}
-                />
-                {verification.catalogs.map((c) => (
-                  <Row
-                    key={c.catalogId}
-                    label={`Catálogo ${c.catalogId.slice(0, 8)}…`}
-                    value={
-                      c.modifiedAt
-                        ? `${c.status} · ${new Date(c.modifiedAt).toLocaleString("pt-BR")}`
-                        : c.status
-                    }
+              ))}
+
+              {quality.invalidos.length > 0 && (
+                <>
+                  <DetailsToggle
+                    open={invalidosOpen}
+                    onToggle={() => setInvalidosOpen((v) => !v)}
+                    label="produtos a corrigir"
                   />
-                ))}
+                  {invalidosOpen &&
+                    quality.invalidos.map((p) => (
+                      <Row
+                        key={p.id}
+                        label={p.name}
+                        value={p.codigo}
+                        tone="err"
+                      />
+                    ))}
+                </>
+              )}
+            </Card>
+          )}
 
-                {verification.amostraSellable.length > 0 && (
-                  <>
-                    <Text
-                      style={{ fontSize: 11, fontWeight: "800", color: COLORS.muted, marginTop: 14 }}
-                    >
-                      VENDÁVEIS — mostrando {verification.amostraSellable.length} de{" "}
-                      {verification.sellableCount}
-                    </Text>
-                    <DataTable
-                      columns={SELLABLE_COLUMNS}
-                      rows={verification.amostraSellable}
-                      keyExtractor={(item) => item.itemId}
-                      renderCell={renderSellableCell}
-                    />
-                  </>
-                )}
-
-                {verification.unsellable.length > 0 && (
-                  <>
-                    <Text
-                      style={{ fontSize: 11, fontWeight: "800", color: COLORS.muted, marginTop: 14 }}
-                    >
-                      REJEITADOS — mostrando {verification.unsellable.length} de{" "}
-                      {verification.unsellableCount}
-                    </Text>
-                    <DataTable
-                      columns={UNSELLABLE_COLUMNS}
-                      rows={verification.unsellable}
-                      keyExtractor={(item, i) => `${item.produtoId}-${i}`}
-                      renderCell={renderUnsellableCell}
-                    />
-                  </>
-                )}
-              </View>
-            )}
-          </Card>
-
-          {/* Monitoramento */}
           <Card
-            title="Monitoramento"
-            subtitle={`Últimas chamadas à Merchant-API — atualiza a cada ${LOG_POLL_MS / 1000}s.`}
+            title="Histórico de sincronizações"
+            subtitle="Últimas 20 rodadas, automáticas e manuais. Toque para ver o detalhe."
           >
-            {log.length === 0 ? (
+            {runs.length === 0 ? (
               <Text style={{ fontSize: 12.5, color: COLORS.muted, paddingVertical: 10 }}>
-                Nenhuma chamada registrada ainda. Use os botões acima.
+                Nenhuma sincronização registrada ainda.
               </Text>
             ) : (
-              log.map((entry) => <LogEntryRow key={entry.id} entry={entry} />)
+              runs.map((run) => <RunRow key={run.id} run={run} />)
             )}
           </Card>
         </ScrollView>

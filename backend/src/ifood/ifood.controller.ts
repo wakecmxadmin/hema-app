@@ -5,6 +5,7 @@ import { IfoodAuthService } from './ifood-auth.service';
 import { IfoodCallLogService } from './ifood-call-log.service';
 import { IfoodCatalogService } from './ifood-catalog.service';
 import { IfoodEventsService } from './ifood-events.service';
+import { IfoodSyncService } from './ifood-sync.service';
 
 /**
  * Painel de integração do iFood, consumido pela tela `/admin/ifood` do app.
@@ -19,6 +20,7 @@ export class IfoodController {
     private readonly catalog: IfoodCatalogService,
     private readonly events: IfoodEventsService,
     private readonly callLog: IfoodCallLogService,
+    private readonly syncService: IfoodSyncService,
   ) {}
 
   /** Diagnóstico: confirma se as credenciais autenticam. */
@@ -154,6 +156,47 @@ export class IfoodController {
         : 'A sincronização terminou com falhas.',
       data,
     };
+  }
+
+  /**
+   * Envio incremental: só produtos novos, alterados ou removidos desde o
+   * último envio aceito. É o mesmo fluxo do cron (a cada 30 min).
+   * `?dryRun=true` calcula a diferença sem chamar o iFood.
+   * `?force=true` reenvia tudo que já subiu, ignorando o hash.
+   */
+  @Post('sync/changes')
+  async syncChanges(
+    @Query('dryRun') dryRun?: string,
+    @Query('force') force?: string,
+  ) {
+    const data = await this.syncService.syncChanges({
+      dryRun: dryRun === 'true',
+      force: force === 'true',
+      trigger: 'manual',
+    });
+    return {
+      success: data.ok,
+      message: data.erro
+        ? data.erro
+        : data.ok
+          ? `${data.enviados} itens ${data.dryRun ? 'seriam enviados' : 'enviados'}.`
+          : 'A sincronização terminou com falhas.',
+      data,
+    };
+  }
+
+  /** Histórico das rodadas de sincronização (cron e manuais). */
+  @Get('sync/runs')
+  async syncRuns() {
+    const data = await this.syncService.listRuns();
+    return { success: true, message: 'ok', data };
+  }
+
+  /** Qualidade dos códigos de barras dos produtos ativos — só leitura. */
+  @Get('catalog/codes')
+  async codeQuality() {
+    const data = await this.catalog.codeQuality();
+    return { success: true, message: 'ok', data };
   }
 
   /**

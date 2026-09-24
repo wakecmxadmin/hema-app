@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { supabase } from '../lib/supabase';
 import {
   IfoodApiService,
   IfoodCatalog,
   IfoodSellableItem,
 } from './ifood-api.service';
+import { barcodeForIfood, classifyCodigo, CodigoClasse } from './ifood-barcode';
 
-interface ProductRow {
+export interface ProductRow {
   id: string;
   name: string;
   description: string | null;
@@ -69,6 +69,14 @@ export interface SyncResult {
   amostraPayload: any[];
 }
 
+export interface CodigoQualidade {
+  /** Produtos ativos com código. */
+  total: number;
+  grupos: Record<CodigoClasse, number>;
+  /** Produtos a corrigir no cadastro — lista completa, costuma ser curta. */
+  invalidos: { id: string; name: string; codigo: string }[];
+}
+
 const BATCH_SIZE = 500;
 
 @Injectable()
@@ -78,6 +86,20 @@ export class IfoodCatalogService {
 
   constructor(private readonly api: IfoodApiService) {}
 
+  /**
+   * Trava compartilhada com o envio incremental (`IfoodSyncService`) — duas
+   * cargas simultâneas mandariam o mesmo produto duas vezes.
+   */
+  acquire(): boolean {
+    if (this.running) return false;
+    this.running = true;
+    return true;
+  }
+
+  release(): void {
+    this.running = false;
+  }
+
   private get markup(): number {
     return Number(process.env.IFOOD_PRICE_MARKUP) || 1.12;
   }
@@ -85,10 +107,6 @@ export class IfoodCatalogService {
   /** Envia `scalePrices` nos itens a granel. Desligado até validar na homologação. */
   private get scalePricesEnabled(): boolean {
     return process.env.IFOOD_SCALE_PRICES === 'true';
-  }
-
-  private get syncEnabled(): boolean {
-    return process.env.IFOOD_SYNC_ENABLED === 'true';
   }
 
   /** Nenhum item sobe abaixo disto — o iFood não aceita preço zero. */
@@ -143,14 +161,13 @@ export class IfoodCatalogService {
       return { skip: 'estoque invalido' };
     }
 
-    const codigo = String(row.codigo);
-    // EAN tem 8, 12, 13 ou 14 dígitos. Códigos curtos são de balança e vão
-    // também em `plu`, que é o campo de código interno do iFood.
-    const isEan = [8, 12, 13, 14].includes(codigo.length);
+    // EAN sem o zero à esquerda volta a ter 13 dígitos. Códigos curtos são
+    // de balança/internos e vão também em `plu`, o código interno do iFood.
+    const { barcode, isEan } = barcodeForIfood(row.codigo, row.type);
 
     return {
-      externalCode: codigo,
-      plu: isEan ? undefined : codigo,
+      externalCode: barcode,
+      plu: isEan ? undefined : barcode,
       imageUrl: row.image_url ?? undefined,
       description: row.description ?? undefined,
       category: this.categoryName(row) || undefined,
@@ -172,7 +189,7 @@ export class IfoodCatalogService {
     return first?.name?.trim() || undefined;
   }
 
-  private async fetchProducts(): Promise<ProductRow[]> {
+  async fetchProducts(): Promise<ProductRow[]> {
     const pageSize = 1000;
     const rows: ProductRow[] = [];
 
@@ -209,7 +226,7 @@ export class IfoodCatalogService {
    * arriscar apagar o catálogo. O POST com `reset=true` substitui o catálogo
    * inteiro e só deve ser usado em carga inicial.
    */
-  private ingestionPath(mode: 'patch' | 'post', reset = false): string {
+  ingestionPath(mode: 'patch' | 'post', reset = false): string {
     const base = `/item/v1.0/ingestion/${this.api.merchantId}`;
     return mode === 'post' ? `${base}?reset=${reset}` : base;
   }
@@ -224,7 +241,7 @@ export class IfoodCatalogService {
    * tocado. Serve pra sync de rotina (preço/estoque mudam a toda hora,
    * nome/imagem/categoria não) sem reenviar o objeto inteiro.
    */
-  private toApiPayload(
+  toApiPayload(
     items: IfoodCatalogItem[],
     fields: 'full' | 'price-stock' = 'full',
   ) {
@@ -305,11 +322,10 @@ export class IfoodCatalogService {
       return { ...result, ok: false };
     }
 
-    if (this.running) {
+    if (!this.acquire()) {
       this.logger.warn('Sync já em andamento — chamada ignorada.');
       return { ...result, ok: false };
     }
-    this.running = true;
 
     try {
       const rows = await this.fetchProducts();
@@ -366,8 +382,43 @@ export class IfoodCatalogService {
 
       return result;
     } finally {
-      this.running = false;
+      this.release();
     }
+  }
+
+  /**
+   * Raio-x dos códigos dos produtos ativos: quantos vinculam ao catálogo
+   * global do iFood (EAN válido), quantos são recuperáveis e quais
+   * precisam de correção no cadastro. Só leitura — não chama o iFood.
+   */
+  async codeQuality(): Promise<CodigoQualidade> {
+    const result: CodigoQualidade = {
+      total: 0,
+      grupos: {
+        ean: 0,
+        'ean-sem-zero': 0,
+        'ean-invalido': 0,
+        balanca: 0,
+        interno: 0,
+      },
+      invalidos: [],
+    };
+
+    for (const row of await this.fetchProducts()) {
+      if (row.is_active === false || row.codigo === null) continue;
+      const classe = classifyCodigo(row.codigo, row.type);
+      result.total++;
+      result.grupos[classe]++;
+      if (classe === 'ean-invalido') {
+        result.invalidos.push({
+          id: row.id,
+          name: row.name,
+          codigo: String(row.codigo),
+        });
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -434,12 +485,5 @@ export class IfoodCatalogService {
     result.unsellable = result.unsellable.slice(0, 30);
     result.ok = true;
     return result;
-  }
-
-  /** Sincronização automática de hora em hora, se habilitada no .env. */
-  @Cron(CronExpression.EVERY_HOUR)
-  async scheduledSync(): Promise<void> {
-    if (!this.syncEnabled) return;
-    await this.sync();
   }
 }

@@ -76,6 +76,18 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
       expect(item.price).toBe(5);
       expect(item.externalCode).toBe('457');
     });
+
+    it('EAN que perdeu o zero à esquerda volta com 13 dígitos e sem plu', () => {
+      // UPC 070847811169 exportado como número -> 70847811169
+      const item = service.toCatalogItem(linha({ codigo: 70847811169 })) as any;
+      expect(item.externalCode).toBe('0070847811169');
+      expect(item.plu).toBeUndefined();
+    });
+
+    it('UPC-A de 12 dígitos vai como EAN-13', () => {
+      const item = service.toCatalogItem(linha({ codigo: 619205693025 })) as any;
+      expect(item.externalCode).toBe('0619205693025');
+    });
   });
 
   describe('estoque', () => {
@@ -122,6 +134,18 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
       const item = service.toCatalogItem(linha({ codigo: 457 })) as any;
       expect(item.plu).toBe('457');
       expect(item.externalCode).toBe('457');
+    });
+
+    it('EAN que perdeu o zero à esquerda volta com 13 dígitos e sem plu', () => {
+      // UPC 070847811169 exportado como número -> 70847811169
+      const item = service.toCatalogItem(linha({ codigo: 70847811169 })) as any;
+      expect(item.externalCode).toBe('0070847811169');
+      expect(item.plu).toBeUndefined();
+    });
+
+    it('UPC-A de 12 dígitos vai como EAN-13', () => {
+      const item = service.toCatalogItem(linha({ codigo: 619205693025 })) as any;
+      expect(item.externalCode).toBe('0619205693025');
     });
   });
 

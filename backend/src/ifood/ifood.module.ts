@@ -4,6 +4,7 @@ import { IfoodAuthService } from './ifood-auth.service';
 import { IfoodCallLogService } from './ifood-call-log.service';
 import { IfoodCatalogService } from './ifood-catalog.service';
 import { IfoodEventsService } from './ifood-events.service';
+import { IfoodSyncService } from './ifood-sync.service';
 import { IfoodController } from './ifood.controller';
 
 @Module({
@@ -14,6 +15,7 @@ import { IfoodController } from './ifood.controller';
     IfoodApiService,
     IfoodCatalogService,
     IfoodEventsService,
+    IfoodSyncService,
   ],
   exports: [IfoodCatalogService],
 })
