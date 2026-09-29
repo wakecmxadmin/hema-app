@@ -1,7 +1,7 @@
 import { IfoodEventsService } from './ifood-events.service';
 import { IfoodApiService } from './ifood-api.service';
 
-describe('IfoodEventsService — heartbeat de conexão', () => {
+describe('IfoodEventsService — polling manual de eventos', () => {
   let api: jest.Mocked<IfoodApiService>;
   let service: IfoodEventsService;
 

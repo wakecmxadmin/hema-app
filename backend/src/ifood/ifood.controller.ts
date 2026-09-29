@@ -115,9 +115,9 @@ export class IfoodController {
   }
 
   /**
-   * Dispara uma rodada manual do polling de eventos, sem esperar o
-   * agendamento automático (a cada 30s) — útil pra testar o heartbeat que
-   * tira a loja do `is-connected: ERROR`.
+   * Dispara uma rodada do polling de eventos. Não há mais agendamento
+   * automático: o módulo Order não está liberado para a aplicação e a rota
+   * responde 403. Fica aqui para testar o dia que o iFood liberar.
    */
   @Post('events/poll')
   async pollEvents() {

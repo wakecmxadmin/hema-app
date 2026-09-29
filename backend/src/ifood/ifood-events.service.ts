@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Interval } from '@nestjs/schedule';
 import { IfoodApiService } from './ifood-api.service';
 
 export interface IfoodEvent {
@@ -11,31 +10,25 @@ export interface IfoodEvent {
   metadata?: Record<string, unknown>;
 }
 
-const POLL_INTERVAL_MS = 30_000;
-
 /**
- * Heartbeat de conexão com o iFood. A validação `is-connected` do status da
- * loja fica em ERROR ("Gestor de Pedidos ou PDV desconectado") se o
- * integrador não faz polling de eventos com regularidade — com a loja
- * marcada como desconectada, ela some do app e o catálogo não é exibido
- * mesmo com a ingestão do Item API aceita (202).
+ * Polling de eventos (pedidos) do iFood — **sem agendamento automático**.
  *
- * Não processamos pedidos ainda (isso fica pra depois): aqui só confirmamos
- * o recebimento de cada evento pra ele não voltar a ser entregue e pra
- * loja continuar marcada como conectada.
+ * O módulo Order não está liberado para esta aplicação no Portal do
+ * Desenvolvedor: `/events/v1.0/events:polling` responde 403 ("user is
+ * forbidden to access this resource") com o mesmo token que faz a ingestão
+ * do Item API dar 202. Rodava a cada 30s e só produzia erro em log.
+ *
+ * A integração é de catálogo: os pedidos do iFood não chegam por aqui. Se um
+ * dia o módulo Order for liberado, `pollOnce` continua pronto e exposto em
+ * `POST /ifood/events/poll` — basta voltar a agendá-lo com `@Interval`.
  */
 @Injectable()
 export class IfoodEventsService {
   private readonly logger = new Logger(IfoodEventsService.name);
-  private polling = false;
 
   constructor(private readonly api: IfoodApiService) {}
 
-  private get enabled(): boolean {
-    return this.api.isConfigured() && !!this.api.merchantId;
-  }
-
-  /** Uma rodada de poll + acknowledge. Exposto à parte para o diagnóstico manual. */
+  /** Uma rodada de poll + acknowledge. Só roda quando chamada na mão. */
   async pollOnce(): Promise<{ eventos: number; codigos: string[] }> {
     const response = await this.api.request<IfoodEvent[]>(
       '/events/v1.0/events:polling',
@@ -64,18 +57,5 @@ export class IfoodEventsService {
     });
 
     return { eventos: events.length, codigos: events.map((e) => e.fullCode) };
-  }
-
-  @Interval(POLL_INTERVAL_MS)
-  async scheduledPoll(): Promise<void> {
-    if (!this.enabled || this.polling) return;
-    this.polling = true;
-    try {
-      await this.pollOnce();
-    } catch (err: any) {
-      this.logger.error(`Falha no polling de eventos: ${err?.message ?? err}`);
-    } finally {
-      this.polling = false;
-    }
   }
 }

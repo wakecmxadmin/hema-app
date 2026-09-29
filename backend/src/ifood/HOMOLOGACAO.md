@@ -12,7 +12,7 @@ Loja: Hema Cereais · Integrador: Wake Comex (CNPJ 66.867.352/0001-57)
 | `ifood-catalog.service.ts` | Leitura do catálogo, validação, mapeamento e envio em lotes |
 | `ifood.controller.ts` | `GET /ifood/status`, `GET /ifood/merchants`, `POST /ifood/sync`, `GET /ifood/catalog/verify` — restrito a `StaffGuard` |
 | `frontend/app/admin/ifood.tsx` | Tela do lojista: estado da conexão, simulação, envio e relatório |
-| `ifood-events.service.ts` | Heartbeat: polling de eventos a cada 30s + acknowledgment |
+| `ifood-events.service.ts` | Polling de eventos + acknowledgment — **só manual** desde 29/09/2026 (403 na loja de produção) |
 
 ## 1.1 Checklist oficial do módulo Item — onde cada cenário está no código
 
@@ -244,6 +244,15 @@ de balança e `prices.price` = preço de 1 kg.
       "Gestor de Pedidos ou PDV desconectado"). Corrigido com
       `ifood-events.service.ts` (polling a cada 30s + acknowledgment) —
       confirmado em 15/09/2026: `is-connected: OK`, "Loja aberta".
+- [ ] **Polling responde 403 na loja de produção** (29/09/2026):
+      `{"message":"user is forbidden to access this resource"}` no
+      `GET /events/v1.0/events:polling`, com o mesmo token que faz a ingestão
+      devolver `202` — o módulo Order não está liberado para o `prod-hema`.
+      O agendamento foi removido (a Hema não recebe pedidos do iFood pela
+      integração, que é só de catálogo) e sobrou a rota manual
+      `POST /ifood/events/poll`. **A conferir:** se o `is-connected` da loja
+      cai para ERROR sem o heartbeat — foi ele que resolveu o caso acima na
+      loja de teste. Se cair, pedir a liberação do módulo Order ao iFood.
 - [x] **Catálogo nunca aparece em `sellableItems`, mesmo com tudo certo do
       nosso lado.** Resolvido em 15/09/2026: perguntado diretamente ao
       analista de homologação (chamado aberto pro `prod-hema`,

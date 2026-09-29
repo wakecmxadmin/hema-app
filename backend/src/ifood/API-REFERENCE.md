@@ -257,7 +257,7 @@ seguem o mesmo padrão de erro `400 BadRequest` do resto da Merchant-API.
 
 ---
 
-## Events — `events/v1.0` ✅ verificado (schema abaixo) — **é o heartbeat de conexão**
+## Events — `events/v1.0` ⚠️ desativado em 29/09/2026 (403 na loja de produção)
 
 ```
 Base: https://merchant-api.ifood.com.br/events/v1.0
@@ -270,11 +270,24 @@ disso.** Descoberto em 14/09/2026 — a loja de teste ficava com `state: ERROR`
 e `is-connected: ERROR` ("Gestor de Pedidos ou PDV desconectado") porque
 nada no projeto fazia polling. Com a loja desconectada, ela não aparece pro
 consumidor final e o catálogo enviado pelo Item API não é exibido mesmo
-recebendo `202`. Implementado em `ifood-events.service.ts`: `@Interval` de
-30s chamando polling + acknowledgment, ligado sempre que as credenciais
-estão configuradas (independe do `IFOOD_SYNC_ENABLED`, que é só do catálogo).
-Pedidos em si (processar o conteúdo dos eventos) ainda não são tratados —
-por enquanto só confirma recebimento pra manter o heartbeat.
+recebendo `202`. Funcionou assim na loja de teste (`is-connected: OK` em 15/09/2026), com um
+`@Interval` de 30s em `ifood-events.service.ts` chamando polling +
+acknowledgment.
+
+**Na loja de produção (`6037efb5-...`) a rota responde `403` —
+`{"message":"user is forbidden to access this resource"}` — com o mesmo token
+que faz a ingestão do Item API devolver `202`.** O módulo Order não está
+liberado para a aplicação nessa loja. Como a integração é só de catálogo (a
+Hema não recebe pedidos do iFood por aqui), o agendamento foi **removido** em
+29/09/2026: rodava a cada 30s e só produzia `ERROR` no log, enterrando os
+logs de sync. `pollOnce` continua exposto em `POST /ifood/events/poll` para
+testar quando o módulo for liberado; religar é voltar o `@Interval`.
+
+⚠️ **Risco em aberto:** sem polling, o `is-connected` da loja pode voltar
+para ERROR e o catálogo deixar de ser exibido. Conferir em
+`GET /ifood/merchant-status`. Se acontecer, a saída é pedir ao iFood a
+liberação do módulo Order para o `prod-hema` — e não reativar o `@Interval`,
+que só voltaria a tomar 403.
 
 **`GET /events:polling`** — sem parâmetros obrigatórios.
 `200` com array de eventos, ou **`204` quando não há evento pendente**
@@ -344,7 +357,7 @@ Separação de pedido de mercado: `POST /orders/{id}/items` (adicionar),
 | `ifood-auth.service.ts` | Token com cache e renovação antecipada |
 | `ifood-api.service.ts` | Cliente HTTP: retry, backoff, 401 |
 | `ifood-catalog.service.ts` | Mapeamento `products` → `ItemIntegrationRequest`, envio (`sync`) e conferência (`verify`) |
-| `ifood-events.service.ts` | Heartbeat: polling de eventos a cada 30s + acknowledgment |
+| `ifood-events.service.ts` | Polling de eventos + acknowledgment — **só manual**, sem agendamento (403 na loja de produção) |
 | `ifood.controller.ts` | `/ifood/status`, `/ifood/merchants`, `/ifood/merchant-status`, `/ifood/sync`, `/ifood/catalog/verify`, `/ifood/events/poll` |
 | `HOMOLOGACAO.md` | Documento da reunião de validação |
 
