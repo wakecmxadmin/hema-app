@@ -15,6 +15,9 @@
       "channel": "production"
     }
   },
+  "submit": {
+    "production": {}
+  },
   "cli": {
     "appVersionSource": "remote"
   }

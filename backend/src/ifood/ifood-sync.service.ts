@@ -96,6 +96,15 @@ export class IfoodSyncService {
     return process.env.IFOOD_SYNC_ENABLED === 'true';
   }
 
+  /**
+   * Prefixo que amarra todas as linhas de uma mesma rodada no log. O id curto
+   * é o começo do `ifood_sync_runs.id`, então dá pra ir do log direto pra linha
+   * da rodada no banco.
+   */
+  private tag(trigger: string, runId: string | null): string {
+    return `[sync ${trigger}${runId ? ` ${runId.slice(0, 8)}` : ''}]`;
+  }
+
   /** Mesma serialização do envio: o hash muda se e só se o body mudar. */
   hashPayload(payload: unknown): string {
     return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
@@ -334,18 +343,37 @@ export class IfoodSyncService {
       amostra: {},
     };
 
+    // Toda saída antecipada é registrada: sem isso, um cron mal configurado
+    // fica meses sem rodar e não deixa rastro nenhum no log nem em sync_runs.
+    const abortar = (erro: string): ChangesResult => {
+      const prefixo = this.tag(trigger, null);
+      this.logger.warn(`${prefixo} Rodada não executada: ${erro}`);
+      return { ...result, erro };
+    };
+
     if (!merchantId) {
-      return { ...result, erro: 'IFOOD_MERCHANT_ID ausente.' };
+      return abortar('IFOOD_MERCHANT_ID ausente.');
     }
     if (!dryRun && !this.api.isConfigured()) {
-      return { ...result, erro: 'Credenciais do iFood ausentes.' };
+      return abortar(
+        'Credenciais ausentes (IFOOD_CLIENT_ID / IFOOD_CLIENT_SECRET).',
+      );
     }
     if (!this.catalog.acquire()) {
-      return { ...result, erro: 'Já existe uma sincronização em andamento.' };
+      return abortar('Já existe uma sincronização em andamento.');
     }
+
+    const iniciadoEm = Date.now();
+    let tag = this.tag(trigger, null);
 
     try {
       if (!dryRun) result.runId = await this.startRun(merchantId, trigger, force);
+      tag = this.tag(trigger, result.runId);
+
+      this.logger.log(
+        `${tag} Rodada iniciada${dryRun ? ' (dry-run)' : ''}` +
+          `${force ? ' (force)' : ''} — merchant ${merchantId}.`,
+      );
 
       const plano = await this.plan(merchantId, force);
       Object.assign(result, {
@@ -357,6 +385,18 @@ export class IfoodSyncService {
         ignorados: plano.ignorados,
         motivoIgnorados: plano.motivoIgnorados,
       });
+
+      const motivos = plano.ignorados
+        ? ` (${JSON.stringify(plano.motivoIgnorados)})`
+        : '';
+
+      this.logger.log(
+        `${tag} Plano: ${plano.total} produtos lidos -> ` +
+          `${plano.novos.length} novos, ${plano.alterados.length} alterados, ` +
+          `${plano.removidos.length} removidos, ` +
+          `${plano.inalterados} inalterados, ` +
+          `${plano.ignorados} ignorados${motivos}.`,
+      );
 
       // Removidos primeiro: um produto que trocou de código precisa ter o
       // estado antigo limpo antes do lote de novos gravar o estado novo.
@@ -372,27 +412,48 @@ export class IfoodSyncService {
         for (let i = 0; i < envios.length; i += BATCH_SIZE) {
           const batch = envios.slice(i, i + BATCH_SIZE);
           result.lotes++;
+          const lote = result.lotes;
+          const alvo = `lote ${lote} (${tipo}, ${batch.length} itens)`;
 
           if (dryRun) {
             result.enviados += batch.length;
+            this.logger.log(`${tag} ${alvo}: dry-run, nada enviado.`);
             continue;
           }
 
-          const response = await this.api.request(
-            this.catalog.ingestionPath(method === 'POST' ? 'post' : 'patch', false),
-            { method, body: JSON.stringify(batch.map((e) => e.payload)) },
+          const path = this.catalog.ingestionPath(
+            method === 'POST' ? 'post' : 'patch',
+            false,
           );
+          const enviadoEm = Date.now();
+          const response = await this.api.request(path, {
+            method,
+            body: JSON.stringify(batch.map((e) => e.payload)),
+          });
+          // O 202 traz `integrationUuid` — é o protocolo que o suporte do
+          // iFood pede pra rastrear um envio específico do lado deles.
+          const corpo = JSON.stringify(response.body ?? null).slice(0, 500);
+          const como =
+            `${method} ${path} -> HTTP ${response.status} ` +
+            `em ${Date.now() - enviadoEm}ms`;
 
           if (response.ok) {
             result.enviados += batch.length;
             await this.saveState(merchantId, result.runId!, tipo, batch);
+            this.logger.log(
+              `${tag} ${alvo}: ${como}. Barcodes ${batch[0].barcode}..` +
+                `${batch[batch.length - 1].barcode}. Resposta: ${corpo}`,
+            );
           } else {
             result.falhas.push({
-              lote: result.lotes,
+              lote,
               tipo,
               status: response.status,
               body: response.body,
             });
+            this.logger.error(
+              `${tag} ${alvo} FALHOU: ${como}. Resposta: ${corpo}`,
+            );
           }
         }
       }
@@ -400,18 +461,24 @@ export class IfoodSyncService {
       result.ok = result.falhas.length === 0;
     } catch (err) {
       result.erro = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Sync incremental interrompido: ${result.erro}`);
+      this.logger.error(`${tag} Rodada interrompida: ${result.erro}`);
     } finally {
       this.catalog.release();
     }
 
     if (result.runId) await this.finishRun(result.runId, result);
 
-    this.logger.log(
-      `Sync incremental iFood${dryRun ? ' (dry-run)' : ''} [${trigger}]: ` +
-        `${result.novos} novos, ${result.alterados} alterados, ${result.removidos} removidos, ` +
-        `${result.inalterados} inalterados, ${result.falhas.length} lotes com falha.`,
-    );
+    const resumo =
+      `${tag} Rodada encerrada${dryRun ? ' (dry-run)' : ''} em ` +
+      `${Date.now() - iniciadoEm}ms: ${result.enviados} itens ` +
+      `em ${result.lotes} lote(s) ` +
+      `(${result.novos} novos, ${result.alterados} alterados, ` +
+      `${result.removidos} removidos, ${result.inalterados} inalterados, ` +
+      `${result.ignorados} ignorados), ` +
+      `${result.falhas.length} lote(s) com falha.`;
+
+    if (result.erro || result.falhas.length) this.logger.error(resumo);
+    else this.logger.log(resumo);
 
     return result;
   }
@@ -440,7 +507,15 @@ export class IfoodSyncService {
    */
   @Cron('0 15,45 * * * *')
   async scheduledSync(): Promise<void> {
-    if (!this.syncEnabled) return;
+    if (!this.syncEnabled) {
+      this.logger.warn(
+        'Cron disparou, mas IFOOD_SYNC_ENABLED não está "true" — ' +
+          'rodada ignorada.',
+      );
+      return;
+    }
+
+    this.logger.log('Cron disparou — iniciando sincronização incremental.');
     await this.syncChanges({ trigger: 'cron' });
   }
 }
