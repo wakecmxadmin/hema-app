@@ -13,7 +13,7 @@ describe('IfoodSyncService — envio incremental', () => {
     price: 10,
     price_per_kg: null,
     stock: 42,
-    codigo: 7891234567890,
+    codigo: 7891234567895,
     is_active: true,
     categories: { name: 'Cereais' },
     ...over,
@@ -104,7 +104,7 @@ describe('IfoodSyncService — envio incremental', () => {
       setup([{ ...a, codigo: 7891000100103 }], [estadoDe(a)]);
       const plano = await svc.plan('m1', false);
       expect(plano.removidos[0].payload).toEqual({
-        barcode: '7891234567890',
+        barcode: '7891234567895',
         active: false,
       });
       expect(plano.novos[0].barcode).toBe('7891000100103');

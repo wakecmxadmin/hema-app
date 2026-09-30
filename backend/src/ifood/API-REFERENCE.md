@@ -363,4 +363,34 @@ Separação de pedido de mercado: `POST /orders/{id}/items` (adicionar),
 
 Variáveis: `IFOOD_CLIENT_ID`, `IFOOD_CLIENT_SECRET`, `IFOOD_API_URL`,
 `IFOOD_MERCHANT_ID`, `IFOOD_PRICE_MARKUP`, `IFOOD_SYNC_ENABLED`,
-`IFOOD_SCALE_PRICES`.
+`IFOOD_SCALE_PRICES`, `IFOOD_SOMENTE_EAN`.
+
+## Somente EAN — `IFOOD_SOMENTE_EAN` (ligado por padrão desde 29/09/2026)
+
+Só produto com EAN válido (`ean` ou `ean-sem-zero`) sobe ao iFood. Código
+interno de balança, código interno de loja e EAN com dígito verificador
+errado são descartados em `toCatalogItem` com motivo `sem ean: <classe>`, e
+quem já estava no iFood é **desativado** pelo envio incremental — `plan()`
+desativa todo item descartado que tinha estado gravado.
+
+**Por quê:** o código interno viaja no campo `barcode`, que é a chave do
+catálogo global do iFood. Código curto casa com o item que outro mercado
+cadastrou: o `989` (LEMON PEPPER, granel, R$ 30/kg) apareceu na loja como
+"Picanha Bovina Boa Carne" a R$ 33,00, com foto de carne — o iFood descarta
+nome e imagem do lojista e aplica a ficha dele. São ~806 itens nessa
+situação, 755 deles a granel.
+
+**Custo:** a loja perde ~30% do catálogo no app, incluindo 99% do granel.
+Decisão do usuário em 29/09/2026: preferível a exibir produto errado.
+
+`IFOOD_SOMENTE_EAN=false` volta a enviar todo mundo, sem deploy.
+
+**Como sair dessa situação** (em aberto): o iFood tem um catálogo global de
+granel com ids `SM` + 11 dígitos (ex.: `SM00201199997`), com atributos de
+forma de venda e peso, e o Portal tem tela de vinculação manual. O BFF do
+Portal expõe `GET /v1/linking/normalized-product/{uuid}` em
+`partner-catalog-groceries-bff.ifood.com.br` — API interna da tela,
+autenticada pelo login do portal, não pela Merchant-API. **Perguntar ao
+analista:** existe equivalente ao `linking`/`normalized-product` na
+Merchant-API, o campo `barcode` aceita o id `SM`, e o que acontece com item
+sem vínculo (fica em "Para Cadastrar"?).

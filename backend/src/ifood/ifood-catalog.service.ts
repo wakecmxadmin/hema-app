@@ -109,6 +109,23 @@ export class IfoodCatalogService {
     return process.env.IFOOD_SCALE_PRICES === 'true';
   }
 
+  /**
+   * Só sobe ao iFood quem tem EAN válido. Ligado por padrão desde 29/09/2026:
+   * o código interno viaja no campo `barcode`, que é a chave do catálogo
+   * global do iFood, e código curto casa com o item de outra loja — o 989
+   * (LEMON PEPPER) virou "Picanha Bovina Boa Carne" na loja.
+   *
+   * Enquanto não há forma de vincular esses itens corretamente, eles ficam
+   * fora do ar em vez de aparecerem como outro produto. Quem já estava no
+   * iFood é desativado pelo envio incremental (`IfoodSyncService.plan`, que
+   * desativa todo item descartado que tinha estado).
+   *
+   * `IFOOD_SOMENTE_EAN=false` volta a enviar todo mundo, sem deploy.
+   */
+  private get somenteEan(): boolean {
+    return process.env.IFOOD_SOMENTE_EAN !== 'false';
+  }
+
   /** Nenhum item sobe abaixo disto — o iFood não aceita preço zero. */
   private readonly precoMinimo = 1;
 
@@ -145,6 +162,12 @@ export class IfoodCatalogService {
 
     if (row.type !== 'unit' && row.type !== 'weight') {
       return { skip: 'tipo desconhecido' };
+    }
+
+    // Sem EAN válido não há vínculo confiável no catálogo do iFood.
+    const classe = classifyCodigo(row.codigo, row.type);
+    if (this.somenteEan && classe !== 'ean' && classe !== 'ean-sem-zero') {
+      return { skip: `sem ean: ${classe}` };
     }
 
     const isWeight = row.type === 'weight';

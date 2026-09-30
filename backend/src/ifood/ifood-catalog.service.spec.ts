@@ -13,7 +13,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
     price: 10,
     price_per_kg: null,
     stock: 42,
-    codigo: 7891234567890,
+    codigo: 7891234567895,
     is_active: true,
     categories: { name: 'Cereais' },
     ...over,
@@ -21,6 +21,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
 
   beforeEach(() => {
     process.env.IFOOD_PRICE_MARKUP = '1.12';
+    delete process.env.IFOOD_SOMENTE_EAN;
     service = new IfoodCatalogService({} as IfoodApiService);
   });
 
@@ -57,7 +58,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
     it('mapeia com unidade UN e código como externalCode', () => {
       const item = service.toCatalogItem(linha()) as any;
       expect(item).toMatchObject({
-        externalCode: '7891234567890',
+        externalCode: '7891234567895',
         name: 'ARROZ BRANCO 5KG',
         price: 11,
         stock: 42,
@@ -69,6 +70,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
 
   describe('itens a granel', () => {
     it('usa price_per_kg e marca unidade KG', () => {
+      process.env.IFOOD_SOMENTE_EAN = 'false';
       const item = service.toCatalogItem(
         linha({ type: 'weight', price: null, price_per_kg: 4.9, codigo: 457 }),
       ) as any;
@@ -116,6 +118,33 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
     });
   });
 
+  describe('somente EAN — código interno não sobe', () => {
+    it.each([
+      ['sem ean: balanca', { codigo: 989, type: 'weight', price_per_kg: 30 }],
+      ['sem ean: interno', { codigo: 989 }],
+      ['sem ean: ean-invalido', { codigo: 7891234567891 }],
+    ])('descarta com motivo "%s"', (motivo, over) => {
+      expect(service.toCatalogItem(linha(over))).toEqual({ skip: motivo });
+    });
+
+    it.each([
+      ['EAN-13', 7891234567895],
+      ['EAN sem o zero à esquerda', 70847811169],
+      ['UPC-A de 12 dígitos', 619205693025],
+    ])('%s continua subindo', (_caso, codigo) => {
+      expect(service.toCatalogItem(linha({ codigo }))).not.toHaveProperty(
+        'skip',
+      );
+    });
+
+    it('IFOOD_SOMENTE_EAN=false volta a enviar código interno', () => {
+      process.env.IFOOD_SOMENTE_EAN = 'false';
+      expect(service.toCatalogItem(linha({ codigo: 989 }))).not.toHaveProperty(
+        'skip',
+      );
+    });
+  });
+
   describe('piso de preço', () => {
     it('item de centavos sobe por R$ 1 em vez de ser descartado', () => {
       const item = service.toCatalogItem(linha({ price: 0.27 })) as any;
@@ -131,6 +160,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
     });
 
     it('código curto de balança também vai em plu', () => {
+      process.env.IFOOD_SOMENTE_EAN = 'false';
       const item = service.toCatalogItem(linha({ codigo: 457 })) as any;
       expect(item.plu).toBe('457');
       expect(item.externalCode).toBe('457');
@@ -157,7 +187,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
 
     it('monta o objeto aninhado esperado pelo iFood', () => {
       expect(payload()).toEqual({
-        barcode: '7891234567890',
+        barcode: '7891234567895',
         name: 'ARROZ BRANCO 5KG',
         active: true,
         details: {
@@ -173,6 +203,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
     });
 
     it('granel vai com unidade KG', () => {
+      process.env.IFOOD_SOMENTE_EAN = 'false';
       const p = payload({
         type: 'weight',
         price: null,
@@ -228,7 +259,7 @@ describe('IfoodCatalogService — mapeamento e regras de preço', () => {
       const p = (service as any).toApiPayload([item], 'price-stock')[0];
 
       expect(p).toEqual({
-        barcode: '7891234567890',
+        barcode: '7891234567895',
         prices: { price: 11 },
         inventory: { stock: 42 },
       });

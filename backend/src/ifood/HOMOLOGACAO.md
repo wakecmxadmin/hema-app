@@ -244,6 +244,12 @@ de balança e `prices.price` = preço de 1 kg.
       "Gestor de Pedidos ou PDV desconectado"). Corrigido com
       `ifood-events.service.ts` (polling a cada 30s + acknowledgment) —
       confirmado em 15/09/2026: `is-connected: OK`, "Loja aberta".
+- [ ] **Itens sem EAN desativados no iFood** (29/09/2026): ~806 produtos
+      (755 a granel) saíram do ar por `IFOOD_SOMENTE_EAN`, porque o código
+      interno no campo `barcode` os vinculava ao item errado do catálogo
+      global — o `989` (LEMON PEPPER) virou "Picanha Bovina Boa Carne".
+      **A resolver:** como vincular granel ao catálogo do iFood sem ser um a
+      um no Portal. Ver a seção "Somente EAN" no `API-REFERENCE.md`.
 - [ ] **Polling responde 403 na loja de produção** (29/09/2026):
       `{"message":"user is forbidden to access this resource"}` no
       `GET /events/v1.0/events:polling`, com o mesmo token que faz a ingestão
