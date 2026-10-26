@@ -29,6 +29,7 @@ import {
 import { useColorScheme } from "@/components/useColorScheme";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
+import { QuantityPickerProvider } from "@/context/QuantityPickerContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 
@@ -100,7 +101,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const currentSegments = segments as string[];
 
     // Telas do fluxo de registro/reset que não devem sofrer redirect
-    const BYPASS_SCREENS = new Set(["password", "verify", "reset-password", "details"]);
+    const BYPASS_SCREENS = new Set(["register", "password", "verify", "reset-password", "details"]);
     if (currentSegments.some((s) => BYPASS_SCREENS.has(s))) return;
 
     if (session) {
@@ -147,33 +148,35 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <CartProvider>
         <NotificationsProvider>
-        <NotificationListener />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colorScheme === "dark" ? "#000" : "#fff",
-          }}
-        >
-          <AuthGuard>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                headerStyle: {
-                  backgroundColor: "#fff",
-                },
-                headerTitleStyle: {
-                  fontWeight: "bold",
-                  fontSize: 18,
-                },
-                headerTitleAlign: "center",
+          <QuantityPickerProvider>
+            <NotificationListener />
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colorScheme === "dark" ? "#000" : "#fff",
               }}
             >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="auth" />
-            </Stack>
-          </AuthGuard>
-          <ToastContainer />
-        </View>
+              <AuthGuard>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    headerStyle: {
+                      backgroundColor: "#fff",
+                    },
+                    headerTitleStyle: {
+                      fontWeight: "bold",
+                      fontSize: 18,
+                    },
+                    headerTitleAlign: "center",
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="auth" />
+                </Stack>
+              </AuthGuard>
+              <ToastContainer />
+            </View>
+          </QuantityPickerProvider>
         </NotificationsProvider>
       </CartProvider>
     </ThemeProvider>

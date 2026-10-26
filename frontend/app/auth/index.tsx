@@ -173,7 +173,7 @@ export default function AuthScreen() {
         {/* Botão primário — Criar conta */}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push("/auth/register-email")}
+          onPress={() => router.push("/auth/register" as any)}
           style={{
             backgroundColor: "#D91A21",
             height: 56,

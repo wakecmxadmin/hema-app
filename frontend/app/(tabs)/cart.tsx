@@ -21,7 +21,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { useCart } from "@/context/CartContext";
 import { CartItemSkeleton } from "@/components/CartItemSkeleton";
 import { PriceSkeleton } from "@/components/PriceSkeleton";
-import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import { CheckoutAuthSheet } from "@/components/CheckoutAuthSheet";
 import { EmptyState } from "@/components/EmptyState";
 import { useDeliveryEstimate } from "@/hooks/useDeliveryEstimate";
 
@@ -315,18 +315,24 @@ export default function CartScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
   const deliveryEstimate = useDeliveryEstimate();
 
   useFocusEffect(
     useCallback(() => {
-      if (isAuthenticated) {
-        refreshCart();
-      } else {
-        setShowAuthModal(true);
-      }
-    }, [isAuthenticated]),
+      // Visitante também tem carrinho; o refresh lê do armazenamento local
+      refreshCart();
+    }, [refreshCart]),
   );
+
+  // A conta só é exigida aqui, na hora de fechar o pedido
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      setShowAuthSheet(true);
+      return;
+    }
+    router.push("/checkout");
+  };
 
   const optimisticSubtotal = useMemo(() => {
     return items.reduce((acc, item) => {
@@ -509,7 +515,7 @@ export default function CartScreen() {
             <TouchableOpacity
               className="bg-brand h-14 rounded-full items-center justify-center flex-row"
               activeOpacity={0.8}
-              onPress={() => router.push("/checkout")}
+              onPress={handleCheckout}
             >
               <Text className="text-brand-on text-[16px] font-bold uppercase tracking-wider">
                 Finalizar Compra
@@ -524,13 +530,13 @@ export default function CartScreen() {
           </View>
         )}
       </View>
-      <AuthRequiredModal
-        visible={showAuthModal}
-        onClose={() => {
-          setShowAuthModal(false);
-          router.navigate("/(tabs)/home" as any);
+      <CheckoutAuthSheet
+        visible={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        onAuthenticated={() => {
+          setShowAuthSheet(false);
+          router.push("/checkout");
         }}
-        message="Você precisa estar logado para acessar o carrinho."
       />
     </SafeAreaView>
   );

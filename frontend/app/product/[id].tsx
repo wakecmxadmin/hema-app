@@ -12,18 +12,16 @@ import {
   Platform,
 } from "react-native";
 
-import { useCart } from "@/context/CartContext";
+import { useQuantityPicker } from "@/context/QuantityPickerContext";
 import { Product } from "@/types/product";
 import { getProductById, getSimilarProducts } from "@/services/products";
 import { Toast } from "@/util/toast";
 import { ProductDetailsSkeleton } from "@/components/ProductDetailSkeleton";
-import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 export default function ProductDetailsScreen() {
   const router = useRouter();
-  const { addItem, isAuthenticated } = useCart();
+  const { openQuantityPicker } = useQuantityPicker();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,26 +88,14 @@ export default function ProductDetailsScreen() {
     setRefreshing(false);
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!product) return;
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
     if (product.stock <= 0) {
       Toast.show({ type: "error", text1: "Produto sem estoque disponível" });
       return;
     }
-    const payload = {
-      product_id: product.id,
-      price: product.type === "unit" ? product.price : product.price_per_kg,
-      ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
-    };
-    const success = await addItem(payload);
-    if (success) {
-      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
-    }
-    // CartContext já exibe o toast com a mensagem específica do backend em caso de erro
+    // A quantidade é escolhida na roda; o item entra no carrinho na confirmação
+    openQuantityPicker(product);
   };
 
   if (loading) {
@@ -280,11 +266,6 @@ export default function ProductDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <AuthRequiredModal
-        visible={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        message="Você precisa estar logado para adicionar produtos ao carrinho."
-      />
     </View>
   );
 }

@@ -35,11 +35,9 @@ import { CategoryCarousel } from "@/components/CategoryCarousel";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
-import { useCart } from "@/context/CartContext";
 import { Product } from "@/types/product";
 import { searchProducts } from "@/services/search";
-import { Toast } from "@/util/toast";
-import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import { useQuantityPicker } from "@/context/QuantityPickerContext";
 import { QuickActions } from "@/components/QuickActions";
 
 const SEARCH_LIMIT = 20;
@@ -47,8 +45,7 @@ const SEARCH_LIMIT = 20;
 export default function HomeScreen() {
   const router = useRouter();
   const { catalog, refreshing, onRefresh } = useHomeData();
-  const { addItem, isAuthenticated } = useCart();
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { openQuantityPicker } = useQuantityPicker();
 
   // Reforça o StatusBar toda vez que a tela ganha foco (navegação entre tabs/telas)
   useFocusEffect(
@@ -91,29 +88,11 @@ export default function HomeScreen() {
   const [hasMoreSearch, setHasMoreSearch] = useState(true);
 
   const handleAddToCart = useCallback(
-    async (product: Product) => {
-      if (!isAuthenticated) {
-        setShowAuthModal(true);
-        return;
-      }
-
-      const isKg =
-        product.price_per_kg !== null && product.price_per_kg !== undefined;
-      const isUnit = product.type === "unit" || !isKg;
-
-      Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
-
-      const success = await addItem({
-        product_id: product.id,
-        price: isUnit ? product.price : product.price_per_kg,
-        ...(isUnit ? { quantity: 1 } : { weight: 100 }),
-      });
-
-      if (!success) {
-        Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
-      }
+    (product: Product) => {
+      // Visitante também adiciona: a conta só é pedida ao fechar o pedido
+      openQuantityPicker(product);
     },
-    [isAuthenticated, addItem],
+    [openQuantityPicker],
   );
 
   const handleSearch = async (query: string) => {
@@ -232,11 +211,6 @@ export default function HomeScreen() {
         <HomeHeader onSearch={handleSearch} headerOffset={headerOffset} />
       </View>
 
-      <AuthRequiredModal
-        visible={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        message="Você precisa estar logado para adicionar produtos ao carrinho."
-      />
     </SafeAreaView>
   );
 }

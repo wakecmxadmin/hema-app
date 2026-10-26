@@ -16,16 +16,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getProductsByCategory } from "@/services/products";
 import { Product } from "@/types/product";
-import { Toast } from "@/util/toast";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
-import { useCart } from "@/context/CartContext";
+import { useQuantityPicker } from "@/context/QuantityPickerContext";
 
 const LIMIT = 30;
 
 export default function CategoryScreen() {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { openQuantityPicker } = useQuantityPicker();
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,21 +92,11 @@ export default function CategoryScreen() {
   };
 
   const handleAddToCart = useCallback(
-    async (product: Product) => {
-      const payload = {
-        product_id: product.id,
-        price: product.type === "unit" ? product.price : product.price_per_kg,
-        ...(product.type === "unit" ? { quantity: 1 } : { weight: 100 }),
-      };
-
-      const success = await addItem(payload);
-      if (success) {
-        Toast.show({ type: "success", text1: "Adicionado ao carrinho!" });
-      } else {
-        Toast.show({ type: "error", text1: "Erro ao adicionar ao carrinho" });
-      }
+    (product: Product) => {
+      // Visitante também adiciona: a conta só é pedida ao fechar o pedido
+      openQuantityPicker(product);
     },
-    [addItem],
+    [openQuantityPicker],
   );
 
   const navigateToProduct = useCallback(

@@ -5,10 +5,19 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import * as cartService from "@/services/cart";
+import {
+  addGuestItem,
+  clearGuestCart,
+  getGuestCart,
+  removeGuestItem,
+  updateGuestItem,
+} from "@/services/guest-cart";
 import { supabase } from "@/services/supabase";
 import { setCachedToken } from "@/services/session-cache";
+import { Product } from "@/types/product";
 import { Toast } from "@/util/toast";
 
 type Cart = any;
@@ -30,12 +39,17 @@ type CartContextType = {
   user: any | null;
   isStaff: boolean;
   refreshCart: () => Promise<void>;
-  addItem: (data: AddCartItemDTO) => Promise<boolean>;
+  /** `product` é obrigatório enquanto o visitante não tem conta: o carrinho
+   *  local guarda um snapshot para conseguir renderizar sem o backend. */
+  addItem: (data: AddCartItemDTO, product?: Product) => Promise<boolean>;
   updateItem: (
     id: string,
     data: { quantity?: number; weight?: number },
   ) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
+  /** Sobe o carrinho local para o backend. Idempotente: chamadas simultâneas
+   *  compartilham a mesma execução. */
+  mergeGuestCart: () => Promise<void>;
 };
 
 const STAFF_EMAIL_DOMAINS = (
@@ -65,6 +79,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const user = session?.user ?? null;
   const isStaff = deriveIsStaff(user);
 
+  // Mantém o valor atual acessível dentro de callbacks que não devem ser
+  // recriados a cada login/logout (o listener do Supabase, por exemplo).
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
@@ -82,8 +101,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // REFRESH: Apenas sincroniza a tela com o backend silenciosamente
   const refreshCart = useCallback(async () => {
     if (!session) {
+      // Visitante: a fonte de verdade é o armazenamento do aparelho
       setCart(null);
-      setItems([]);
+      setItems(await getGuestCart());
       setLoading(false);
       return;
     }
@@ -98,10 +118,63 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, [session]);
 
+  // MERGE: sobe o carrinho do visitante assim que ele entra na conta
+  const mergingRef = useRef<Promise<void> | null>(null);
+
+  const mergeGuestCart = useCallback(async () => {
+    if (mergingRef.current) return mergingRef.current;
+
+    const run = async () => {
+      const guestItems = await getGuestCart();
+      if (guestItems.length === 0) return;
+
+      const rejected: string[] = [];
+
+      for (const item of guestItems) {
+        const response = await cartService.addCartItemService({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          weight: item.weight,
+          price: item.price,
+        } as any);
+
+        if (!response.success) {
+          rejected.push(item.product?.name ?? "Produto");
+        }
+      }
+
+      await clearGuestCart();
+
+      if (rejected.length > 0) {
+        Toast.show({
+          type: "error",
+          text1: "Alguns itens não puderam ser adicionados",
+          text2: rejected.join(", "),
+        });
+      }
+    };
+
+    mergingRef.current = run().finally(() => {
+      mergingRef.current = null;
+    });
+
+    return mergingRef.current;
+  }, []);
+
   // ADD: Optimistic UI com tratamento de erro padronizado
   const addItem = useCallback(
-    async (data: AddCartItemDTO) => {
-      if (!isAuthenticated) return false;
+    async (data: AddCartItemDTO, product?: Product) => {
+      if (!isAuthenticated) {
+        if (!product) {
+          Toast.show({
+            type: "error",
+            text1: "Não foi possível adicionar ao carrinho",
+          });
+          return false;
+        }
+        setItems(await addGuestItem(data, product));
+        return true;
+      }
 
       const previousItems = [...items];
 
@@ -111,7 +184,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         product_id: data.product_id,
         quantity: data.quantity || 0,
         weight: data.weight || 0,
-        product: {}, // Poderíamos passar o produto real aqui se a tela que chamou fornecer
+        product: product ?? {},
       };
 
       setItems((prev) => [...prev, tempItem]);
@@ -128,12 +201,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [items, refreshCart],
+    [isAuthenticated, items, refreshCart],
   );
 
   // UPDATE: Optimistic UI com tratamento de erro padronizado
   const updateItem = useCallback(
     async (id: string, data: { quantity?: number; weight?: number }) => {
+      if (!isAuthenticated) {
+        setItems(await updateGuestItem(id, data));
+        return;
+      }
+
       const previousItems = [...items];
       const previousCart = cart;
 
@@ -154,12 +232,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         Toast.show({ type: "error", text1: response.message });
       }
     },
-    [items, cart, refreshCart],
+    [isAuthenticated, items, cart, refreshCart],
   );
 
   // REMOVE: Optimistic UI com tratamento de erro padronizado
   const removeItem = useCallback(
     async (id: string) => {
+      if (!isAuthenticated) {
+        setItems(await removeGuestItem(id));
+        return;
+      }
+
       const previousItems = [...items];
       const previousCart = cart;
 
@@ -175,8 +258,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         Toast.show({ type: "error", text1: response.message });
       }
     },
-    [items, cart, refreshCart],
+    [isAuthenticated, items, cart, refreshCart],
   );
+
+  // Login feito por qualquer caminho do app leva o carrinho local junto
+  const previousAuthRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    const wasAuthenticated = previousAuthRef.current;
+    previousAuthRef.current = isAuthenticated;
+
+    if (wasAuthenticated === false && isAuthenticated) {
+      mergeGuestCart().then(refreshCart);
+    }
+  }, [isAuthenticated, mergeGuestCart, refreshCart]);
 
   useEffect(() => {
     refreshCart();
@@ -195,6 +290,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem,
       updateItem,
       removeItem,
+      mergeGuestCart,
     }),
     [
       cart,
@@ -208,6 +304,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem,
       updateItem,
       removeItem,
+      mergeGuestCart,
     ],
   );
 

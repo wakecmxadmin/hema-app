@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -73,6 +73,12 @@ export default function CheckoutScreen() {
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // Conta recém-criada chega aqui sem endereço: abre o formulário uma vez,
+  // em vez de deixar a pessoa procurar o botão.
+  const autoOpenedAddressForm = useRef(false);
+  const deliveryMethodRef = useRef(deliveryMethod);
+  deliveryMethodRef.current = deliveryMethod;
+
   const loadData = async () => {
     await refreshCart();
 
@@ -105,6 +111,15 @@ export default function CheckoutScreen() {
         }
         return null;
       });
+
+      if (
+        data.length === 0 &&
+        deliveryMethodRef.current === "delivery" &&
+        !autoOpenedAddressForm.current
+      ) {
+        autoOpenedAddressForm.current = true;
+        router.push("/addresses/new" as any);
+      }
     } else {
       console.log("Falha ao carregar endereços no checkout:", response.message);
     }
