@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { supabase } from '../lib/supabase';
 import {
   ORDER_STATUSES,
@@ -9,6 +15,9 @@ import { ConfirmOrderDto, RejectOrderDto } from './dto/confirm-order.dto';
 import { ShippingService } from '../shipping/shipping.service';
 import { ExpoPushService } from '../notifications/expo-push.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { PaymentsService } from '../payments/payment.service';
+import type { RefundResult } from '../payments/payment.service';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 interface ListOrdersQuery {
   status?: string;
@@ -25,6 +34,8 @@ export class AdminOrdersService {
     private readonly shippingService: ShippingService,
     private readonly expoPushService: ExpoPushService,
     private readonly couponsService: CouponsService,
+    @Inject(forwardRef(() => PaymentsService))
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   async findAll(query: ListOrdersQuery) {
@@ -599,11 +610,22 @@ export class AdminOrdersService {
     });
   }
 
-  async cancelOrder(orderId: string) {
+  /**
+   * Cancela um pedido e, se ele estiver pago, devolve o dinheiro antes.
+   *
+   * A ordem importa: o estorno vem primeiro e, se o Mercado Pago recusar, o
+   * pedido NÃO é cancelado. O inverso — cancelar e falhar no estorno — deixaria
+   * um pedido encerrado no app com o dinheiro ainda retido, que é o pior
+   * desfecho possível pra loja e pro cliente. Quando a loja quiser mesmo
+   * cancelar sem devolver, isso é explícito via `skip_refund`.
+   */
+  async cancelOrder(orderId: string, dto: CancelOrderDto = {}) {
     try {
       const { data: existing, error: fetchError } = await supabase
         .from('orders')
-        .select('id, status')
+        .select(
+          'id, status, payment_status, payment_method, refund_status, total_price',
+        )
         .eq('id', orderId)
         .single();
 
@@ -620,6 +642,43 @@ export class AdminOrdersService {
           message: 'Pedido já está cancelado.',
           data: { status: 'cancelled' },
         };
+      }
+
+      const shouldRefund =
+        !dto.skip_refund &&
+        existing.payment_status === 'paid' &&
+        existing.payment_method !== 'cash' &&
+        existing.refund_status !== 'refunded';
+
+      let refund: RefundResult | null = null;
+
+      if (shouldRefund) {
+        try {
+          refund = await this.paymentsService.refundPayment(
+            orderId,
+            dto.refund_amount,
+          );
+        } catch (refundError: any) {
+          const detail =
+            refundError?.response?.message ??
+            refundError?.message ??
+            'erro desconhecido';
+
+          console.error(
+            `[ADMIN_ORDER] Estorno do pedido ${orderId} falhou. Cancelamento abortado.`,
+            refundError,
+          );
+
+          throw new HttpException(
+            {
+              success: false,
+              message: `Não foi possível estornar o pagamento, então o pedido não foi cancelado. ${detail}`,
+              error: detail,
+              data: { refund_blocked: true },
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
       }
 
       const { data: orderItems } = await supabase
@@ -659,8 +718,10 @@ export class AdminOrdersService {
 
       return {
         success: true,
-        message: 'Pedido cancelado.',
-        data: { status: 'cancelled' },
+        message: refund
+          ? `Pedido cancelado. ${refund.message}`
+          : 'Pedido cancelado.',
+        data: { status: 'cancelled', refund },
       };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;

@@ -14,6 +14,15 @@ export type AdminOrderStatus =
   | "completed"
   | "cancelled";
 
+/** null = nunca houve tentativa de estorno. */
+export type RefundStatus =
+  | null
+  | "pending"
+  | "refunded"
+  | "partial"
+  | "failed"
+  | "charged_back";
+
 export interface OrderItemEdit {
   order_item_id: string;
   new_quantity?: number;
@@ -33,6 +42,11 @@ export interface AdminOrderListItem {
   shipping_status: string | null;
   shipping_last_error: string | null;
   logmanager_envio_id: string | null;
+  mp_payment_id: string | null;
+  refund_status: RefundStatus;
+  refund_amount: number | null;
+  refunded_at: string | null;
+  refund_error: string | null;
   order_items: Array<{
     id: string;
     product_name: string;
@@ -79,8 +93,34 @@ export const AdminOrdersService = {
     });
   },
 
-  async cancel(orderId: string): Promise<ApiResponse<any>> {
-    return apiFetch(`/admin/orders/${orderId}/cancel`, { method: "PATCH" });
+  /**
+   * Cancela o pedido. Se ele estiver pago via Mercado Pago, o estorno é
+   * automático — `skipRefund` cancela retendo o valor, e `refundAmount`
+   * devolve só uma parte.
+   */
+  async cancel(
+    orderId: string,
+    opts: { skipRefund?: boolean; refundAmount?: number } = {},
+  ): Promise<ApiResponse<any>> {
+    const body: Record<string, unknown> = {};
+    if (opts.skipRefund) body.skip_refund = true;
+    if (opts.refundAmount != null) body.refund_amount = opts.refundAmount;
+
+    return apiFetch(`/admin/orders/${orderId}/cancel`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+
+  /** Estorno sem cancelar — para pedidos já cancelados ou devolução parcial. */
+  async refund(
+    orderId: string,
+    amount?: number,
+  ): Promise<ApiResponse<any>> {
+    return apiFetch(`/admin/orders/${orderId}/refund`, {
+      method: "POST",
+      body: JSON.stringify(amount != null ? { amount } : {}),
+    });
   },
 
   async confirm(

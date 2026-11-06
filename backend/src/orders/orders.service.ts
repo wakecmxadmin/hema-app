@@ -9,10 +9,32 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { supabase } from '../lib/supabase';
 import { calculateDeliveryFee } from '../utils/delivery.util';
 import { PaymentsService } from '../payments/payment.service';
+import type { RefundResult } from '../payments/payment.service';
 import { CartService } from '../cart/cart.service';
 import { ExpoPushService } from '../notifications/expo-push.service';
 import { ShippingService } from '../shipping/shipping.service';
 import { CouponsService } from '../coupons/coupons.service';
+
+/**
+ * Até onde o cliente cancela sozinho pelo app.
+ *
+ * `confirmed` e `preparing` entram porque até aí nada saiu da loja e o
+ * estorno custa pouco: deixar o cliente resolver sozinho evita o contato que
+ * hoje vira atrito. De `awaiting_dispatch` em diante o pedido já está
+ * embalado ou com a transportadora, então cancelar passa a exigir a loja no
+ * meio — o botão some no app e o caminho é o admin.
+ *
+ * Para encurtar ou ampliar a janela, é esta lista que muda (e a gêmea em
+ * `frontend/app/orders/[id].tsx`, que decide quando mostrar o botão).
+ */
+const SELF_CANCELABLE_STATUSES = [
+  'pending',
+  'awaiting_store_confirmation',
+  'awaiting_customer_payment',
+  'waiting_payment',
+  'confirmed',
+  'preparing',
+];
 
 @Injectable()
 export class OrdersService {
@@ -339,11 +361,22 @@ export class OrdersService {
     }
   }
 
+  /**
+   * Cancelamento feito pelo próprio cliente no app.
+   *
+   * Se o pedido já estiver pago, o dinheiro volta automaticamente antes do
+   * cancelamento — e se o Mercado Pago recusar o estorno, o pedido NÃO é
+   * cancelado. Esse é o ponto: um cliente que cancela sozinho não tem ninguém
+   * da loja acompanhando, então encerrar o pedido sem devolver o valor viraria
+   * um prejuízo silencioso que só apareceria na reclamação seguinte.
+   */
   async cancelOrder(userId: string, orderId: string) {
     try {
       const { data: order, error: fetchError } = await supabase
         .from('orders')
-        .select('status')
+        .select(
+          'status, payment_status, payment_method, refund_status, total_price',
+        )
         .eq('id', orderId)
         .eq('user_id', userId)
         .single();
@@ -355,21 +388,45 @@ export class OrdersService {
         );
       }
 
-      const cancelableStatuses = [
-        'pending',
-        'awaiting_store_confirmation',
-        'awaiting_customer_payment',
-      ];
-
-      if (!cancelableStatuses.includes(order.status)) {
+      if (!SELF_CANCELABLE_STATUSES.includes(order.status)) {
         throw new HttpException(
           {
             success: false,
             message:
-              'Este pedido já está em processamento e não pode ser cancelado.',
+              'Este pedido já está a caminho e não pode mais ser cancelado pelo app. Fale com a loja.',
           },
           HttpStatus.CONFLICT,
         );
+      }
+
+      const shouldRefund =
+        order.payment_status === 'paid' &&
+        order.payment_method !== 'cash' &&
+        order.refund_status !== 'refunded';
+
+      let refund: RefundResult | null = null;
+
+      if (shouldRefund) {
+        try {
+          refund = await this.paymentsService.refundPayment(orderId);
+        } catch (refundError: any) {
+          console.error(
+            `[ORDER] Estorno do pedido ${orderId} falhou no cancelamento pelo cliente. Pedido mantido ativo.`,
+            refundError,
+          );
+
+          // O cliente não tem como agir sobre uma recusa do MP (falta de saldo
+          // na conta da loja, por exemplo), então a mensagem o encaminha à loja
+          // em vez de expor o motivo técnico.
+          throw new HttpException(
+            {
+              success: false,
+              message:
+                'Não conseguimos processar a devolução agora, então seu pedido segue ativo. Entre em contato com a loja para concluir o cancelamento.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
       }
 
       // Buscar itens do pedido para devolver estoque
@@ -414,8 +471,10 @@ export class OrdersService {
 
       return {
         success: true,
-        message: 'Pedido cancelado com sucesso.',
-        data: { new_status: 'cancelled' },
+        message: refund
+          ? `Pedido cancelado. ${refund.message}`
+          : 'Pedido cancelado com sucesso.',
+        data: { new_status: 'cancelled', refund },
       };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;

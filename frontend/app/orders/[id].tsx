@@ -153,21 +153,41 @@ export default function OrderDetailsScreen() {
   };
 
   const handleCancelOrder = () => {
+    const willRefund =
+      order?.payment_status === "paid" &&
+      order?.payment_method !== "cash" &&
+      order?.refund_status !== "refunded";
+
+    const refundNotice =
+      order?.payment_method === "pix"
+        ? "O valor volta para a sua conta do PIX, normalmente em alguns minutos."
+        : "O valor volta no cartão usado na compra e aparece na fatura — dependendo do banco, pode levar até duas faturas.";
+
     Alert.alert(
-      "Cancelar Pedido",
-      "Tem certeza que deseja cancelar este pedido?",
+      willRefund ? "Cancelar e receber de volta" : "Cancelar Pedido",
+      willRefund
+        ? `Vamos devolver ${formatPrice(Number(order?.total_price ?? 0))} para você.\n\n${refundNotice}`
+        : "Tem certeza que deseja cancelar este pedido?",
       [
         { text: "Não", style: "cancel" },
         {
-          text: "Sim, cancelar",
+          text: willRefund ? "Cancelar e estornar" : "Sim, cancelar",
           style: "destructive",
           onPress: async () => {
-            Toast.show({ type: "success", text1: "Pedido cancelado!" });
             setCanceling(true);
             const response = await OrdersService.cancelOrder(id);
             setCanceling(false);
 
+            // O toast de sucesso só vem depois da resposta: o estorno pode ser
+            // recusado pelo Mercado Pago e, nesse caso, o pedido continua ativo.
             if (response.success) {
+              Toast.show({
+                type: "success",
+                text1: willRefund
+                  ? "Pedido cancelado e estorno solicitado!"
+                  : "Pedido cancelado!",
+                text2: willRefund ? refundNotice : undefined,
+              });
               fetchOrderDetails(false);
             } else {
               Toast.show({
@@ -279,10 +299,17 @@ export default function OrderDetailsScreen() {
   const isCancelled = order.status === "cancelled";
   const isCash = order.payment_method === "cash";
   const wasEdited = !!order.was_edited;
-  const canCancel =
-    order.status === "pending" ||
-    order.status === "awaiting_store_confirmation" ||
-    order.status === "awaiting_customer_payment";
+  // Espelha SELF_CANCELABLE_STATUSES em backend/src/orders/orders.service.ts:
+  // até `preparing` nada saiu da loja e o cliente resolve sozinho; a partir de
+  // `awaiting_dispatch` o pedido já está com a transportadora e o botão some.
+  const canCancel = [
+    "pending",
+    "awaiting_store_confirmation",
+    "awaiting_customer_payment",
+    "waiting_payment",
+    "confirmed",
+    "preparing",
+  ].includes(order.status);
 
   const sectionShadow = Platform.select({
     ios: {
@@ -455,6 +482,38 @@ export default function OrderDetailsScreen() {
             </View>
             <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 18 }}>
               Motivo: {order.rejection_reason}
+            </Text>
+          </View>
+        )}
+
+        {/* ESTORNO — evita o "cadê meu dinheiro" depois de cancelar. */}
+        {(order.refund_status === "refunded" ||
+          order.refund_status === "partial") && (
+          <View
+            className="bg-surface rounded-card p-4 mb-4"
+            style={[sectionShadow, { borderLeftWidth: 4, borderLeftColor: "#047857" }]}
+          >
+            <View className="flex-row items-center mb-2">
+              <MaterialCommunityIcons
+                name="cash-refund"
+                size={22}
+                color="#047857"
+              />
+              <Text className="text-[16px] font-bold text-text-primary ml-2">
+                {order.refund_status === "partial"
+                  ? "Estorno parcial realizado"
+                  : "Valor devolvido"}
+              </Text>
+            </View>
+            <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 18 }}>
+              Devolvemos {formatPrice(Number(order.refund_amount ?? order.total_price))}
+              {order.refunded_at
+                ? ` em ${new Date(order.refunded_at).toLocaleDateString("pt-BR")}`
+                : ""}
+              .{" "}
+              {order.payment_method === "pix"
+                ? "O valor volta para a conta do PIX usada no pagamento."
+                : "O valor aparece na fatura do cartão usado na compra — dependendo do banco, pode levar até duas faturas."}
             </Text>
           </View>
         )}

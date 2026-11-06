@@ -122,6 +122,7 @@ export default function AdminOrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
+  const [refunding, setRefunding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -174,27 +175,98 @@ export default function AdminOrderDetailScreen() {
     }
   };
 
+  const runCancel = async (opts: { skipRefund?: boolean } = {}) => {
+    setCanceling(true);
+    const response = await AdminOrdersService.cancel(id, opts);
+    setCanceling(false);
+
+    if (response.success) {
+      Toast.show({
+        type: "success",
+        text1: "Pedido cancelado.",
+        text2: response.message,
+      });
+      fetchDetails(false);
+      return;
+    }
+
+    // O estorno falhou e, por isso, o pedido continua ativo. Oferece a saída
+    // explícita em vez de deixar a loja sem ação nenhuma.
+    if ((response.data as any)?.refund_blocked) {
+      Alert.alert(
+        "Estorno recusado",
+        `${response.message}\n\nVocê pode cancelar mesmo assim, retendo o valor, e resolver o estorno depois pelo painel do Mercado Pago.`,
+        [
+          { text: "Voltar", style: "cancel" },
+          {
+            text: "Cancelar sem estornar",
+            style: "destructive",
+            onPress: () => runCancel({ skipRefund: true }),
+          },
+        ],
+      );
+      return;
+    }
+
+    Toast.show({
+      type: "error",
+      text1: "Erro ao cancelar",
+      text2: response.message,
+    });
+  };
+
   const handleCancel = () => {
+    const willRefund =
+      order?.payment_status === "paid" &&
+      order?.payment_method !== "cash" &&
+      order?.refund_status !== "refunded";
+
     Alert.alert(
-      "Cancelar pedido",
-      "Tem certeza que deseja cancelar este pedido? O estoque dos itens será devolvido.",
+      willRefund ? "Cancelar e estornar" : "Cancelar pedido",
+      willRefund
+        ? `Este pedido está pago. Cancelar vai devolver ${formatPrice(Number(order?.total_price ?? 0))} ao cliente pelo Mercado Pago e repor o estoque.\n\nPIX cai na conta dele em minutos; cartão de crédito aparece na fatura e pode levar até duas faturas.`
+        : "Tem certeza que deseja cancelar este pedido? O estoque dos itens será devolvido.",
       [
         { text: "Não", style: "cancel" },
         {
-          text: "Sim, cancelar",
+          text: willRefund ? "Cancelar e estornar" : "Sim, cancelar",
+          style: "destructive",
+          onPress: () => runCancel(),
+        },
+      ],
+    );
+  };
+
+  /**
+   * Estorno avulso: pedidos cancelados antes desta funcionalidade existir
+   * ficaram encerrados com o dinheiro retido. Aqui a loja resolve sem abrir o
+   * painel do Mercado Pago.
+   */
+  const handleRefundOnly = () => {
+    Alert.alert(
+      "Estornar pagamento",
+      `Devolver ${formatPrice(Number(order?.total_price ?? 0))} ao cliente pelo Mercado Pago? O pedido continua como está — só o dinheiro volta.`,
+      [
+        { text: "Voltar", style: "cancel" },
+        {
+          text: "Estornar",
           style: "destructive",
           onPress: async () => {
-            setCanceling(true);
-            const response = await AdminOrdersService.cancel(id);
-            setCanceling(false);
+            setRefunding(true);
+            const response = await AdminOrdersService.refund(id);
+            setRefunding(false);
 
             if (response.success) {
-              Toast.show({ type: "success", text1: "Pedido cancelado." });
+              Toast.show({
+                type: "success",
+                text1: "Estorno solicitado.",
+                text2: response.message,
+              });
               fetchDetails(false);
             } else {
               Toast.show({
                 type: "error",
-                text1: "Erro ao cancelar",
+                text1: "Erro ao estornar",
                 text2: response.message,
               });
             }
@@ -290,6 +362,63 @@ export default function AdminOrderDetailScreen() {
   const isPickup = !order.addresses;
   const customer = order.customer ?? {};
   const isCancelled = order.status === "cancelled";
+
+  // Dinheiro ainda na conta da loja: pago pelo MP e sem estorno concluído.
+  const hasRetainedMoney =
+    order.payment_status === "paid" &&
+    order.payment_method !== "cash" &&
+    order.refund_status !== "refunded" &&
+    order.refund_status !== "pending" &&
+    order.refund_status !== "charged_back";
+
+  const refundInfo = (() => {
+    const amount = order.refund_amount
+      ? formatPrice(Number(order.refund_amount))
+      : null;
+    const when = order.refunded_at
+      ? new Date(order.refunded_at).toLocaleString("pt-BR")
+      : null;
+
+    switch (order.refund_status) {
+      case "refunded":
+        return {
+          label: `Estornado${amount ? ` • ${amount}` : ""}`,
+          detail: when ? `Devolvido ao cliente em ${when}` : null,
+          color: "#047857",
+          bg: "#ECFDF5",
+        };
+      case "partial":
+        return {
+          label: `Estorno parcial${amount ? ` • ${amount}` : ""}`,
+          detail: when ? `Devolvido ao cliente em ${when}` : null,
+          color: "#B45309",
+          bg: "#FFFBEB",
+        };
+      case "pending":
+        return {
+          label: "Estorno em andamento",
+          detail: "Aguardando confirmação do Mercado Pago.",
+          color: "#B45309",
+          bg: "#FFFBEB",
+        };
+      case "failed":
+        return {
+          label: "Estorno falhou",
+          detail: order.refund_error ?? "O Mercado Pago recusou a devolução.",
+          color: "#D91A21",
+          bg: "#FEF2F2",
+        };
+      case "charged_back":
+        return {
+          label: "Contestado pelo cliente (chargeback)",
+          detail: "O Mercado Pago reteve o valor. Resolva pelo painel do MP.",
+          color: "#D91A21",
+          bg: "#FEF2F2",
+        };
+      default:
+        return null;
+    }
+  })();
   const needsStoreConfirmation = order.status === "awaiting_store_confirmation";
   const awaitingCustomerPayment = order.status === "awaiting_customer_payment";
 
@@ -350,6 +479,24 @@ export default function AdminOrderDetailScreen() {
             <Text className="text-[12px] text-text-secondary mt-0.5">
               Pedido editado • original: {formatPrice(Number(order.original_total_price))}
             </Text>
+          )}
+          {refundInfo && (
+            <View
+              className="mt-3 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: refundInfo.bg }}
+            >
+              <Text
+                className="text-[13px] font-bold"
+                style={{ color: refundInfo.color }}
+              >
+                {refundInfo.label}
+              </Text>
+              {!!refundInfo.detail && (
+                <Text className="text-[12px] text-text-secondary mt-0.5">
+                  {refundInfo.detail}
+                </Text>
+              )}
+            </View>
           )}
         </View>
 
@@ -736,7 +883,32 @@ export default function AdminOrderDetailScreen() {
             {canceling ? (
               <ActivityIndicator color="#D91A21" />
             ) : (
-              <Text className="text-brand text-[16px] font-bold">Cancelar Pedido</Text>
+              <Text className="text-brand text-[16px] font-bold">
+                {hasRetainedMoney ? "Cancelar e Estornar" : "Cancelar Pedido"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Pedido já cancelado com o dinheiro ainda retido — o caso dos pedidos
+          cancelados antes do estorno automático existir. */}
+      {isCancelled && hasRetainedMoney && (
+        <View className="p-4 bg-surface border-t border-neutral-200">
+          <Text className="text-[12px] text-text-secondary mb-2 text-center">
+            Pedido cancelado, mas o valor ainda não foi devolvido ao cliente.
+          </Text>
+          <TouchableOpacity
+            className="py-4 rounded-btn border border-brand items-center"
+            onPress={handleRefundOnly}
+            disabled={refunding}
+          >
+            {refunding ? (
+              <ActivityIndicator color="#D91A21" />
+            ) : (
+              <Text className="text-brand text-[16px] font-bold">
+                Estornar {formatPrice(Number(order.total_price))}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

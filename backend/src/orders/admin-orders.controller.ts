@@ -12,11 +12,17 @@ import { StaffGuard } from '../auth/staff.guard';
 import { AdminOrdersService } from './admin-orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { ConfirmOrderDto, RejectOrderDto } from './dto/confirm-order.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
+import { RefundOrderDto } from './dto/refund-order.dto';
+import { PaymentsService } from '../payments/payment.service';
 
 @Controller('admin/orders')
 @UseGuards(StaffGuard)
 export class AdminOrdersController {
-  constructor(private readonly adminOrdersService: AdminOrdersService) {}
+  constructor(
+    private readonly adminOrdersService: AdminOrdersService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Get()
   list(
@@ -54,7 +60,18 @@ export class AdminOrdersController {
   }
 
   @Patch(':id/cancel')
-  cancel(@Param('id') id: string) {
-    return this.adminOrdersService.cancelOrder(id);
+  cancel(@Param('id') id: string, @Body() dto: CancelOrderDto = {}) {
+    return this.adminOrdersService.cancelOrder(id, dto);
+  }
+
+  /**
+   * Estorno avulso, sem cancelar. Existe para pedidos que já foram cancelados
+   * antes desta feature (cancelados no app, com o dinheiro nunca devolvido) e
+   * para devolução parcial de um pedido que segue em pé.
+   */
+  @Post(':id/refund')
+  async refund(@Param('id') id: string, @Body() dto: RefundOrderDto = {}) {
+    const refund = await this.paymentsService.refundPayment(id, dto.amount);
+    return { success: true, message: refund.message, data: { refund } };
   }
 }
