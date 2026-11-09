@@ -19,6 +19,8 @@ import { Product } from "@/types/product";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { useQuantityPicker } from "@/context/QuantityPickerContext";
+import { SortChips } from "@/components/SortChips";
+import { CATEGORY_SORTS, ProductSort } from "@/types/sort";
 
 const LIMIT = 30;
 
@@ -33,13 +35,21 @@ export default function CategoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [sort, setSort] = useState<ProductSort>(CATEGORY_SORTS[0].value);
 
-  useEffect(() => {
-    async function loadInitialProducts() {
+  // Carrega a primeira página. Usada na entrada da tela, na troca de
+  // ordenação e no pull-to-refresh — os três precisam zerar o offset, senão a
+  // lista continua paginando de onde a ordenação anterior tinha parado.
+  const loadFirstPage = useCallback(
+    async (nextSort: ProductSort) => {
       if (!id) return;
-      setLoading(true);
 
-      const response = await getProductsByCategory(id as string, LIMIT, 0);
+      const response = await getProductsByCategory(
+        id as string,
+        LIMIT,
+        0,
+        nextSort,
+      );
 
       if (response.success && response.data) {
         setProducts(response.data);
@@ -49,24 +59,28 @@ export default function CategoryScreen() {
         setProducts([]);
         setHasMore(false);
       }
+    },
+    [id],
+  );
 
+  // Roda na entrada da tela e a cada troca de ordenação. Enquanto carrega, a
+  // FlatList dá lugar ao skeleton e remonta zerada depois — é o que devolve a
+  // lista ao topo, em vez de deixar o cliente no meio de produtos que acabaram
+  // de trocar de posição.
+  useEffect(() => {
+    async function loadProducts() {
+      if (!id) return;
+      setLoading(true);
+      await loadFirstPage(sort);
       setLoading(false);
     }
-    loadInitialProducts();
-  }, [id]);
+    loadProducts();
+  }, [id, sort, loadFirstPage]);
 
   const onRefresh = async () => {
     if (!id) return;
     setRefreshing(true);
-
-    const response = await getProductsByCategory(id as string, LIMIT, 0);
-
-    if (response.success && response.data) {
-      setProducts(response.data);
-      setOffset(0);
-      setHasMore(response.data.length === LIMIT);
-    }
-
+    await loadFirstPage(sort);
     setRefreshing(false);
   };
 
@@ -80,6 +94,7 @@ export default function CategoryScreen() {
       id as string,
       LIMIT,
       nextOffset,
+      sort,
     );
 
     if (response.success && response.data) {
@@ -163,12 +178,21 @@ export default function CategoryScreen() {
         </Text>
       </View>
 
+      {/* Ordenação fora do bloco de loading: some durante o skeleton e o chip
+          que acabou de ser tocado piscaria para fora da tela. */}
+      <SortChips
+        options={CATEGORY_SORTS}
+        value={sort}
+        onChange={setSort}
+        disabled={loading}
+      />
+
       {loading ? (
         <ScrollView
           className="flex-1 w-full"
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-row flex-wrap justify-between px-4 pt-4">
+          <View className="flex-row flex-wrap justify-between px-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <View key={i} className="w-[48%] mb-4">
                 <ProductCardSkeleton />
@@ -182,7 +206,7 @@ export default function CategoryScreen() {
           data={products}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           numColumns={2}
-          contentContainerClassName="px-4 pt-4 pb-10"
+          contentContainerClassName="px-4 pb-10"
           columnWrapperClassName="justify-between mb-4"
           showsVerticalScrollIndicator={false}
           refreshControl={

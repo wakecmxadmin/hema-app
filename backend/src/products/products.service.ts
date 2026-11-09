@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { supabase } from '../lib/supabase';
+import { ProductSort } from './product-sort';
 
 @Injectable()
 export class ProductsService {
@@ -123,17 +124,41 @@ export class ProductsService {
     categoryId: string,
     limit: number,
     offset: number,
+    sort: ProductSort = 'name_asc',
   ) {
     try {
       const to = offset + limit - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('id, name, price, price_per_kg, image_url, type, stock')
         .eq('category_id', categoryId)
         .eq('is_active', true)
-        .gt('stock', 0)
-        .range(offset, to);
+        .gt('stock', 0);
+
+      // `effective_price` é a coluna gerada que unifica `price` (produto por
+      // unidade) e `price_per_kg / 10` (produto por peso, cobrado por 100g).
+      // Ordenar por `price` puro deixaria os produtos por peso fora da ordem.
+      if (sort === 'price_asc') {
+        query = query.order('effective_price', {
+          ascending: true,
+          nullsFirst: false,
+        });
+      } else if (sort === 'price_desc') {
+        query = query.order('effective_price', {
+          ascending: false,
+          nullsFirst: false,
+        });
+      } else {
+        query = query.order('name', { ascending: true });
+      }
+
+      // Desempate obrigatório. Antes desta ordenação a query não tinha ORDER BY
+      // nenhum, e `range()` sobre uma ordem indefinida fazia o "Mostrar Mais"
+      // repetir ou pular produtos entre as páginas.
+      query = query.order('id', { ascending: true });
+
+      const { data, error } = await query.range(offset, to);
 
       if (error) throw error;
 

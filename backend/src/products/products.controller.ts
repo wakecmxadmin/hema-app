@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { parseProductSort } from './product-sort';
 
 @Controller('products')
 export class ProductsController {
@@ -23,8 +24,16 @@ export class ProductsController {
     @Param('id') id: string,
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    // Sem pipe de validação de propósito: `parseProductSort` cai no padrão
+    // em vez de responder 400 para um app em versão antiga.
+    @Query('sort') sort?: string,
   ) {
-    return this.productsService.findCategoryProducts(id, limit, offset);
+    return this.productsService.findCategoryProducts(
+      id,
+      limit,
+      offset,
+      parseProductSort(sort, 'name_asc'),
+    );
   }
 
   // Idem aqui. Rotas com sufixos fixos (como /similar) devem vir antes

@@ -37,6 +37,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { Product } from "@/types/product";
 import { searchProducts } from "@/services/search";
+import { SortChips } from "@/components/SortChips";
+import { SEARCH_SORTS, ProductSort } from "@/types/sort";
 import { useQuantityPicker } from "@/context/QuantityPickerContext";
 import { QuickActions } from "@/components/QuickActions";
 
@@ -86,6 +88,9 @@ export default function HomeScreen() {
   const [isSearchingMore, setIsSearchingMore] = useState(false);
   const [searchOffset, setSearchOffset] = useState(0);
   const [hasMoreSearch, setHasMoreSearch] = useState(true);
+  const [searchSort, setSearchSort] = useState<ProductSort>(
+    SEARCH_SORTS[0].value,
+  );
 
   const handleAddToCart = useCallback(
     (product: Product) => {
@@ -95,18 +100,10 @@ export default function HomeScreen() {
     [openQuantityPicker],
   );
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-
-    if (!query.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
+  const runSearch = async (query: string, sort: ProductSort) => {
     setIsSearching(true);
 
-    const response = await searchProducts(query, SEARCH_LIMIT, 0);
+    const response = await searchProducts(query, SEARCH_LIMIT, 0, sort);
 
     if (response.success && response.data) {
       setSearchResults(response.data);
@@ -119,6 +116,28 @@ export default function HomeScreen() {
     setIsSearching(false);
   };
 
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Um termo novo volta para relevância: a ordenação por preço escolhida na
+    // busca anterior não diz nada sobre o que a pessoa acabou de digitar.
+    const sort = SEARCH_SORTS[0].value;
+    setSearchSort(sort);
+    await runSearch(query, sort);
+  };
+
+  const handleSearchSortChange = async (sort: ProductSort) => {
+    setSearchSort(sort);
+    if (!searchQuery.trim()) return;
+    await runSearch(searchQuery, sort);
+  };
+
   const loadMoreSearchResults = async () => {
     if (!hasMoreSearch || isSearchingMore || !searchQuery.trim()) return;
 
@@ -129,6 +148,7 @@ export default function HomeScreen() {
       searchQuery,
       SEARCH_LIMIT,
       nextOffset,
+      searchSort,
     );
 
     if (response.success && response.data) {
@@ -180,11 +200,29 @@ export default function HomeScreen() {
             />
           }
         >
+          {/* Cabeçalho da busca fora do ternário: durante a troca de ordenação
+              `isSearching` vira true e, se os chips vivessem dentro de
+              SearchResults, o chip recém-tocado desapareceria junto com a
+              lista. A condição inclui `searchSort !== "relevance"` para que
+              uma ordenação por preço que não devolveu nada ainda mostre os
+              chips — senão o cliente fica sem caminho de volta. */}
+          {searchQuery.trim() !== "" &&
+            (isSearching ||
+              searchResults.length > 0 ||
+              searchSort !== "relevance") && (
+              <SearchHeader
+                query={searchQuery}
+                results={searchResults}
+                isSearching={isSearching}
+                sort={searchSort}
+                onSortChange={handleSearchSortChange}
+              />
+            )}
+
           {isSearching ? (
             <SearchSkeleton />
           ) : searchQuery.trim() !== "" ? (
             <SearchResults
-              query={searchQuery}
               results={searchResults}
               hasMore={hasMoreSearch}
               isLoadingMore={isSearchingMore}
@@ -227,8 +265,66 @@ function SearchSkeleton() {
   );
 }
 
-interface SearchResultsProps {
+interface SearchHeaderProps {
   query: string;
+  results: Product[];
+  isSearching: boolean;
+  sort: ProductSort;
+  onSortChange: (sort: ProductSort) => void;
+}
+
+/**
+ * Título dos resultados + chips de ordenação.
+ *
+ * Separado de SearchResults porque precisa continuar na tela enquanto a busca
+ * recarrega: é ele que segura os chips durante a troca de ordenação.
+ */
+function SearchHeader({
+  query,
+  results,
+  isSearching,
+  sort,
+  onSortChange,
+}: SearchHeaderProps) {
+  // Score baixo = a busca não achou o termo e está mostrando aproximações.
+  // Durante o recarregamento os resultados em tela são os antigos, então o
+  // título cai no texto neutro em vez de acusar um "não encontramos" que pode
+  // nem valer para a ordenação nova.
+  const lowScore =
+    !isSearching &&
+    results.length > 0 &&
+    (results[0].similarity_score ?? 1) < 0.3;
+
+  return (
+    <View>
+      <View className="px-4 mt-5">
+        {lowScore ? (
+          <>
+            <Text className="text-[18px] font-[800] text-text-primary">
+              Não encontramos "{query}"
+            </Text>
+            <Text className="text-[13px] text-neutral-300 mt-1">
+              Separamos algumas sugestões para você:
+            </Text>
+          </>
+        ) : (
+          <Text className="text-[18px] font-[800] text-text-primary">
+            Resultados para "{query}"
+          </Text>
+        )}
+      </View>
+
+      <SortChips
+        options={SEARCH_SORTS}
+        value={sort}
+        onChange={onSortChange}
+        disabled={isSearching}
+      />
+    </View>
+  );
+}
+
+interface SearchResultsProps {
   results: Product[];
   hasMore: boolean;
   isLoadingMore: boolean;
@@ -238,7 +334,6 @@ interface SearchResultsProps {
 }
 
 function SearchResults({
-  query,
   results,
   hasMore,
   isLoadingMore,
@@ -259,29 +354,8 @@ function SearchResults({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const lowScore =
-    results.length > 0 && (results[0].similarity_score ?? 1) < 0.3;
   return (
     <Animated.View style={animStyle}>
-      {results.length > 0 && (
-        <View className="px-4 mt-5 mb-3">
-          {lowScore ? (
-            <>
-              <Text className="text-[18px] font-[800] text-text-primary">
-                Não encontramos "{query}"
-              </Text>
-              <Text className="text-[13px] text-neutral-300 mt-1">
-                Separamos algumas sugestões para você:
-              </Text>
-            </>
-          ) : (
-            <Text className="text-[18px] font-[800] text-text-primary">
-              Resultados para "{query}"
-            </Text>
-          )}
-        </View>
-      )}
-
       {results.length === 0 ? (
         <View className="items-center justify-center pt-16">
           <MaterialCommunityIcons name="magnify-close" size={52} color="#C2C2C2" />

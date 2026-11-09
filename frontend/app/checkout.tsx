@@ -21,6 +21,7 @@ import { OrdersService } from "@/services/orders";
 import { CouponsService } from "@/services/coupons";
 import { validateCartStockService } from "@/services/cart";
 import { Toast } from "@/util/toast";
+import { DeliveryScheduleModal } from "@/components/DeliveryScheduleModal";
 
 type DeliveryMethod = "pickup" | "delivery";
 type PaymentMethod = "pix" | "credit_card" | "cash";
@@ -64,6 +65,7 @@ export default function CheckoutScreen() {
 
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [couponInput, setCouponInput] = useState("");
@@ -249,7 +251,9 @@ export default function CheckoutScreen() {
     }
   }, [currentDeliveryFee, deliveryMethod, selectedAddressId]);
 
-  const handleConfirmOrder = async () => {
+  // O clique em confirmar roda as validações locais primeiro: assim o aviso
+  // de horários não aparece só pra a pessoa tomar um erro logo depois.
+  const handleConfirmPress = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (items.length === 0) {
       return Toast.show({ type: "error", text1: "Seu carrinho está vazio." });
@@ -271,14 +275,24 @@ export default function CheckoutScreen() {
           text2: "Selecione a opção Retirada na Loja.",
         });
       }
+
+      // O badge de horários na tela passa despercebido (cliente já reclamou
+      // de não ter visto): na entrega vira confirmação explícita.
+      setShowScheduleModal(true);
+      return;
     }
 
+    await submitOrder();
+  };
+
+  const submitOrder = async () => {
     setIsCreatingOrder(true);
 
     // Re-validar estoque antes de confirmar
     const stockCheck = await validateCartStockService();
     if (stockCheck.success && stockCheck.data && !stockCheck.data.valid) {
       setIsCreatingOrder(false);
+      setShowScheduleModal(false);
       await refreshCart();
       const names = stockCheck.data.adjustments.map((a) => a.product_name).join(", ");
       Toast.show({
@@ -299,6 +313,7 @@ export default function CheckoutScreen() {
     });
 
     setIsCreatingOrder(false);
+    setShowScheduleModal(false);
 
     if (response.success && response.data) {
       // Novo fluxo: pedido nasce em awaiting_store_confirmation. A loja
@@ -735,7 +750,7 @@ export default function CheckoutScreen() {
             (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
           }`}
           activeOpacity={0.8}
-          onPress={handleConfirmOrder}
+          onPress={handleConfirmPress}
           disabled={isCreatingOrder || currentDeliveryFee === -1}
         >
           {isCreatingOrder ? (
@@ -758,6 +773,12 @@ export default function CheckoutScreen() {
         </TouchableOpacity>
       </View>
 
+      <DeliveryScheduleModal
+        visible={showScheduleModal}
+        loading={isCreatingOrder}
+        onConfirm={submitOrder}
+        onClose={() => setShowScheduleModal(false)}
+      />
     </View>
   );
 }

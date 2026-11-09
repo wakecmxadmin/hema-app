@@ -13,6 +13,7 @@ export class SearchController {
       body.search_query,
       body.limit,
       body.offset,
+      body.sort,
     );
   }
 }
