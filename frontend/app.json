@@ -10,6 +10,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "runtimeVersion": "2.1.1",
+    "platforms": ["ios", "android"],
     "updates": {
       "url": "https://u.expo.dev/13ba697c-dc80-4712-86f4-b18d784d8d38"
     },
