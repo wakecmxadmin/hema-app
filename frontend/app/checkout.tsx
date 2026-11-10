@@ -19,6 +19,7 @@ import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
 import { OrdersService } from "@/services/orders";
 import { CouponsService } from "@/services/coupons";
+import { getProfileData, updateProfile } from "@/services/profile";
 import { validateCartStockService } from "@/services/cart";
 import { Toast } from "@/util/toast";
 import { DeliveryScheduleModal } from "@/components/DeliveryScheduleModal";
@@ -50,6 +51,18 @@ function calculateDeliveryFee(city?: string): number {
   return -1;
 }
 
+function maskPhone(text: string) {
+  const digits = text.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 10) {
+    return digits
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
 export default function CheckoutScreen() {
   const router = useRouter();
   const { items, loading, cart, refreshCart } = useCart();
@@ -75,6 +88,11 @@ export default function CheckoutScreen() {
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // A transportadora exige telefone do comprador. Quem se cadastrou sem
+  // informar (campo era opcional) preenche aqui, antes de fechar o pedido.
+  const [profilePhone, setProfilePhone] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+
   // Conta recém-criada chega aqui sem endereço: abre o formulário uma vez,
   // em vez de deixar a pessoa procurar o botão.
   const autoOpenedAddressForm = useRef(false);
@@ -97,6 +115,13 @@ export default function CheckoutScreen() {
           text2: `Estoque insuficiente para: ${names}`,
         });
       }
+    }
+
+    const profileResponse = await getProfileData();
+    if (profileResponse.success && profileResponse.data) {
+      const savedPhone = profileResponse.data.phone ?? "";
+      setProfilePhone(savedPhone);
+      setPhoneInput((current) => current || maskPhone(savedPhone));
     }
 
     const response = await getAddresses();
@@ -139,6 +164,11 @@ export default function CheckoutScreen() {
     await loadData();
     setRefreshing(false);
   };
+
+  const phoneInputDigits = phoneInput.replace(/\D/g, "");
+  const needsPhone =
+    deliveryMethod === "delivery" &&
+    profilePhone.replace(/\D/g, "").length < 10;
 
   const subtotal = cart?.total_price ? Number(cart.total_price) : 0;
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
@@ -276,6 +306,14 @@ export default function CheckoutScreen() {
         });
       }
 
+      if (needsPhone && phoneInputDigits.length < 10) {
+        return Toast.show({
+          type: "error",
+          text1: "Informe um telefone",
+          text2: "O entregador precisa de um número com DDD para contato.",
+        });
+      }
+
       // O badge de horários na tela passa despercebido (cliente já reclamou
       // de não ter visto): na entrega vira confirmação explícita.
       setShowScheduleModal(true);
@@ -301,6 +339,22 @@ export default function CheckoutScreen() {
         text2: `Itens ajustados: ${names}. Revise o carrinho.`,
       });
       return;
+    }
+
+    // Sem telefone no cadastro a transportadora recusa a etiqueta, então o
+    // número é salvo no perfil antes do pedido existir.
+    if (needsPhone) {
+      const savedPhone = await updateProfile({ phone: phoneInput });
+      if (!savedPhone.success) {
+        setIsCreatingOrder(false);
+        setShowScheduleModal(false);
+        return Toast.show({
+          type: "error",
+          text1: "Não foi possível salvar seu telefone",
+          text2: savedPhone.message,
+        });
+      }
+      setProfilePhone(phoneInput);
     }
 
     const addressToLog =
@@ -563,6 +617,34 @@ export default function CheckoutScreen() {
                       </View>
                     </TouchableOpacity>
                   ))
+                )}
+
+                {needsPhone && (
+                  <View className="mt-2 border-t border-neutral-200 pt-4">
+                    <Text className="text-sm font-semibold text-text-primary mb-1">
+                      Telefone para a entrega
+                    </Text>
+                    <Text className="text-xs text-text-secondary mb-3">
+                      O entregador precisa de um número com DDD para te
+                      encontrar. Ele fica salvo no seu perfil.
+                    </Text>
+                    <View className="flex-row items-center border border-neutral-200 rounded-btn px-3">
+                      <MaterialCommunityIcons
+                        name="phone-outline"
+                        size={20}
+                        color="#8A8079"
+                      />
+                      <TextInput
+                        className="flex-1 ml-2 py-3 text-sm text-text-primary"
+                        placeholder="(41) 99999-9999"
+                        placeholderTextColor="#C2C2C2"
+                        value={phoneInput}
+                        onChangeText={(text) => setPhoneInput(maskPhone(text))}
+                        keyboardType="phone-pad"
+                        maxLength={15}
+                      />
+                    </View>
+                  </View>
                 )}
               </View>
             )}

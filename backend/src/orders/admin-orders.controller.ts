@@ -14,7 +14,9 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { ConfirmOrderDto, RejectOrderDto } from './dto/confirm-order.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { RefundOrderDto } from './dto/refund-order.dto';
+import { ResendShipmentDto } from './dto/resend-shipment.dto';
 import { PaymentsService } from '../payments/payment.service';
+import { ShippingService } from '../shipping/shipping.service';
 
 @Controller('admin/orders')
 @UseGuards(StaffGuard)
@@ -22,6 +24,7 @@ export class AdminOrdersController {
   constructor(
     private readonly adminOrdersService: AdminOrdersService,
     private readonly paymentsService: PaymentsService,
+    private readonly shippingService: ShippingService,
   ) {}
 
   @Get()
@@ -73,5 +76,22 @@ export class AdminOrdersController {
   async refund(@Param('id') id: string, @Body() dto: RefundOrderDto = {}) {
     const refund = await this.paymentsService.refundPayment(id, dto.amount);
     return { success: true, message: refund.message, data: { refund } };
+  }
+
+  /**
+   * Tenta criar de novo o envio que falhou. Aceita `phone` para corrigir o
+   * cadastro do cliente na mesma chamada. Não duplica envio já criado.
+   */
+  @Post(':id/resend-shipment')
+  async resendShipment(
+    @Param('id') id: string,
+    @Body() dto: ResendShipmentDto = {},
+  ) {
+    const result = await this.shippingService.resendForOrder(id, dto.phone);
+    return {
+      success: result.ok,
+      message: result.message,
+      data: { id_envio: result.idEnvio ?? null },
+    };
   }
 }

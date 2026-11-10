@@ -45,7 +45,11 @@ export default function AuthDetailsScreen() {
   const [focusedField, setFocusedField] = useState<"name" | "phone" | "cpf" | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = name.trim().length >= 2 && !loading;
+  // O telefone é obrigatório: sem ele a transportadora recusa a etiqueta de
+  // entrega (erro 422 "telefoneComprador").
+  const phoneDigits = phone.replace(/\D/g, "");
+  const canSubmit =
+    name.trim().length >= 2 && phoneDigits.length >= 10 && !loading;
 
   function handleCpfChange(text: string) {
     setCpf(maskCpf(text));
@@ -158,8 +162,19 @@ export default function AuthDetailsScreen() {
             keyboardType="phone-pad"
             editable={!loading}
             returnKeyType="next"
+            maxLength={15}
           />
         </View>
+        <Text
+          style={{
+            fontSize: 12,
+            color: "#C2C2C2",
+            marginTop: 8,
+            lineHeight: 17,
+          }}
+        >
+          Usamos o celular para falar sobre o pedido e para a entrega.
+        </Text>
 
         {/* ── Campo: CPF ── */}
         <Text style={[s.label, { marginTop: 20 }]}>CPF</Text>

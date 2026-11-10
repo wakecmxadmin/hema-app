@@ -26,6 +26,18 @@ import { Toast } from "@/util/toast";
 import { optimizedImage } from "@/util/image-url";
 import { EditItemsModal } from "@/components/admin/EditItemsModal";
 
+function maskPhone(text: string) {
+  const digits = text.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 10) {
+    return digits
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
 function ItemThumbnail({ uri }: { uri?: string | null }) {
   if (uri) {
     return (
@@ -129,6 +141,8 @@ export default function AdminOrderDetailScreen() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendPhone, setResendPhone] = useState("");
 
   const fetchDetails = async (isInitial = true) => {
     if (isInitial) setLoading(true);
@@ -345,6 +359,45 @@ export default function AdminOrderDetailScreen() {
       Toast.show({
         type: "error",
         text1: "Erro ao rejeitar",
+        text2: response.message,
+      });
+    }
+  };
+
+  /**
+   * O envio falhou (transportadora fora do ar, telefone ausente, CEP errado) e
+   * nada tenta de novo sozinho. Aqui o admin corrige e dispara na mão.
+   */
+  const handleResendShipment = async () => {
+    const phoneDigits = resendPhone.replace(/\D/g, "");
+    if (resendPhone.length > 0 && phoneDigits.length < 10) {
+      Toast.show({
+        type: "error",
+        text1: "Telefone inválido",
+        text2: "Informe DDD + número.",
+      });
+      return;
+    }
+
+    setResending(true);
+    const response = await AdminOrdersService.resendShipment(
+      id,
+      resendPhone.length > 0 ? resendPhone : undefined,
+    );
+    setResending(false);
+
+    if (response.success) {
+      Toast.show({
+        type: "success",
+        text1: "Envio criado",
+        text2: response.message,
+      });
+      setResendPhone("");
+      fetchDetails(false);
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Não foi possível reenviar",
         text2: response.message,
       });
     }
@@ -808,6 +861,62 @@ export default function AdminOrderDetailScreen() {
                 <Text className="text-[11px]" style={{ color: "#7F1D1D" }} numberOfLines={3}>
                   {order.shipping_last_error}
                 </Text>
+              </View>
+            )}
+
+            {order.shipping_last_error && !order.logmanager_envio_id && (
+              <View className="mt-3">
+                {!customer.phone && (
+                  <>
+                    <Text className="text-[12px] text-text-secondary mb-2">
+                      O cliente não tem telefone no cadastro — é o que a
+                      transportadora exige. O número informado aqui fica salvo
+                      no perfil dele.
+                    </Text>
+                    <View className="flex-row items-center border border-neutral-200 rounded-btn px-3 mb-2">
+                      <MaterialCommunityIcons
+                        name="phone-outline"
+                        size={18}
+                        color="#8A8079"
+                      />
+                      <TextInput
+                        className="flex-1 ml-2 py-2.5 text-[14px] text-text-primary"
+                        placeholder="(41) 99999-9999"
+                        placeholderTextColor="#C2C2C2"
+                        value={resendPhone}
+                        onChangeText={(text) => setResendPhone(maskPhone(text))}
+                        keyboardType="phone-pad"
+                        maxLength={15}
+                        editable={!resending}
+                      />
+                    </View>
+                  </>
+                )}
+
+                <TouchableOpacity
+                  onPress={handleResendShipment}
+                  disabled={resending}
+                  activeOpacity={0.8}
+                  className="flex-row items-center justify-center rounded-btn py-3"
+                  style={{
+                    backgroundColor: resending ? "#C2C2C2" : "#1A1613",
+                  }}
+                >
+                  {resending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons
+                        name="refresh"
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                      <Text className="text-[14px] font-bold text-white ml-2">
+                        Reenviar para a transportadora
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
           </View>

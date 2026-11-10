@@ -25,11 +25,14 @@ export async function signup(
   email: string,
   password: string,
   name: string,
+  phone?: string,
 ): Promise<ApiResponse<any>> {
+  // O telefone vai no metadata porque, com confirmação de e-mail ligada, o
+  // cadastro termina sem sessão e não há como gravar em `profiles` depois.
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: { data: { name, phone: phone ?? null } },
   });
 
   if (error) {

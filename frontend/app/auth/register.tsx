@@ -62,7 +62,7 @@ export default function RegisterScreen() {
     if (!canSubmit) return;
 
     setLoading(true);
-    const response = await signup(email.trim(), password, name.trim());
+    const response = await signup(email.trim(), password, name.trim(), phone);
 
     if (!response.success) {
       setLoading(false);

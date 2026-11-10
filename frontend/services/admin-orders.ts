@@ -133,6 +133,20 @@ export const AdminOrdersService = {
     });
   },
 
+  /**
+   * Tenta criar de novo o envio que a transportadora recusou. `phone` corrige
+   * o cadastro do cliente na mesma chamada — é a causa mais comum da recusa.
+   */
+  async resendShipment(
+    orderId: string,
+    phone?: string,
+  ): Promise<ApiResponse<any>> {
+    return apiFetch(`/admin/orders/${orderId}/resend-shipment`, {
+      method: "POST",
+      body: JSON.stringify(phone ? { phone } : {}),
+    });
+  },
+
   async reject(orderId: string, reason: string): Promise<ApiResponse<any>> {
     return apiFetch(`/admin/orders/${orderId}/reject`, {
       method: "POST",
