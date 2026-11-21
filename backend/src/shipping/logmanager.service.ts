@@ -89,7 +89,7 @@ export class LogManagerService {
         );
       } else {
         this.logger.log(
-          `LogManager envio criado: idEnvio=${payload.idEnvio} status=${response.status}`,
+          `LogManager envio criado: idEnvio=${payload.idEnvio} status=${response.status} body=${JSON.stringify(body).substring(0, 1000)}`,
         );
       }
 

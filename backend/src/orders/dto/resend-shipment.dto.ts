@@ -10,4 +10,9 @@ export class ResendShipmentDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  /** Chave da NF-e (44 dígitos), exigida pelo Melhor Envio em envio comercial. */
+  @IsOptional()
+  @IsString()
+  nfe_key?: string;
 }

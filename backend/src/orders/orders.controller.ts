@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ShippingQuoteDto } from './dto/shipping-quote.dto';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { AuthRequest } from '../auth/types';
 
@@ -22,6 +23,11 @@ export class OrdersController {
   createOrder(@Req() req: AuthRequest, @Body() dto: CreateOrderDto) {
     const userId = req.user.sub;
     return this.ordersService.createOrder(userId, dto);
+  }
+
+  @Post('shipping-quote')
+  quoteShipping(@Req() req: AuthRequest, @Body() dto: ShippingQuoteDto) {
+    return this.ordersService.quoteShipping(req.user.sub, dto.address_id);
   }
 
   @Post(':id/proceed-to-payment')

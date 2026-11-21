@@ -87,11 +87,26 @@ export class AdminOrdersController {
     @Param('id') id: string,
     @Body() dto: ResendShipmentDto = {},
   ) {
-    const result = await this.shippingService.resendForOrder(id, dto.phone);
+    const result = await this.shippingService.resendForOrder(
+      id,
+      dto.phone,
+      dto.nfe_key,
+    );
     return {
       success: result.ok,
       message: result.message,
       data: { id_envio: result.idEnvio ?? null },
+    };
+  }
+
+  /** Link público da etiqueta do Melhor Envio para imprimir. */
+  @Post(':id/shipping-label')
+  async shippingLabel(@Param('id') id: string) {
+    const result = await this.shippingService.labelUrl(id);
+    return {
+      success: result.ok,
+      message: result.message,
+      data: { url: result.url ?? null },
     };
   }
 }

@@ -17,7 +17,11 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { getAddresses, Address } from "@/services/addresses";
-import { OrdersService } from "@/services/orders";
+import {
+  OrdersService,
+  ShippingOption,
+  ShippingQuote,
+} from "@/services/orders";
 import { CouponsService } from "@/services/coupons";
 import { getProfileData, updateProfile } from "@/services/profile";
 import { validateCartStockService } from "@/services/cart";
@@ -49,6 +53,36 @@ function calculateDeliveryFee(city?: string): number {
   if (tier15.includes(normalizedCity)) return 15.0;
 
   return -1;
+}
+
+function maskCpf(text: string) {
+  return text
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+/** Confere os dígitos verificadores do CPF. */
+function isValidCpf(value: string) {
+  const cpf = value.replace(/\D/g, "");
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  const digit = (len: number) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(cpf[i]) * (len + 1 - i);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return digit(9) === Number(cpf[9]) && digit(10) === Number(cpf[10]);
+}
+
+function formatDeliveryDays(option: ShippingOption) {
+  const max = option.delivery_range?.max ?? option.delivery_days;
+  const min = option.delivery_range?.min ?? max;
+  if (!max) return "";
+  if (min && min !== max) return `${min} a ${max} dias úteis`;
+  return `até ${max} ${max === 1 ? "dia útil" : "dias úteis"}`;
 }
 
 function maskPhone(text: string) {
@@ -93,6 +127,21 @@ export default function CheckoutScreen() {
   const [profilePhone, setProfilePhone] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
 
+  // Fora de Curitiba e região o pedido vai pelo Melhor Envio: o frete vem de
+  // uma cotação no backend e o cliente escolhe o serviço (PAC, SEDEX…).
+  const [shippingQuote, setShippingQuote] = useState<ShippingQuote | null>(
+    null,
+  );
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteNonce, setQuoteNonce] = useState(0);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(
+    null,
+  );
+
+  // A etiqueta dos Correios exige o CPF do destinatário.
+  const [profileCpf, setProfileCpf] = useState("");
+  const [cpfInput, setCpfInput] = useState("");
+
   // Conta recém-criada chega aqui sem endereço: abre o formulário uma vez,
   // em vez de deixar a pessoa procurar o botão.
   const autoOpenedAddressForm = useRef(false);
@@ -122,6 +171,9 @@ export default function CheckoutScreen() {
       const savedPhone = profileResponse.data.phone ?? "";
       setProfilePhone(savedPhone);
       setPhoneInput((current) => current || maskPhone(savedPhone));
+      const savedCpf = profileResponse.data.cpf ?? "";
+      setProfileCpf(savedCpf);
+      setCpfInput((current) => current || maskCpf(savedCpf));
     }
 
     const response = await getAddresses();
@@ -173,12 +225,71 @@ export default function CheckoutScreen() {
   const subtotal = cart?.total_price ? Number(cart.total_price) : 0;
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
-  const currentDeliveryFee = useMemo(() => {
-    if (deliveryMethod === "pickup") return 0;
-    return calculateDeliveryFee(selectedAddress?.city);
-  }, [deliveryMethod, selectedAddress]);
+  const localDeliveryFee = useMemo(
+    () => calculateDeliveryFee(selectedAddress?.city),
+    [selectedAddress],
+  );
 
-  const displayDeliveryFee = currentDeliveryFee === -1 ? 0 : currentDeliveryFee;
+  // Endereço fora da área do motoboy → frete pelo Melhor Envio.
+  const outsideLocalArea =
+    deliveryMethod === "delivery" && !!selectedAddress && localDeliveryFee === -1;
+
+  useEffect(() => {
+    if (!outsideLocalArea || !selectedAddressId) {
+      setShippingQuote(null);
+      setQuoteLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setQuoteLoading(true);
+    OrdersService.quoteShipping(selectedAddressId)
+      .then((response) => {
+        if (cancelled) return;
+        const quote: ShippingQuote =
+          response.success && response.data
+            ? response.data
+            : { mode: "unavailable", fee: null, options: [] };
+        setShippingQuote(quote);
+        // Mantém a escolha se ela ainda existir; senão, o mais barato.
+        setSelectedServiceId((current) =>
+          quote.options.some((o) => o.service_id === current)
+            ? current
+            : (quote.options[0]?.service_id ?? null),
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setQuoteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [outsideLocalArea, selectedAddressId, subtotal, quoteNonce]);
+
+  const shippingOptions =
+    shippingQuote?.mode === "melhor_envio" ? shippingQuote.options : [];
+  const isMelhorEnvio = outsideLocalArea && shippingOptions.length > 0;
+  const selectedShippingOption = shippingOptions.find(
+    (o) => o.service_id === selectedServiceId,
+  );
+
+  // null = frete ainda sendo calculado; -1 = não entregamos no endereço.
+  const currentDeliveryFee: number | null = (() => {
+    if (deliveryMethod === "pickup") return 0;
+    if (!outsideLocalArea) return localDeliveryFee;
+    if (quoteLoading || !shippingQuote) return null;
+    if (isMelhorEnvio) return selectedShippingOption?.price ?? 0;
+    return -1;
+  })();
+
+  const displayDeliveryFee =
+    currentDeliveryFee == null || currentDeliveryFee === -1
+      ? 0
+      : currentDeliveryFee;
+
+  const needsCpf =
+    isMelhorEnvio && profileCpf.replace(/\D/g, "").length !== 11;
 
   // Sempre derivado do subtotal atual — nunca guardado, pra não ficar
   // defasado se o carrinho mudar depois do cupom aplicado.
@@ -272,7 +383,7 @@ export default function CheckoutScreen() {
       const timer = setTimeout(() => {
         Alert.alert(
           "Região não atendida 🛵",
-          "Infelizmente ainda não realizamos entregas flex para esta cidade.\n\nPor favor, selecione outro endereço ou mude para a opção 'Retirar na Loja'.",
+          "Não encontramos nenhuma opção de entrega para este endereço.\n\nConfira o CEP, selecione outro endereço ou mude para a opção 'Retirar na Loja'.",
           [{ text: "Entendi", style: "default" }],
         );
       }, 100);
@@ -298,11 +409,30 @@ export default function CheckoutScreen() {
         });
       }
 
+      // Frete ainda sendo calculado (o botão já fica desabilitado).
+      if (currentDeliveryFee === null) return;
+
       if (currentDeliveryFee === -1) {
         return Toast.show({
           type: "error",
           text1: "Região não atendida",
           text2: "Selecione a opção Retirada na Loja.",
+        });
+      }
+
+      if (isMelhorEnvio && !selectedShippingOption) {
+        return Toast.show({
+          type: "error",
+          text1: "Escolha o frete",
+          text2: "Selecione uma das opções de entrega.",
+        });
+      }
+
+      if (needsCpf && !isValidCpf(cpfInput)) {
+        return Toast.show({
+          type: "error",
+          text1: "Informe um CPF válido",
+          text2: "Os Correios exigem o CPF de quem recebe.",
         });
       }
 
@@ -315,9 +445,12 @@ export default function CheckoutScreen() {
       }
 
       // O badge de horários na tela passa despercebido (cliente já reclamou
-      // de não ter visto): na entrega vira confirmação explícita.
-      setShowScheduleModal(true);
-      return;
+      // de não ter visto): na entrega vira confirmação explícita. Não vale
+      // para Correios/transportadora, que têm o próprio prazo.
+      if (!isMelhorEnvio) {
+        setShowScheduleModal(true);
+        return;
+      }
     }
 
     await submitOrder();
@@ -341,20 +474,25 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Sem telefone no cadastro a transportadora recusa a etiqueta, então o
-    // número é salvo no perfil antes do pedido existir.
-    if (needsPhone) {
-      const savedPhone = await updateProfile({ phone: phoneInput });
-      if (!savedPhone.success) {
+    // Sem telefone (ou CPF, nos Correios) no cadastro a transportadora
+    // recusa a etiqueta, então os dados são salvos no perfil antes do pedido
+    // existir.
+    if (needsPhone || needsCpf) {
+      const updates: { phone?: string; cpf?: string } = {};
+      if (needsPhone) updates.phone = phoneInput;
+      if (needsCpf) updates.cpf = cpfInput;
+      const saved = await updateProfile(updates);
+      if (!saved.success) {
         setIsCreatingOrder(false);
         setShowScheduleModal(false);
         return Toast.show({
           type: "error",
-          text1: "Não foi possível salvar seu telefone",
-          text2: savedPhone.message,
+          text1: "Não foi possível salvar seus dados",
+          text2: saved.message,
         });
       }
-      setProfilePhone(phoneInput);
+      if (needsPhone) setProfilePhone(phoneInput);
+      if (needsCpf) setProfileCpf(cpfInput);
     }
 
     const addressToLog =
@@ -364,6 +502,7 @@ export default function CheckoutScreen() {
       address_id: addressToLog,
       payment_method: paymentMethod,
       coupon_code: appliedCoupon?.code,
+      shipping_service_id: isMelhorEnvio ? selectedServiceId : null,
     });
 
     setIsCreatingOrder(false);
@@ -388,6 +527,18 @@ export default function CheckoutScreen() {
           type: "error",
           text1: "Produto ficou indisponível",
           text2: response.message || "Revise seu carrinho e tente novamente.",
+        });
+      } else if (
+        response.error === "SHIPPING_OPTION_UNAVAILABLE" ||
+        response.error === "SHIPPING_OPTION_REQUIRED"
+      ) {
+        // O preço/serviço mudou desde a cotação: recalcula e deixa o
+        // cliente conferir antes de confirmar de novo.
+        setQuoteNonce((n) => n + 1);
+        Toast.show({
+          type: "error",
+          text1: "Frete atualizado",
+          text2: response.message || "Confira as opções de entrega.",
         });
       } else if (
         response.error === "COUPON_INVALID" ||
@@ -538,17 +689,32 @@ export default function CheckoutScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <View className="flex-row bg-neutral-100 p-3 rounded-btn items-start mb-3">
-                  <MaterialCommunityIcons
-                    name="clock-outline"
-                    size={20}
-                    color="#D91A21"
-                  />
-                  <Text className="ml-3 flex-1 text-xs text-text-secondary">
-                    Entregas chegam entre 14h e 21h. Pedidos feitos até as
-                    12h são entregues no mesmo dia.
-                  </Text>
-                </View>
+                {outsideLocalArea ? (
+                  <View className="flex-row bg-neutral-100 p-3 rounded-btn items-start mb-3">
+                    <MaterialCommunityIcons
+                      name="package-variant-closed"
+                      size={20}
+                      color="#D91A21"
+                    />
+                    <Text className="ml-3 flex-1 text-xs text-text-secondary">
+                      Este endereço fica fora da área do nosso entregador.
+                      Enviamos pelos Correios ou transportadora. O prazo
+                      conta a partir do envio.
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="flex-row bg-neutral-100 p-3 rounded-btn items-start mb-3">
+                    <MaterialCommunityIcons
+                      name="clock-outline"
+                      size={20}
+                      color="#D91A21"
+                    />
+                    <Text className="ml-3 flex-1 text-xs text-text-secondary">
+                      Entregas chegam entre 14h e 21h. Pedidos feitos até as
+                      12h são entregues no mesmo dia.
+                    </Text>
+                  </View>
+                )}
 
                 {loadingAddresses ? (
                   <ActivityIndicator
@@ -617,6 +783,93 @@ export default function CheckoutScreen() {
                       </View>
                     </TouchableOpacity>
                   ))
+                )}
+
+                {outsideLocalArea && (
+                  <View className="mt-2 border-t border-neutral-200 pt-4">
+                    <Text className="text-sm font-semibold text-text-primary mb-3">
+                      Opções de frete
+                    </Text>
+                    {quoteLoading || !shippingQuote ? (
+                      <View className="flex-row items-center py-3">
+                        <ActivityIndicator size="small" color="#D91A21" />
+                        <Text className="ml-3 text-xs text-text-secondary">
+                          Calculando o frete...
+                        </Text>
+                      </View>
+                    ) : shippingOptions.length === 0 ? (
+                      <Text className="text-xs text-brand">
+                        Nenhuma opção de entrega para este CEP. Escolha outro
+                        endereço ou retire na loja.
+                      </Text>
+                    ) : (
+                      shippingOptions.map((option) => {
+                        const active = option.service_id === selectedServiceId;
+                        return (
+                          <TouchableOpacity
+                            key={option.service_id}
+                            className={`flex-row items-center py-3 px-3 border rounded-btn mb-2 ${
+                              active
+                                ? "border-brand bg-brand/5"
+                                : "border-neutral-200"
+                            }`}
+                            onPress={() =>
+                              setSelectedServiceId(option.service_id)
+                            }
+                          >
+                            <MaterialCommunityIcons
+                              name={active ? "radiobox-marked" : "radiobox-blank"}
+                              size={20}
+                              color={active ? "#D91A21" : "#C2C2C2"}
+                            />
+                            <View className="ml-3 flex-1">
+                              <Text className="text-sm font-bold text-text-primary">
+                                {option.name}
+                                <Text className="text-xs font-normal text-text-secondary">
+                                  {" "}
+                                  · {option.company}
+                                </Text>
+                              </Text>
+                              <Text className="text-xs text-text-secondary mt-0.5">
+                                {formatDeliveryDays(option)}
+                              </Text>
+                            </View>
+                            <Text className="text-sm font-bold text-text-primary">
+                              {formatPrice(option.price)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </View>
+                )}
+
+                {needsCpf && (
+                  <View className="mt-2 border-t border-neutral-200 pt-4">
+                    <Text className="text-sm font-semibold text-text-primary mb-1">
+                      CPF de quem recebe
+                    </Text>
+                    <Text className="text-xs text-text-secondary mb-3">
+                      Os Correios exigem o CPF na etiqueta. Ele fica salvo no
+                      seu perfil.
+                    </Text>
+                    <View className="flex-row items-center border border-neutral-200 rounded-btn px-3">
+                      <MaterialCommunityIcons
+                        name="card-account-details-outline"
+                        size={20}
+                        color="#8A8079"
+                      />
+                      <TextInput
+                        className="flex-1 ml-2 py-3 text-sm text-text-primary"
+                        placeholder="000.000.000-00"
+                        placeholderTextColor="#C2C2C2"
+                        value={cpfInput}
+                        onChangeText={(text) => setCpfInput(maskCpf(text))}
+                        keyboardType="number-pad"
+                        maxLength={14}
+                      />
+                    </View>
+                  </View>
                 )}
 
                 {needsPhone && (
@@ -792,7 +1045,11 @@ export default function CheckoutScreen() {
             </View>
           )}
           <View className="flex-row justify-between mb-2">
-            <Text className="text-sm text-text-secondary">Taxa de Entrega</Text>
+            <Text className="text-sm text-text-secondary">
+              {isMelhorEnvio && selectedShippingOption
+                ? `Frete (${selectedShippingOption.name})`
+                : "Taxa de Entrega"}
+            </Text>
             <Text
               className={`text-sm font-medium ${
                 currentDeliveryFee === -1 ? "text-brand" : "text-text-primary"
@@ -800,9 +1057,11 @@ export default function CheckoutScreen() {
             >
               {deliveryMethod === "pickup"
                 ? "Isento"
-                : currentDeliveryFee === -1
-                  ? "Região não atendida"
-                  : formatPrice(currentDeliveryFee)}
+                : currentDeliveryFee === null
+                  ? "Calculando..."
+                  : currentDeliveryFee === -1
+                    ? "Região não atendida"
+                    : formatPrice(currentDeliveryFee)}
             </Text>
           </View>
 
@@ -829,11 +1088,18 @@ export default function CheckoutScreen() {
       >
         <TouchableOpacity
           className={`bg-brand h-[50px] rounded-btn justify-center items-center mb-3 ${
-            (isCreatingOrder || currentDeliveryFee === -1) && "opacity-70"
+            (isCreatingOrder ||
+              currentDeliveryFee === -1 ||
+              currentDeliveryFee === null) &&
+            "opacity-70"
           }`}
           activeOpacity={0.8}
           onPress={handleConfirmPress}
-          disabled={isCreatingOrder || currentDeliveryFee === -1}
+          disabled={
+            isCreatingOrder ||
+            currentDeliveryFee === -1 ||
+            currentDeliveryFee === null
+          }
         >
           {isCreatingOrder ? (
             <ActivityIndicator color="#FFFFFF" />

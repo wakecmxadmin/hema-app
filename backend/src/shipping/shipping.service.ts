@@ -5,6 +5,9 @@ import {
   LogManagerService,
   LogManagerShipmentPayload,
 } from './logmanager.service';
+import { MelhorEnvioShipmentService } from './melhor-envio-shipment.service';
+import { PackItem } from './melhor-envio.packaging';
+import { advancesDelivery } from './shipping-status.util';
 
 // Status do LogManager mapeados para os nossos. Mantemos o status do pedido (`status`)
 // apenas para transições significativas e usamos `shipping_status` para o estado bruto.
@@ -19,6 +22,14 @@ const STATUS_MAP: Record<string, string | null> = {
   cancelled: null, // não rebaixa o pedido — só registra
   cancelado: null,
 };
+
+// O LogManager devolve o nosso idEnvio com um prefixo da conta dele
+// (ex.: enviamos `HEMA-7BF6A127` e o webhook chega com
+// `LM182291APHEMA-7BF6A127`). Extrai o trecho que nós geramos.
+function extrairIdEnvio(valor: string): string | null {
+  const match = valor.toUpperCase().match(/HEMA-[0-9A-F]{8}/);
+  return match ? match[0] : null;
+}
 
 function centavos(reais: number | string): number {
   return Math.round(Number(reais) * 100);
@@ -55,13 +66,87 @@ export interface ShippingDispatchResult {
 export class ShippingService {
   private readonly logger = new Logger(ShippingService.name);
 
-  constructor(private readonly logManager: LogManagerService) {}
+  constructor(
+    private readonly logManager: LogManagerService,
+    private readonly melhorEnvio: MelhorEnvioShipmentService,
+  ) {}
+
+  /** Melhor Envio tem credencial e CEP de origem configurados. */
+  isMelhorEnvioConfigured(): boolean {
+    return this.melhorEnvio.isConfigured();
+  }
+
+  /** Cotação Melhor Envio para entregas fora da área do motoboy. */
+  quoteMelhorEnvio(
+    postalCode: string,
+    items: PackItem[],
+    insuranceValue: number,
+  ) {
+    return this.melhorEnvio.quote(postalCode, items, insuranceValue);
+  }
+
+  /** Link público da etiqueta Melhor Envio do pedido. */
+  labelUrl(orderId: string) {
+    return this.melhorEnvio.labelUrl(orderId);
+  }
+
+  /**
+   * Chamado depois que o pedido foi cancelado. Pedidos do Melhor Envio têm a
+   * etiqueta cancelada para o valor voltar à carteira; os do motoboy seguem
+   * como antes (sem chamada à LogManager).
+   */
+  async cancelForOrder(orderId: string, reason: string): Promise<void> {
+    try {
+      await this.melhorEnvio.cancelForOrder(orderId, reason);
+    } catch (err: any) {
+      this.logger.error(
+        `Erro ao cancelar etiqueta do pedido ${orderId}: ${err?.message ?? err}`,
+      );
+    }
+  }
+
+  /**
+   * Cria o envio do pedido na transportadora certa: Melhor Envio para
+   * pedidos de fora da região do motoboy, LogManager para o resto.
+   */
+  async createForOrder(orderId: string): Promise<ShippingDispatchResult> {
+    const { data: provider } = await supabase
+      .from('orders')
+      .select('shipping_provider')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (provider?.shipping_provider === 'melhor_envio') {
+      try {
+        const result = await this.melhorEnvio.createForOrder(orderId);
+        return {
+          ok: result.ok,
+          message: result.message,
+          idEnvio: result.meOrderId,
+        };
+      } catch (err: any) {
+        const message = err?.message ?? 'Erro desconhecido.';
+        this.logger.error(
+          `Erro ao criar etiqueta Melhor Envio do pedido ${orderId}: ${message}`,
+        );
+        await supabase
+          .from('orders')
+          .update({ shipping_last_error: message })
+          .eq('id', orderId);
+        return { ok: false, message };
+      }
+    }
+
+    return this.createLogManagerShipment(orderId);
+  }
 
   /**
    * Idempotente: se o pedido já tem `logmanager_envio_id`, não dispara de novo.
    * Pickup orders (sem address_id) são ignorados.
    */
-  async createForOrder(orderId: string): Promise<ShippingDispatchResult> {
+  private async createLogManagerShipment(
+    orderId: string,
+  ): Promise<ShippingDispatchResult> {
     if (!this.logManager.isConfigured()) {
       this.logger.warn(
         `Pulando envio para pedido ${orderId}: LogManager não configurado.`,
@@ -182,10 +267,20 @@ export class ShippingService {
 
       const result = await this.logManager.createShipment(payload);
 
+      // Guarda o que o LogManager respondeu, inclusive no sucesso: um envio
+      // aceito pela API que não aparece no painel só é diagnosticável pelo
+      // corpo da resposta.
+      const lastResponse = {
+        status: result.status,
+        body: result.body,
+        at: new Date().toISOString(),
+      };
+
       if (result.ok) {
         await supabase
           .from('orders')
           .update({
+            shipping_last_response: lastResponse,
             logmanager_envio_id: idEnvio,
             shipping_status: 'created',
             shipping_dispatched_at: new Date().toISOString(),
@@ -218,7 +313,10 @@ export class ShippingService {
       const falha = `HTTP ${result.status}: ${JSON.stringify(result.body).substring(0, 500)}`;
       await supabase
         .from('orders')
-        .update({ shipping_last_error: falha })
+        .update({
+          shipping_last_error: falha,
+          shipping_last_response: lastResponse,
+        })
         .eq('id', orderId);
 
       return { ok: false, message: falha };
@@ -247,7 +345,29 @@ export class ShippingService {
   async resendForOrder(
     orderId: string,
     phone?: string,
+    nfeKey?: string,
   ): Promise<ShippingDispatchResult> {
+    // Chave da NF-e: exigida pelo Melhor Envio em envio comercial.
+    if (nfeKey !== undefined) {
+      const key = somenteDigitos(nfeKey);
+      if (key.length !== 44) {
+        return {
+          ok: false,
+          message: 'Chave da NF-e inválida: precisa ter 44 dígitos.',
+        };
+      }
+      const { error: nfeError } = await supabase
+        .from('orders')
+        .update({ nfe_key: key })
+        .eq('id', orderId);
+      if (nfeError) {
+        return {
+          ok: false,
+          message: `Não foi possível salvar a chave da NF-e: ${nfeError.message}`,
+        };
+      }
+    }
+
     if (phone !== undefined) {
       if (somenteDigitos(phone).length < 10) {
         return {
@@ -293,12 +413,24 @@ export class ShippingService {
    * dispara o Realtime que o cliente já escuta para notificações in-app).
    */
   async handleStatusWebhook(payload: any): Promise<void> {
-    const orderShortId: string | undefined = payload?.orderId;
+    // Payload completo no log: ainda não sabemos com certeza quais nomes de
+    // status o LogManager usa, e o STATUS_MAP precisa ser conferido contra eles.
+    this.logger.log(
+      `Webhook LogManager recebido: ${JSON.stringify(payload).substring(0, 2000)}`,
+    );
+
+    const rawOrderId: string | undefined = payload?.orderId;
     const carrierStatus: string | undefined = payload?.status;
 
-    if (!orderShortId || !carrierStatus) {
+    if (!rawOrderId || !carrierStatus) {
+      this.logger.warn('Webhook LogManager ignorado — payload incompleto.');
+      return;
+    }
+
+    const idEnvio = extrairIdEnvio(String(rawOrderId));
+    if (!idEnvio) {
       this.logger.warn(
-        `Webhook LogManager ignorado — payload incompleto: ${JSON.stringify(payload)}`,
+        `Webhook LogManager: orderId=${rawOrderId} não contém um idEnvio HEMA-.`,
       );
       return;
     }
@@ -306,21 +438,21 @@ export class ShippingService {
     const { data: order, error } = await supabase
       .from('orders')
       .select('id, status, logmanager_envio_id')
-      .eq('logmanager_envio_id', orderShortId)
+      .eq('logmanager_envio_id', idEnvio)
       .single();
 
     if (error || !order) {
       this.logger.warn(
-        `Webhook LogManager: pedido com idEnvio=${orderShortId} não encontrado.`,
+        `Webhook LogManager: pedido com idEnvio=${idEnvio} (recebido ${rawOrderId}) não encontrado.`,
       );
       return;
     }
 
-    const normalized = carrierStatus.toLowerCase();
+    const normalized = String(carrierStatus).toLowerCase();
     const mappedOrderStatus = STATUS_MAP[normalized];
 
     const update: Record<string, any> = { shipping_status: normalized };
-    if (mappedOrderStatus && order.status !== mappedOrderStatus) {
+    if (advancesDelivery(order.status, mappedOrderStatus ?? null)) {
       update.status = mappedOrderStatus;
     }
 

@@ -586,6 +586,59 @@ export default function OrderDetailsScreen() {
               </View>
             </View>
           )}
+
+          {/* Envio pelos Correios/transportadora (Melhor Envio) */}
+          {order.shipping_provider === "melhor_envio" && (
+            <View
+              style={{
+                backgroundColor: "#FAF6F0",
+                padding: 12,
+                borderRadius: 12,
+                marginTop: 8,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons
+                  name="package-variant-closed"
+                  size={22}
+                  color="#D91A21"
+                />
+                <View className="ml-3 flex-1">
+                  <Text className="text-[14px] font-bold text-text-primary">
+                    {order.me_quote?.name
+                      ? `${order.me_quote.name} · ${order.me_quote.company}`
+                      : "Envio por transportadora"}
+                  </Text>
+                  <Text className="text-[12px] text-text-secondary">
+                    {order.me_tracking_code
+                      ? `Rastreio: ${order.me_tracking_code}`
+                      : order.me_quote?.delivery_days
+                        ? `Prazo de até ${order.me_quote.delivery_days} dias úteis após o envio`
+                        : "O código de rastreio aparece aqui após o envio"}
+                  </Text>
+                </View>
+              </View>
+              {order.me_tracking_url && (
+                <TouchableOpacity
+                  onPress={() =>
+                    WebBrowser.openBrowserAsync(order.me_tracking_url)
+                  }
+                  activeOpacity={0.8}
+                  className="flex-row items-center justify-center rounded-btn py-2.5 mt-3"
+                  style={{ backgroundColor: "#1A1613" }}
+                >
+                  <MaterialCommunityIcons
+                    name="map-search-outline"
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                  <Text className="text-[13px] font-bold text-white ml-2">
+                    Rastrear entrega
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         {/* TOTAIS */}
@@ -637,7 +690,9 @@ export default function OrderDetailsScreen() {
             </View>
           )}
           <View className="flex-row justify-between mb-2">
-            <Text className="text-[14px] text-text-secondary">Taxa de Entrega</Text>
+            <Text className="text-[14px] text-text-secondary">
+              {order.shipping_provider === "melhor_envio" ? "Frete" : "Taxa de Entrega"}
+            </Text>
             <Text className="text-[14px] text-text-primary">
               {order.delivery_fee > 0
                 ? formatPrice(order.delivery_fee)

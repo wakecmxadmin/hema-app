@@ -34,6 +34,9 @@ async function findAvailablePort(startPort: number): Promise<number> {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug'],
+    // Corpo bruto em req.rawBody: o webhook do Melhor Envio é assinado com
+    // HMAC sobre os bytes exatos recebidos.
+    rawBody: true,
   });
 
   app.useGlobalPipes(new ValidationPipe());

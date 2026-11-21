@@ -62,10 +62,11 @@ export class OrdersService {
       const isDelivery = !!dto.address_id;
 
       let deliveryFee = 0;
+      let deliveryZip: string | null = null;
       if (isDelivery) {
         const { data: address, error: addressError } = await supabase
           .from('addresses')
-          .select('city')
+          .select('city, zip_code')
           .eq('id', dto.address_id)
           .single();
 
@@ -77,8 +78,14 @@ export class OrdersService {
         }
 
         deliveryFee = calculateDeliveryFee(address.city);
+        deliveryZip = address.zip_code;
 
-        if (deliveryFee === -1) {
+        // Fora da área do motoboy: segue pelo Melhor Envio quando ele está
+        // configurado. O frete é recotado mais abaixo, com o subtotal.
+        if (
+          deliveryFee === -1 &&
+          !this.shippingService.isMelhorEnvioConfigured()
+        ) {
           throw new HttpException(
             {
               success: false,
@@ -114,6 +121,63 @@ export class OrdersService {
       });
 
       const roundedSubtotal = Number(calculatedTotal.toFixed(2));
+
+      // Melhor Envio: nunca confia no preço vindo do app — recota com o
+      // carrinho atual e usa o valor do serviço que o cliente escolheu.
+      let shippingProvider: 'local' | 'melhor_envio' = 'local';
+      let meServiceId: number | null = null;
+      let meQuote: Record<string, any> | null = null;
+
+      if (isDelivery && deliveryFee === -1) {
+        if (!dto.shipping_service_id) {
+          throw new HttpException(
+            {
+              success: false,
+              message: 'Escolha uma opção de frete para este endereço.',
+              error: 'SHIPPING_OPTION_REQUIRED',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const quote = await this.shippingService.quoteMelhorEnvio(
+          deliveryZip ?? '',
+          cartItems.map((item: any) => ({
+            name: item.product?.name,
+            quantity: item.product?.type === 'unit' ? item.quantity : null,
+            weight: item.product?.type === 'unit' ? null : item.weight,
+          })),
+          roundedSubtotal,
+        );
+
+        const option = quote.options.find(
+          (o) => o.service_id === dto.shipping_service_id,
+        );
+
+        if (!quote.ok || !option) {
+          throw new HttpException(
+            {
+              success: false,
+              message:
+                quote.message && !quote.ok
+                  ? quote.message
+                  : 'O frete escolhido não está mais disponível. Escolha outra opção.',
+              error: 'SHIPPING_OPTION_UNAVAILABLE',
+            },
+            HttpStatus.CONFLICT,
+          );
+        }
+
+        deliveryFee = Number(option.price.toFixed(2));
+        shippingProvider = 'melhor_envio';
+        meServiceId = option.service_id;
+        meQuote = {
+          ...option,
+          volume: quote.volume,
+          quoted_at: new Date().toISOString(),
+        };
+      }
+
       const finalTotalPrice = Number(
         (roundedSubtotal + deliveryFee).toFixed(2),
       );
@@ -134,6 +198,9 @@ export class OrdersService {
           original_total_price: finalTotalPrice,
           delivery_fee: deliveryFee,
           payment_method: dto.payment_method,
+          shipping_provider: shippingProvider,
+          me_service_id: meServiceId,
+          me_quote: meQuote,
         })
         .select()
         .single();
@@ -287,6 +354,86 @@ export class OrdersService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Frete para o endereço escolhido no checkout. Dentro de Curitiba e região
+   * é a taxa fixa do motoboy; fora, as opções do Melhor Envio para o
+   * carrinho atual.
+   */
+  async quoteShipping(userId: string, addressId: string) {
+    const { data: address } = await supabase
+      .from('addresses')
+      .select('city, zip_code')
+      .eq('id', addressId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!address) {
+      throw new HttpException(
+        { success: false, message: 'Endereço não encontrado.' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const localFee = calculateDeliveryFee(address.city);
+    if (localFee !== -1) {
+      return {
+        success: true,
+        message: 'Entrega local.',
+        data: { mode: 'local', fee: localFee, options: [] },
+      };
+    }
+
+    if (!this.shippingService.isMelhorEnvioConfigured()) {
+      return {
+        success: true,
+        message: 'Não realizamos entregas para esta região.',
+        data: { mode: 'unavailable', fee: null, options: [] },
+      };
+    }
+
+    const cartResponse = await this.cartService.getCart(userId);
+    const cartItems: any[] = cartResponse.data.items ?? [];
+    if (cartItems.length === 0) {
+      return {
+        success: true,
+        message: 'Carrinho vazio.',
+        data: { mode: 'melhor_envio', fee: null, options: [] },
+      };
+    }
+
+    let subtotal = 0;
+    const packItems = cartItems.map((item: any) => {
+      const product = item.product ?? {};
+      const isUnit = product.type === 'unit';
+      subtotal += isUnit
+        ? Number(product.price) * (item.quantity || 1)
+        : Number(product.price_per_kg) * ((item.weight || 0) / 1000);
+      return {
+        name: product.name,
+        quantity: isUnit ? item.quantity : null,
+        weight: isUnit ? null : item.weight,
+      };
+    });
+
+    const quote = await this.shippingService.quoteMelhorEnvio(
+      address.zip_code,
+      packItems,
+      Number(subtotal.toFixed(2)),
+    );
+
+    return {
+      success: true,
+      message: quote.ok
+        ? 'Frete calculado.'
+        : (quote.message ?? 'Sem opções de frete.'),
+      data: {
+        mode: quote.ok ? 'melhor_envio' : 'unavailable',
+        fee: null,
+        options: quote.options,
+      },
+    };
   }
 
   async findAllByUser(userId: string) {
@@ -465,6 +612,13 @@ export class OrdersService {
       // Devolve o uso do cupom (se houver) — cancelamento não deve fazer o
       // cliente perder o cupom.
       await this.couponsService.revertRedemption(orderId);
+
+      // Etiqueta do Melhor Envio (se houver) é cancelada para o frete voltar
+      // à carteira. Melhor esforço: falha fica em shipping_last_error.
+      void this.shippingService.cancelForOrder(
+        orderId,
+        'Pedido cancelado pelo cliente',
+      );
 
       // Push fire-and-forget pra staff (não bloqueia a resposta ao cliente).
       void this.notifyStaffOfCancelledOrder(orderId, userId);

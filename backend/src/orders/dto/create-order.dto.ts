@@ -5,6 +5,8 @@ import {
   IsIn,
   MaxLength,
   Matches,
+  IsInt,
+  IsPositive,
 } from 'class-validator';
 
 export class CreateOrderDto {
@@ -24,4 +26,13 @@ export class CreateOrderDto {
   @MaxLength(32)
   @Matches(/^[A-Za-z0-9-]+$/, { message: 'Código de cupom inválido' })
   coupon_code?: string;
+
+  /**
+   * Serviço do Melhor Envio escolhido no checkout (PAC, SEDEX…). Só vale
+   * para endereço fora da área do motoboy; o preço é recotado no servidor.
+   */
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  shipping_service_id?: number;
 }

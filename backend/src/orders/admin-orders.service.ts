@@ -716,6 +716,12 @@ export class AdminOrdersService {
 
       await this.couponsService.revertRedemption(orderId);
 
+      // Etiqueta do Melhor Envio (se houver) volta para a carteira.
+      void this.shippingService.cancelForOrder(
+        orderId,
+        'Pedido cancelado pela loja',
+      );
+
       return {
         success: true,
         message: refund

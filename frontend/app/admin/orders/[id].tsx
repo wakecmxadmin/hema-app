@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -143,6 +144,8 @@ export default function AdminOrderDetailScreen() {
   const [rejecting, setRejecting] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendPhone, setResendPhone] = useState("");
+  const [resendNfeKey, setResendNfeKey] = useState("");
+  const [loadingLabel, setLoadingLabel] = useState(false);
 
   const fetchDetails = async (isInitial = true) => {
     if (isInitial) setLoading(true);
@@ -364,6 +367,24 @@ export default function AdminOrderDetailScreen() {
     }
   };
 
+  /** Abre a etiqueta do Melhor Envio (PDF público) para imprimir. */
+  const handleOpenLabel = async () => {
+    setLoadingLabel(true);
+    const response = await AdminOrdersService.shippingLabel(id);
+    setLoadingLabel(false);
+
+    if (response.success && response.data?.url) {
+      Linking.openURL(response.data.url);
+      fetchDetails(false);
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Etiqueta indisponível",
+        text2: response.message,
+      });
+    }
+  };
+
   /**
    * O envio falhou (transportadora fora do ar, telefone ausente, CEP errado) e
    * nada tenta de novo sozinho. Aqui o admin corrige e dispara na mão.
@@ -379,10 +400,21 @@ export default function AdminOrderDetailScreen() {
       return;
     }
 
+    const nfeDigits = resendNfeKey.replace(/\D/g, "");
+    if (nfeDigits.length > 0 && nfeDigits.length !== 44) {
+      Toast.show({
+        type: "error",
+        text1: "Chave da NF-e inválida",
+        text2: "A chave tem 44 dígitos.",
+      });
+      return;
+    }
+
     setResending(true);
     const response = await AdminOrdersService.resendShipment(
       id,
       resendPhone.length > 0 ? resendPhone : undefined,
+      nfeDigits.length > 0 ? nfeDigits : undefined,
     );
     setResending(false);
 
@@ -393,6 +425,7 @@ export default function AdminOrderDetailScreen() {
         text2: response.message,
       });
       setResendPhone("");
+      setResendNfeKey("");
       fetchDetails(false);
     } else {
       Toast.show({
@@ -811,13 +844,52 @@ export default function AdminOrderDetailScreen() {
           </View>
         </View>
 
-        {/* ENVIO LOGMANAGER */}
-        {(order.logmanager_envio_id || order.shipping_status || order.shipping_last_error) && (
+        {/* ENVIO (LogManager ou Melhor Envio) */}
+        {(order.logmanager_envio_id ||
+          order.me_order_id ||
+          order.shipping_status ||
+          order.shipping_last_error) && (
           <View className="bg-surface rounded-card p-4 mb-4" style={sectionShadow}>
             <View className="flex-row items-center mb-3">
               <MaterialCommunityIcons name="truck-fast-outline" size={18} color="#1A1613" />
               <Text className="text-[16px] font-bold text-text-primary ml-2">Envio</Text>
             </View>
+
+            {order.shipping_provider === "melhor_envio" && (
+              <View className="flex-row items-center mb-2">
+                <Text className="text-[12px] text-text-secondary">Melhor Envio:</Text>
+                <Text className="text-[13px] font-bold text-text-primary ml-2">
+                  {order.me_quote?.name
+                    ? `${order.me_quote.name} · ${order.me_quote.company}`
+                    : `serviço ${order.me_service_id ?? "?"}`}
+                </Text>
+              </View>
+            )}
+
+            {order.me_order_id && (
+              <View className="flex-row items-center mb-2">
+                <Text className="text-[12px] text-text-secondary">Etiqueta:</Text>
+                <Text
+                  className="text-[12px] font-bold text-text-primary ml-2 flex-1"
+                  numberOfLines={1}
+                  selectable
+                >
+                  {order.me_order_id}
+                </Text>
+              </View>
+            )}
+
+            {order.me_tracking_code && (
+              <View className="flex-row items-center mb-2">
+                <Text className="text-[12px] text-text-secondary">Rastreio:</Text>
+                <Text
+                  className="text-[13px] font-bold text-text-primary ml-2"
+                  selectable
+                >
+                  {order.me_tracking_code}
+                </Text>
+              </View>
+            )}
 
             {order.logmanager_envio_id && (
               <View className="flex-row items-center mb-2">
@@ -864,8 +936,69 @@ export default function AdminOrderDetailScreen() {
               </View>
             )}
 
-            {order.shipping_last_error && !order.logmanager_envio_id && (
+            {order.me_order_id &&
+              !["pending", "canceled", "cancelled", "expired"].includes(
+                order.shipping_status,
+              ) && (
+                <TouchableOpacity
+                  onPress={handleOpenLabel}
+                  disabled={loadingLabel}
+                  activeOpacity={0.8}
+                  className="flex-row items-center justify-center rounded-btn py-3 mt-2"
+                  style={{
+                    backgroundColor: loadingLabel ? "#C2C2C2" : "#D91A21",
+                  }}
+                >
+                  {loadingLabel ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons
+                        name="printer-outline"
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                      <Text className="text-[14px] font-bold text-white ml-2">
+                        Imprimir etiqueta
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+
+            {order.shipping_last_error &&
+              !order.logmanager_envio_id &&
+              order.shipping_status !== "generated" && (
               <View className="mt-3">
+                {order.shipping_provider === "melhor_envio" &&
+                  /NF-e/i.test(order.shipping_last_error) && (
+                    <>
+                      <Text className="text-[12px] text-text-secondary mb-2">
+                        Envio comercial pelo Melhor Envio exige a chave da
+                        NF-e do pedido (44 dígitos).
+                      </Text>
+                      <View className="flex-row items-center border border-neutral-200 rounded-btn px-3 mb-2">
+                        <MaterialCommunityIcons
+                          name="file-document-outline"
+                          size={18}
+                          color="#8A8079"
+                        />
+                        <TextInput
+                          className="flex-1 ml-2 py-2.5 text-[13px] text-text-primary"
+                          placeholder="Chave da NF-e"
+                          placeholderTextColor="#C2C2C2"
+                          value={resendNfeKey}
+                          onChangeText={(text) =>
+                            setResendNfeKey(text.replace(/\D/g, "").slice(0, 44))
+                          }
+                          keyboardType="number-pad"
+                          maxLength={44}
+                          editable={!resending}
+                        />
+                      </View>
+                    </>
+                  )}
+
                 {!customer.phone && (
                   <>
                     <Text className="text-[12px] text-text-secondary mb-2">

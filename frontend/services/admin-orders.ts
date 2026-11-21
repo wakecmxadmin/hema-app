@@ -42,6 +42,8 @@ export interface AdminOrderListItem {
   shipping_status: string | null;
   shipping_last_error: string | null;
   logmanager_envio_id: string | null;
+  shipping_provider?: "local" | "melhor_envio";
+  me_order_id?: string | null;
   mp_payment_id: string | null;
   refund_status: RefundStatus;
   refund_amount: number | null;
@@ -140,10 +142,23 @@ export const AdminOrdersService = {
   async resendShipment(
     orderId: string,
     phone?: string,
+    nfeKey?: string,
   ): Promise<ApiResponse<any>> {
+    const body: Record<string, string> = {};
+    if (phone) body.phone = phone;
+    if (nfeKey) body.nfe_key = nfeKey;
     return apiFetch(`/admin/orders/${orderId}/resend-shipment`, {
       method: "POST",
-      body: JSON.stringify(phone ? { phone } : {}),
+      body: JSON.stringify(body),
+    });
+  },
+
+  /** Link público da etiqueta do Melhor Envio (abre o PDF para imprimir). */
+  async shippingLabel(
+    orderId: string,
+  ): Promise<ApiResponse<{ url: string | null }>> {
+    return apiFetch(`/admin/orders/${orderId}/shipping-label`, {
+      method: "POST",
     });
   },
 
